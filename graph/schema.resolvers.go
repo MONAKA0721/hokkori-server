@@ -7,15 +7,28 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/graph/generated"
 	"github.com/MONAKA0721/hokkori/graph/model"
 )
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
+func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*ent.Todo, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+func (r *queryResolver) Todos(ctx context.Context) ([]*ent.Todo, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *todoResolver) Text(ctx context.Context, obj *ent.Todo) (string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *todoResolver) Done(ctx context.Context, obj *ent.Todo) (bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *todoResolver) User(ctx context.Context, obj *ent.Todo) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -25,5 +38,9 @@ func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResol
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Todo returns generated.TodoResolver implementation.
+func (r *Resolver) Todo() generated.TodoResolver { return &todoResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type todoResolver struct{ *Resolver }
