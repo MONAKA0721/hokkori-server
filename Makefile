@@ -14,3 +14,6 @@ tag:
 
 push:
 	docker push kix.ocir.io/nro0opflyunj/hokkori/hokkori:$(REVISION)
+
+gen:
+	go generate ./...
