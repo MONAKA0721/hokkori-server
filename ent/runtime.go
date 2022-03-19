@@ -5,6 +5,7 @@ package ent
 import (
 	"time"
 
+	"github.com/MONAKA0721/hokkori/ent/letter"
 	"github.com/MONAKA0721/hokkori/ent/schema"
 	"github.com/MONAKA0721/hokkori/ent/todo"
 )
@@ -13,6 +14,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	letterFields := schema.Letter{}.Fields()
+	_ = letterFields
+	// letterDescContent is the schema descriptor for content field.
+	letterDescContent := letterFields[0].Descriptor()
+	// letter.ContentValidator is a validator for the "content" field. It is called by the builders before save.
+	letter.ContentValidator = letterDescContent.Validators[0].(func(string) error)
 	todoFields := schema.Todo{}.Fields()
 	_ = todoFields
 	// todoDescText is the schema descriptor for text field.

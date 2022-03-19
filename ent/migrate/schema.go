@@ -8,6 +8,17 @@ import (
 )
 
 var (
+	// LettersColumns holds the columns for the "letters" table.
+	LettersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "content", Type: field.TypeString, Size: 2147483647},
+	}
+	// LettersTable holds the schema information for the "letters" table.
+	LettersTable = &schema.Table{
+		Name:       "letters",
+		Columns:    LettersColumns,
+		PrimaryKey: []*schema.Column{LettersColumns[0]},
+	}
 	// TodosColumns holds the columns for the "todos" table.
 	TodosColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -33,6 +44,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		LettersTable,
 		TodosTable,
 	}
 )

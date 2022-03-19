@@ -2,6 +2,10 @@
 
 package model
 
+type CreateLetterInput struct {
+	Content string `json:"content"`
+}
+
 type NewTodo struct {
 	Text   string `json:"text"`
 	UserID string `json:"userId"`

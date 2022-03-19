@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
+	"github.com/MONAKA0721/hokkori/ent/letter"
 	"github.com/MONAKA0721/hokkori/ent/todo"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/vmihailenco/msgpack/v5"
@@ -231,6 +232,233 @@ const (
 	pageInfoField   = "pageInfo"
 	totalCountField = "totalCount"
 )
+
+// LetterEdge is the edge representation of Letter.
+type LetterEdge struct {
+	Node   *Letter `json:"node"`
+	Cursor Cursor  `json:"cursor"`
+}
+
+// LetterConnection is the connection containing edges to Letter.
+type LetterConnection struct {
+	Edges      []*LetterEdge `json:"edges"`
+	PageInfo   PageInfo      `json:"pageInfo"`
+	TotalCount int           `json:"totalCount"`
+}
+
+// LetterPaginateOption enables pagination customization.
+type LetterPaginateOption func(*letterPager) error
+
+// WithLetterOrder configures pagination ordering.
+func WithLetterOrder(order *LetterOrder) LetterPaginateOption {
+	if order == nil {
+		order = DefaultLetterOrder
+	}
+	o := *order
+	return func(pager *letterPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultLetterOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithLetterFilter configures pagination filter.
+func WithLetterFilter(filter func(*LetterQuery) (*LetterQuery, error)) LetterPaginateOption {
+	return func(pager *letterPager) error {
+		if filter == nil {
+			return errors.New("LetterQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type letterPager struct {
+	order  *LetterOrder
+	filter func(*LetterQuery) (*LetterQuery, error)
+}
+
+func newLetterPager(opts []LetterPaginateOption) (*letterPager, error) {
+	pager := &letterPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultLetterOrder
+	}
+	return pager, nil
+}
+
+func (p *letterPager) applyFilter(query *LetterQuery) (*LetterQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *letterPager) toCursor(l *Letter) Cursor {
+	return p.order.Field.toCursor(l)
+}
+
+func (p *letterPager) applyCursors(query *LetterQuery, after, before *Cursor) *LetterQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultLetterOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *letterPager) applyOrder(query *LetterQuery, reverse bool) *LetterQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultLetterOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultLetterOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Letter.
+func (l *LetterQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...LetterPaginateOption,
+) (*LetterConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newLetterPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if l, err = pager.applyFilter(l); err != nil {
+		return nil, err
+	}
+
+	conn := &LetterConnection{Edges: []*LetterEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := l.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := l.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	l = pager.applyCursors(l, after, before)
+	l = pager.applyOrder(l, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		l = l.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		l = l.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := l.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *Letter
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Letter {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Letter {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*LetterEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &LetterEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+// LetterOrderField defines the ordering field of Letter.
+type LetterOrderField struct {
+	field    string
+	toCursor func(*Letter) Cursor
+}
+
+// LetterOrder defines the ordering of Letter.
+type LetterOrder struct {
+	Direction OrderDirection    `json:"direction"`
+	Field     *LetterOrderField `json:"field"`
+}
+
+// DefaultLetterOrder is the default ordering of Letter.
+var DefaultLetterOrder = &LetterOrder{
+	Direction: OrderDirectionAsc,
+	Field: &LetterOrderField{
+		field: letter.FieldID,
+		toCursor: func(l *Letter) Cursor {
+			return Cursor{ID: l.ID}
+		},
+	},
+}
+
+// ToEdge converts Letter into LetterEdge.
+func (l *Letter) ToEdge(order *LetterOrder) *LetterEdge {
+	if order == nil {
+		order = DefaultLetterOrder
+	}
+	return &LetterEdge{
+		Node:   l,
+		Cursor: order.Field.toCursor(l),
+	}
+}
 
 // TodoEdge is the edge representation of Todo.
 type TodoEdge struct {

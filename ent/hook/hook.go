@@ -9,6 +9,19 @@ import (
 	"github.com/MONAKA0721/hokkori/ent"
 )
 
+// The LetterFunc type is an adapter to allow the use of ordinary
+// function as Letter mutator.
+type LetterFunc func(context.Context, *ent.LetterMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f LetterFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.LetterMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LetterMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The TodoFunc type is an adapter to allow the use of ordinary
 // function as Todo mutator.
 type TodoFunc func(context.Context, *ent.TodoMutation) (ent.Value, error)

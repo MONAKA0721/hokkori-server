@@ -9,6 +9,7 @@ import (
 
 	"github.com/MONAKA0721/hokkori/ent/migrate"
 
+	"github.com/MONAKA0721/hokkori/ent/letter"
 	"github.com/MONAKA0721/hokkori/ent/todo"
 
 	"entgo.io/ent/dialect"
@@ -21,6 +22,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Letter is the client for interacting with the Letter builders.
+	Letter *LetterClient
 	// Todo is the client for interacting with the Todo builders.
 	Todo *TodoClient
 	// additional fields for node api
@@ -38,6 +41,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Letter = NewLetterClient(c.config)
 	c.Todo = NewTodoClient(c.config)
 }
 
@@ -72,6 +76,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:    ctx,
 		config: cfg,
+		Letter: NewLetterClient(cfg),
 		Todo:   NewTodoClient(cfg),
 	}, nil
 }
@@ -92,6 +97,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:    ctx,
 		config: cfg,
+		Letter: NewLetterClient(cfg),
 		Todo:   NewTodoClient(cfg),
 	}, nil
 }
@@ -99,7 +105,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Todo.
+//		Letter.
 //		Query().
 //		Count(ctx)
 //
@@ -122,7 +128,98 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Letter.Use(hooks...)
 	c.Todo.Use(hooks...)
+}
+
+// LetterClient is a client for the Letter schema.
+type LetterClient struct {
+	config
+}
+
+// NewLetterClient returns a client for the Letter from the given config.
+func NewLetterClient(c config) *LetterClient {
+	return &LetterClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `letter.Hooks(f(g(h())))`.
+func (c *LetterClient) Use(hooks ...Hook) {
+	c.hooks.Letter = append(c.hooks.Letter, hooks...)
+}
+
+// Create returns a create builder for Letter.
+func (c *LetterClient) Create() *LetterCreate {
+	mutation := newLetterMutation(c.config, OpCreate)
+	return &LetterCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Letter entities.
+func (c *LetterClient) CreateBulk(builders ...*LetterCreate) *LetterCreateBulk {
+	return &LetterCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Letter.
+func (c *LetterClient) Update() *LetterUpdate {
+	mutation := newLetterMutation(c.config, OpUpdate)
+	return &LetterUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *LetterClient) UpdateOne(l *Letter) *LetterUpdateOne {
+	mutation := newLetterMutation(c.config, OpUpdateOne, withLetter(l))
+	return &LetterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *LetterClient) UpdateOneID(id int) *LetterUpdateOne {
+	mutation := newLetterMutation(c.config, OpUpdateOne, withLetterID(id))
+	return &LetterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Letter.
+func (c *LetterClient) Delete() *LetterDelete {
+	mutation := newLetterMutation(c.config, OpDelete)
+	return &LetterDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *LetterClient) DeleteOne(l *Letter) *LetterDeleteOne {
+	return c.DeleteOneID(l.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *LetterClient) DeleteOneID(id int) *LetterDeleteOne {
+	builder := c.Delete().Where(letter.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &LetterDeleteOne{builder}
+}
+
+// Query returns a query builder for Letter.
+func (c *LetterClient) Query() *LetterQuery {
+	return &LetterQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Letter entity by its id.
+func (c *LetterClient) Get(ctx context.Context, id int) (*Letter, error) {
+	return c.Query().Where(letter.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *LetterClient) GetX(ctx context.Context, id int) *Letter {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *LetterClient) Hooks() []Hook {
+	return c.hooks.Letter
 }
 
 // TodoClient is a client for the Todo schema.

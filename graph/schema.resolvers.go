@@ -18,8 +18,18 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 		Save(ctx)
 }
 
+func (r *mutationResolver) CreateLetter(ctx context.Context, input model.CreateLetterInput) (*ent.Letter, error) {
+	return r.client.Letter.Create().
+		SetContent(input.Content).
+		Save(ctx)
+}
+
 func (r *queryResolver) Todos(ctx context.Context) ([]*ent.Todo, error) {
 	return r.client.Todo.Query().All(ctx)
+}
+
+func (r *queryResolver) Letters(ctx context.Context) ([]*ent.Letter, error) {
+	return r.client.Letter.Query().All(ctx)
 }
 
 func (r *todoResolver) Done(ctx context.Context, obj *ent.Todo) (bool, error) {
