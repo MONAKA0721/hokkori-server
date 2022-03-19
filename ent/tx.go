@@ -14,8 +14,6 @@ type Tx struct {
 	config
 	// Letter is the client for interacting with the Letter builders.
 	Letter *LetterClient
-	// Todo is the client for interacting with the Todo builders.
-	Todo *TodoClient
 
 	// lazily loaded.
 	client     *Client
@@ -152,7 +150,6 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Letter = NewLetterClient(tx.config)
-	tx.Todo = NewTodoClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

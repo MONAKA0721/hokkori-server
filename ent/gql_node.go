@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/MONAKA0721/hokkori/ent/letter"
-	"github.com/MONAKA0721/hokkori/ent/todo"
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/sync/semaphore"
 )
@@ -62,69 +61,6 @@ func (l *Letter) Node(ctx context.Context) (node *Node, err error) {
 		Type:  "string",
 		Name:  "content",
 		Value: string(buf),
-	}
-	return node, nil
-}
-
-func (t *Todo) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     t.ID,
-		Type:   "Todo",
-		Fields: make([]*Field, 4),
-		Edges:  make([]*Edge, 2),
-	}
-	var buf []byte
-	if buf, err = json.Marshal(t.Text); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "string",
-		Name:  "text",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(t.CreatedAt); err != nil {
-		return nil, err
-	}
-	node.Fields[1] = &Field{
-		Type:  "time.Time",
-		Name:  "created_at",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(t.Status); err != nil {
-		return nil, err
-	}
-	node.Fields[2] = &Field{
-		Type:  "todo.Status",
-		Name:  "status",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(t.Priority); err != nil {
-		return nil, err
-	}
-	node.Fields[3] = &Field{
-		Type:  "int",
-		Name:  "priority",
-		Value: string(buf),
-	}
-	node.Edges[0] = &Edge{
-		Type: "Todo",
-		Name: "children",
-	}
-	err = t.QueryChildren().
-		Select(todo.FieldID).
-		Scan(ctx, &node.Edges[0].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[1] = &Edge{
-		Type: "Todo",
-		Name: "parent",
-	}
-	err = t.QueryParent().
-		Select(todo.FieldID).
-		Scan(ctx, &node.Edges[1].IDs)
-	if err != nil {
-		return nil, err
 	}
 	return node, nil
 }
@@ -200,15 +136,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 		n, err := c.Letter.Query().
 			Where(letter.ID(id)).
 			CollectFields(ctx, "Letter").
-			Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
-	case todo.Table:
-		n, err := c.Todo.Query().
-			Where(todo.ID(id)).
-			CollectFields(ctx, "Todo").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -291,19 +218,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		nodes, err := c.Letter.Query().
 			Where(letter.IDIn(ids...)).
 			CollectFields(ctx, "Letter").
-			All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case todo.Table:
-		nodes, err := c.Todo.Query().
-			Where(todo.IDIn(ids...)).
-			CollectFields(ctx, "Todo").
 			All(ctx)
 		if err != nil {
 			return nil, err

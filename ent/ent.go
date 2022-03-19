@@ -9,7 +9,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/MONAKA0721/hokkori/ent/letter"
-	"github.com/MONAKA0721/hokkori/ent/todo"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -31,7 +30,6 @@ type OrderFunc func(*sql.Selector)
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
 		letter.Table: letter.ValidColumn,
-		todo.Table:   todo.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {
