@@ -12,6 +12,8 @@ import (
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/ent/migrate"
 	"github.com/MONAKA0721/hokkori/graph"
+	"github.com/MONAKA0721/hokkori/middleware"
+	"github.com/joho/godotenv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -19,6 +21,10 @@ import (
 const defaultPort = "8080"
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading the .env file: %v", err)
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -41,7 +47,7 @@ func main() {
 	http.Handle("/",
 		playground.Handler("Hokkori", "/query"),
 	)
-	http.Handle("/query", srv)
+	http.Handle("/query", middleware.EnsureValidToken()(srv))
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("http server terminated", err)
