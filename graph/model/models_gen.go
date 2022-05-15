@@ -6,7 +6,6 @@ type CreateLetterInput struct {
 	Content string `json:"content"`
 }
 
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type CreateUserInput struct {
+	ID string `json:"id"`
 }

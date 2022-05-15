@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/MONAKA0721/hokkori/ent/letter"
+	"github.com/MONAKA0721/hokkori/ent/user"
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/sync/semaphore"
 )
@@ -61,6 +62,16 @@ func (l *Letter) Node(ctx context.Context) (node *Node, err error) {
 		Type:  "string",
 		Name:  "content",
 		Value: string(buf),
+	}
+	return node, nil
+}
+
+func (u *User) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     u.ID,
+		Type:   "User",
+		Fields: make([]*Field, 0),
+		Edges:  make([]*Edge, 0),
 	}
 	return node, nil
 }
@@ -136,6 +147,15 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 		n, err := c.Letter.Query().
 			Where(letter.ID(id)).
 			CollectFields(ctx, "Letter").
+			Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case user.Table:
+		n, err := c.User.Query().
+			Where(user.ID(id)).
+			CollectFields(ctx, "User").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -218,6 +238,19 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		nodes, err := c.Letter.Query().
 			Where(letter.IDIn(ids...)).
 			CollectFields(ctx, "Letter").
+			All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case user.Table:
+		nodes, err := c.User.Query().
+			Where(user.IDIn(ids...)).
+			CollectFields(ctx, "User").
 			All(ctx)
 		if err != nil {
 			return nil, err

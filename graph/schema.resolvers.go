@@ -5,11 +5,16 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/graph/generated"
 	"github.com/MONAKA0721/hokkori/graph/model"
 )
+
+func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*ent.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
 func (r *mutationResolver) CreateLetter(ctx context.Context, input model.CreateLetterInput) (*ent.Letter, error) {
 	return r.client.Letter.Create().
