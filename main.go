@@ -13,7 +13,6 @@ import (
 	"github.com/MONAKA0721/hokkori/ent/migrate"
 	"github.com/MONAKA0721/hokkori/graph"
 	"github.com/MONAKA0721/hokkori/middleware"
-	"github.com/joho/godotenv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -21,9 +20,6 @@ import (
 const defaultPort = "8080"
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading the .env file: %v", err)
-	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
