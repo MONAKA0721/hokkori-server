@@ -16,6 +16,7 @@ workflows:
                 - main
           repo: hokkori
           tag: "${CIRCLE_SHA1}"
+          platform: linux/arm64
       - aws-ecs/deploy-service-update:
           filters:
             branches:
@@ -26,3 +27,4 @@ workflows:
           family: "hokkori"
           cluster-name: "hokkori"
           container-image-name-updates: "container=hokkori_container,tag=${CIRCLE_SHA1}"
+          aws-region: AWS_REGION
