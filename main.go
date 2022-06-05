@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +15,7 @@ import (
 	"github.com/MONAKA0721/hokkori/graph"
 	"github.com/MONAKA0721/hokkori/middleware"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 const defaultPort = "8080"
@@ -27,7 +28,13 @@ func main() {
 	}
 
 	// Create ent.Client and run the schema migration.
-	client, err := ent.Open(dialect.SQLite, "file:ent?mode=memory&cache=shared&_fk=1")
+	client, err := ent.Open(dialect.Postgres, fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
+		os.Getenv("HOKKORI_DB_HOST"),
+		os.Getenv("HOKKORI_DB_PORT"),
+		os.Getenv("HOKKORI_DB_USER"),
+		os.Getenv("HOKKORI_DB_DATABASE"),
+		os.Getenv("HOKKORI_DB_PASSWORD"),
+	))
 	if err != nil {
 		log.Fatal("opening ent client", err)
 	}

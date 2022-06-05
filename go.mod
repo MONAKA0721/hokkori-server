@@ -8,7 +8,7 @@ require (
 	github.com/99designs/gqlgen v0.17.1
 	github.com/auth0/go-jwt-middleware/v2 v2.0.1
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/mattn/go-sqlite3 v1.14.12
+	github.com/lib/pq v1.10.4
 	github.com/vektah/gqlparser/v2 v2.4.0
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.9
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
