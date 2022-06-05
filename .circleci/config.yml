@@ -24,7 +24,8 @@ workflows:
                 - main
           requires:
             - aws-ecr/build-and-push-image
-          family: "hokkori"
-          cluster-name: "hokkori"
+          family: hokkori_taskdef
+          service-name: hokkori
+          cluster-name: hokkori
           container-image-name-updates: "container=hokkori_container,tag=${CIRCLE_SHA1}"
           aws-region: AWS_REGION
