@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:14.2
+    container_name: hokkori_db
+    environment:
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./db/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - 15432:5432
+  app:
+    container_name: hokkori_app
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    entrypoint: "./wait-for-it.sh db:5432 -- air"
+    env_file: ./docker.env
+    volumes:
+      - bin:/hokkori/bin
+      - .:/hokkori
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+volumes:
+  bin:

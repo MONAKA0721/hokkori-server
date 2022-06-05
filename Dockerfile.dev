@@ -1,0 +1,15 @@
+FROM golang:1.18.0-buster
+
+ENV TZ Asia/Tokyo
+
+RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+
+WORKDIR /hokkori
+
+COPY go.mod /hokkori/
+RUN go mod download
+
+COPY . /hokkori/
+
+RUN chmod 755 ./entry-point.sh
+ENTRYPOINT [ "./entry-point.sh" ]
