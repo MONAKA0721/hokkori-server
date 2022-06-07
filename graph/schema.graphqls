@@ -1,8 +1,8 @@
 type Query {
-  letters: [Letter!]!
+  posts: [Post!]!
 }
 
 type Mutation {
   createUser(input: CreateUserInput!): User!
-  createLetter(input: CreateLetterInput!): Letter!
+  createPost(input: CreatePostInput!): Post!
 }

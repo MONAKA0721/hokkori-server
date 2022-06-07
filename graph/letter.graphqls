@@ -1,8 +1,0 @@
-type Letter {
-  id: ID!
-  content: String!
-}
-
-input CreateLetterInput {
-  content: String!
-}

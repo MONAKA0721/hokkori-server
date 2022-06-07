@@ -14,7 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/MONAKA0721/hokkori/ent/letter"
+	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/sync/semaphore"
@@ -47,20 +47,36 @@ type Edge struct {
 	IDs  []int  `json:"ids,omitempty"`  // node ids (where this edge point to).
 }
 
-func (l *Letter) Node(ctx context.Context) (node *Node, err error) {
+func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
-		ID:     l.ID,
-		Type:   "Letter",
-		Fields: make([]*Field, 1),
+		ID:     po.ID,
+		Type:   "Post",
+		Fields: make([]*Field, 3),
 		Edges:  make([]*Edge, 0),
 	}
 	var buf []byte
-	if buf, err = json.Marshal(l.Content); err != nil {
+	if buf, err = json.Marshal(po.Title); err != nil {
 		return nil, err
 	}
 	node.Fields[0] = &Field{
 		Type:  "string",
+		Name:  "title",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(po.Content); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "string",
 		Name:  "content",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(po.Type); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "post.Type",
+		Name:  "type",
 		Value: string(buf),
 	}
 	return node, nil
@@ -70,8 +86,17 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     u.ID,
 		Type:   "User",
-		Fields: make([]*Field, 0),
+		Fields: make([]*Field, 1),
 		Edges:  make([]*Edge, 0),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(u.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
 	}
 	return node, nil
 }
@@ -143,10 +168,10 @@ func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder
 
 func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error) {
 	switch table {
-	case letter.Table:
-		n, err := c.Letter.Query().
-			Where(letter.ID(id)).
-			CollectFields(ctx, "Letter").
+	case post.Table:
+		n, err := c.Post.Query().
+			Where(post.ID(id)).
+			CollectFields(ctx, "Post").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -234,10 +259,10 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
-	case letter.Table:
-		nodes, err := c.Letter.Query().
-			Where(letter.IDIn(ids...)).
-			CollectFields(ctx, "Letter").
+	case post.Table:
+		nodes, err := c.Post.Query().
+			Where(post.IDIn(ids...)).
+			CollectFields(ctx, "Post").
 			All(ctx)
 		if err != nil {
 			return nil, err

@@ -16,14 +16,12 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUse
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) CreateLetter(ctx context.Context, input model.CreateLetterInput) (*ent.Letter, error) {
-	return r.client.Letter.Create().
-		SetContent(input.Content).
-		Save(ctx)
+func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePostInput) (*ent.Post, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Letters(ctx context.Context) ([]*ent.Letter, error) {
-	return r.client.Letter.Query().All(ctx)
+func (r *queryResolver) Posts(ctx context.Context) ([]*ent.Post, error) {
+	return r.client.Post.Query().All(ctx)
 }
 
 // Mutation returns generated.MutationResolver implementation.

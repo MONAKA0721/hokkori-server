@@ -9,7 +9,7 @@ import (
 
 	"github.com/MONAKA0721/hokkori/ent/migrate"
 
-	"github.com/MONAKA0721/hokkori/ent/letter"
+	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -21,8 +21,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
-	// Letter is the client for interacting with the Letter builders.
-	Letter *LetterClient
+	// Post is the client for interacting with the Post builders.
+	Post *PostClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// additional fields for node api
@@ -40,7 +40,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
-	c.Letter = NewLetterClient(c.config)
+	c.Post = NewPostClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -75,7 +75,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:    ctx,
 		config: cfg,
-		Letter: NewLetterClient(cfg),
+		Post:   NewPostClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -96,7 +96,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:    ctx,
 		config: cfg,
-		Letter: NewLetterClient(cfg),
+		Post:   NewPostClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -104,7 +104,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Letter.
+//		Post.
 //		Query().
 //		Count(ctx)
 //
@@ -127,88 +127,88 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Letter.Use(hooks...)
+	c.Post.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
-// LetterClient is a client for the Letter schema.
-type LetterClient struct {
+// PostClient is a client for the Post schema.
+type PostClient struct {
 	config
 }
 
-// NewLetterClient returns a client for the Letter from the given config.
-func NewLetterClient(c config) *LetterClient {
-	return &LetterClient{config: c}
+// NewPostClient returns a client for the Post from the given config.
+func NewPostClient(c config) *PostClient {
+	return &PostClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `letter.Hooks(f(g(h())))`.
-func (c *LetterClient) Use(hooks ...Hook) {
-	c.hooks.Letter = append(c.hooks.Letter, hooks...)
+// A call to `Use(f, g, h)` equals to `post.Hooks(f(g(h())))`.
+func (c *PostClient) Use(hooks ...Hook) {
+	c.hooks.Post = append(c.hooks.Post, hooks...)
 }
 
-// Create returns a create builder for Letter.
-func (c *LetterClient) Create() *LetterCreate {
-	mutation := newLetterMutation(c.config, OpCreate)
-	return &LetterCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a create builder for Post.
+func (c *PostClient) Create() *PostCreate {
+	mutation := newPostMutation(c.config, OpCreate)
+	return &PostCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of Letter entities.
-func (c *LetterClient) CreateBulk(builders ...*LetterCreate) *LetterCreateBulk {
-	return &LetterCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Post entities.
+func (c *PostClient) CreateBulk(builders ...*PostCreate) *PostCreateBulk {
+	return &PostCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for Letter.
-func (c *LetterClient) Update() *LetterUpdate {
-	mutation := newLetterMutation(c.config, OpUpdate)
-	return &LetterUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Post.
+func (c *PostClient) Update() *PostUpdate {
+	mutation := newPostMutation(c.config, OpUpdate)
+	return &PostUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *LetterClient) UpdateOne(l *Letter) *LetterUpdateOne {
-	mutation := newLetterMutation(c.config, OpUpdateOne, withLetter(l))
-	return &LetterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *PostClient) UpdateOne(po *Post) *PostUpdateOne {
+	mutation := newPostMutation(c.config, OpUpdateOne, withPost(po))
+	return &PostUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *LetterClient) UpdateOneID(id int) *LetterUpdateOne {
-	mutation := newLetterMutation(c.config, OpUpdateOne, withLetterID(id))
-	return &LetterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *PostClient) UpdateOneID(id int) *PostUpdateOne {
+	mutation := newPostMutation(c.config, OpUpdateOne, withPostID(id))
+	return &PostUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Letter.
-func (c *LetterClient) Delete() *LetterDelete {
-	mutation := newLetterMutation(c.config, OpDelete)
-	return &LetterDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Post.
+func (c *PostClient) Delete() *PostDelete {
+	mutation := newPostMutation(c.config, OpDelete)
+	return &PostDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a delete builder for the given entity.
-func (c *LetterClient) DeleteOne(l *Letter) *LetterDeleteOne {
-	return c.DeleteOneID(l.ID)
+func (c *PostClient) DeleteOne(po *Post) *PostDeleteOne {
+	return c.DeleteOneID(po.ID)
 }
 
 // DeleteOneID returns a delete builder for the given id.
-func (c *LetterClient) DeleteOneID(id int) *LetterDeleteOne {
-	builder := c.Delete().Where(letter.ID(id))
+func (c *PostClient) DeleteOneID(id int) *PostDeleteOne {
+	builder := c.Delete().Where(post.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &LetterDeleteOne{builder}
+	return &PostDeleteOne{builder}
 }
 
-// Query returns a query builder for Letter.
-func (c *LetterClient) Query() *LetterQuery {
-	return &LetterQuery{
+// Query returns a query builder for Post.
+func (c *PostClient) Query() *PostQuery {
+	return &PostQuery{
 		config: c.config,
 	}
 }
 
-// Get returns a Letter entity by its id.
-func (c *LetterClient) Get(ctx context.Context, id int) (*Letter, error) {
-	return c.Query().Where(letter.ID(id)).Only(ctx)
+// Get returns a Post entity by its id.
+func (c *PostClient) Get(ctx context.Context, id int) (*Post, error) {
+	return c.Query().Where(post.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *LetterClient) GetX(ctx context.Context, id int) *Letter {
+func (c *PostClient) GetX(ctx context.Context, id int) *Post {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -217,8 +217,8 @@ func (c *LetterClient) GetX(ctx context.Context, id int) *Letter {
 }
 
 // Hooks returns the client hooks.
-func (c *LetterClient) Hooks() []Hook {
-	return c.hooks.Letter
+func (c *PostClient) Hooks() []Hook {
+	return c.hooks.Post
 }
 
 // UserClient is a client for the User schema.

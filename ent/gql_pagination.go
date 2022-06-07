@@ -14,7 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
-	"github.com/MONAKA0721/hokkori/ent/letter"
+	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/vmihailenco/msgpack/v5"
@@ -233,124 +233,124 @@ const (
 	totalCountField = "totalCount"
 )
 
-// LetterEdge is the edge representation of Letter.
-type LetterEdge struct {
-	Node   *Letter `json:"node"`
-	Cursor Cursor  `json:"cursor"`
+// PostEdge is the edge representation of Post.
+type PostEdge struct {
+	Node   *Post  `json:"node"`
+	Cursor Cursor `json:"cursor"`
 }
 
-// LetterConnection is the connection containing edges to Letter.
-type LetterConnection struct {
-	Edges      []*LetterEdge `json:"edges"`
-	PageInfo   PageInfo      `json:"pageInfo"`
-	TotalCount int           `json:"totalCount"`
+// PostConnection is the connection containing edges to Post.
+type PostConnection struct {
+	Edges      []*PostEdge `json:"edges"`
+	PageInfo   PageInfo    `json:"pageInfo"`
+	TotalCount int         `json:"totalCount"`
 }
 
-// LetterPaginateOption enables pagination customization.
-type LetterPaginateOption func(*letterPager) error
+// PostPaginateOption enables pagination customization.
+type PostPaginateOption func(*postPager) error
 
-// WithLetterOrder configures pagination ordering.
-func WithLetterOrder(order *LetterOrder) LetterPaginateOption {
+// WithPostOrder configures pagination ordering.
+func WithPostOrder(order *PostOrder) PostPaginateOption {
 	if order == nil {
-		order = DefaultLetterOrder
+		order = DefaultPostOrder
 	}
 	o := *order
-	return func(pager *letterPager) error {
+	return func(pager *postPager) error {
 		if err := o.Direction.Validate(); err != nil {
 			return err
 		}
 		if o.Field == nil {
-			o.Field = DefaultLetterOrder.Field
+			o.Field = DefaultPostOrder.Field
 		}
 		pager.order = &o
 		return nil
 	}
 }
 
-// WithLetterFilter configures pagination filter.
-func WithLetterFilter(filter func(*LetterQuery) (*LetterQuery, error)) LetterPaginateOption {
-	return func(pager *letterPager) error {
+// WithPostFilter configures pagination filter.
+func WithPostFilter(filter func(*PostQuery) (*PostQuery, error)) PostPaginateOption {
+	return func(pager *postPager) error {
 		if filter == nil {
-			return errors.New("LetterQuery filter cannot be nil")
+			return errors.New("PostQuery filter cannot be nil")
 		}
 		pager.filter = filter
 		return nil
 	}
 }
 
-type letterPager struct {
-	order  *LetterOrder
-	filter func(*LetterQuery) (*LetterQuery, error)
+type postPager struct {
+	order  *PostOrder
+	filter func(*PostQuery) (*PostQuery, error)
 }
 
-func newLetterPager(opts []LetterPaginateOption) (*letterPager, error) {
-	pager := &letterPager{}
+func newPostPager(opts []PostPaginateOption) (*postPager, error) {
+	pager := &postPager{}
 	for _, opt := range opts {
 		if err := opt(pager); err != nil {
 			return nil, err
 		}
 	}
 	if pager.order == nil {
-		pager.order = DefaultLetterOrder
+		pager.order = DefaultPostOrder
 	}
 	return pager, nil
 }
 
-func (p *letterPager) applyFilter(query *LetterQuery) (*LetterQuery, error) {
+func (p *postPager) applyFilter(query *PostQuery) (*PostQuery, error) {
 	if p.filter != nil {
 		return p.filter(query)
 	}
 	return query, nil
 }
 
-func (p *letterPager) toCursor(l *Letter) Cursor {
-	return p.order.Field.toCursor(l)
+func (p *postPager) toCursor(po *Post) Cursor {
+	return p.order.Field.toCursor(po)
 }
 
-func (p *letterPager) applyCursors(query *LetterQuery, after, before *Cursor) *LetterQuery {
+func (p *postPager) applyCursors(query *PostQuery, after, before *Cursor) *PostQuery {
 	for _, predicate := range cursorsToPredicates(
 		p.order.Direction, after, before,
-		p.order.Field.field, DefaultLetterOrder.Field.field,
+		p.order.Field.field, DefaultPostOrder.Field.field,
 	) {
 		query = query.Where(predicate)
 	}
 	return query
 }
 
-func (p *letterPager) applyOrder(query *LetterQuery, reverse bool) *LetterQuery {
+func (p *postPager) applyOrder(query *PostQuery, reverse bool) *PostQuery {
 	direction := p.order.Direction
 	if reverse {
 		direction = direction.reverse()
 	}
 	query = query.Order(direction.orderFunc(p.order.Field.field))
-	if p.order.Field != DefaultLetterOrder.Field {
-		query = query.Order(direction.orderFunc(DefaultLetterOrder.Field.field))
+	if p.order.Field != DefaultPostOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultPostOrder.Field.field))
 	}
 	return query
 }
 
-// Paginate executes the query and returns a relay based cursor connection to Letter.
-func (l *LetterQuery) Paginate(
+// Paginate executes the query and returns a relay based cursor connection to Post.
+func (po *PostQuery) Paginate(
 	ctx context.Context, after *Cursor, first *int,
-	before *Cursor, last *int, opts ...LetterPaginateOption,
-) (*LetterConnection, error) {
+	before *Cursor, last *int, opts ...PostPaginateOption,
+) (*PostConnection, error) {
 	if err := validateFirstLast(first, last); err != nil {
 		return nil, err
 	}
-	pager, err := newLetterPager(opts)
+	pager, err := newPostPager(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	if l, err = pager.applyFilter(l); err != nil {
+	if po, err = pager.applyFilter(po); err != nil {
 		return nil, err
 	}
 
-	conn := &LetterConnection{Edges: []*LetterEdge{}}
+	conn := &PostConnection{Edges: []*PostEdge{}}
 	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
 		if hasCollectedField(ctx, totalCountField) ||
 			hasCollectedField(ctx, pageInfoField) {
-			count, err := l.Count(ctx)
+			count, err := po.Count(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -362,15 +362,15 @@ func (l *LetterQuery) Paginate(
 	}
 
 	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
-		count, err := l.Clone().Count(ctx)
+		count, err := po.Clone().Count(ctx)
 		if err != nil {
 			return nil, err
 		}
 		conn.TotalCount = count
 	}
 
-	l = pager.applyCursors(l, after, before)
-	l = pager.applyOrder(l, last != nil)
+	po = pager.applyCursors(po, after, before)
+	po = pager.applyOrder(po, last != nil)
 	var limit int
 	if first != nil {
 		limit = *first + 1
@@ -378,14 +378,14 @@ func (l *LetterQuery) Paginate(
 		limit = *last + 1
 	}
 	if limit > 0 {
-		l = l.Limit(limit)
+		po = po.Limit(limit)
 	}
 
 	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
-		l = l.collectField(graphql.GetOperationContext(ctx), *field)
+		po = po.collectField(graphql.GetOperationContext(ctx), *field)
 	}
 
-	nodes, err := l.All(ctx)
+	nodes, err := po.All(ctx)
 	if err != nil || len(nodes) == 0 {
 		return conn, err
 	}
@@ -396,22 +396,22 @@ func (l *LetterQuery) Paginate(
 		nodes = nodes[:len(nodes)-1]
 	}
 
-	var nodeAt func(int) *Letter
+	var nodeAt func(int) *Post
 	if last != nil {
 		n := len(nodes) - 1
-		nodeAt = func(i int) *Letter {
+		nodeAt = func(i int) *Post {
 			return nodes[n-i]
 		}
 	} else {
-		nodeAt = func(i int) *Letter {
+		nodeAt = func(i int) *Post {
 			return nodes[i]
 		}
 	}
 
-	conn.Edges = make([]*LetterEdge, len(nodes))
+	conn.Edges = make([]*PostEdge, len(nodes))
 	for i := range nodes {
 		node := nodeAt(i)
-		conn.Edges[i] = &LetterEdge{
+		conn.Edges[i] = &PostEdge{
 			Node:   node,
 			Cursor: pager.toCursor(node),
 		}
@@ -426,37 +426,37 @@ func (l *LetterQuery) Paginate(
 	return conn, nil
 }
 
-// LetterOrderField defines the ordering field of Letter.
-type LetterOrderField struct {
+// PostOrderField defines the ordering field of Post.
+type PostOrderField struct {
 	field    string
-	toCursor func(*Letter) Cursor
+	toCursor func(*Post) Cursor
 }
 
-// LetterOrder defines the ordering of Letter.
-type LetterOrder struct {
-	Direction OrderDirection    `json:"direction"`
-	Field     *LetterOrderField `json:"field"`
+// PostOrder defines the ordering of Post.
+type PostOrder struct {
+	Direction OrderDirection  `json:"direction"`
+	Field     *PostOrderField `json:"field"`
 }
 
-// DefaultLetterOrder is the default ordering of Letter.
-var DefaultLetterOrder = &LetterOrder{
+// DefaultPostOrder is the default ordering of Post.
+var DefaultPostOrder = &PostOrder{
 	Direction: OrderDirectionAsc,
-	Field: &LetterOrderField{
-		field: letter.FieldID,
-		toCursor: func(l *Letter) Cursor {
-			return Cursor{ID: l.ID}
+	Field: &PostOrderField{
+		field: post.FieldID,
+		toCursor: func(po *Post) Cursor {
+			return Cursor{ID: po.ID}
 		},
 	},
 }
 
-// ToEdge converts Letter into LetterEdge.
-func (l *Letter) ToEdge(order *LetterOrder) *LetterEdge {
+// ToEdge converts Post into PostEdge.
+func (po *Post) ToEdge(order *PostOrder) *PostEdge {
 	if order == nil {
-		order = DefaultLetterOrder
+		order = DefaultPostOrder
 	}
-	return &LetterEdge{
-		Node:   l,
-		Cursor: order.Field.toCursor(l),
+	return &PostEdge{
+		Node:   po,
+		Cursor: order.Field.toCursor(po),
 	}
 }
 

@@ -6,8 +6,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-// Letter is the predicate function for letter builders.
-type Letter func(*sql.Selector)
+// Post is the predicate function for post builders.
+type Post func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

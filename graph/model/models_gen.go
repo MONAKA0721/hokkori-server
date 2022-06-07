@@ -2,8 +2,14 @@
 
 package model
 
-type CreateLetterInput struct {
-	Content string `json:"content"`
+import (
+	"github.com/MONAKA0721/hokkori/ent/post"
+)
+
+type CreatePostInput struct {
+	Title   string    `json:"title"`
+	Content string    `json:"content"`
+	Type    post.Type `json:"type"`
 }
 
 type CreateUserInput struct {

@@ -8,20 +8,23 @@ import (
 )
 
 var (
-	// LettersColumns holds the columns for the "letters" table.
-	LettersColumns = []*schema.Column{
+	// PostsColumns holds the columns for the "posts" table.
+	PostsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "title", Type: field.TypeString, Size: 2147483647},
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"letter", "praise"}},
 	}
-	// LettersTable holds the schema information for the "letters" table.
-	LettersTable = &schema.Table{
-		Name:       "letters",
-		Columns:    LettersColumns,
-		PrimaryKey: []*schema.Column{LettersColumns[0]},
+	// PostsTable holds the schema information for the "posts" table.
+	PostsTable = &schema.Table{
+		Name:       "posts",
+		Columns:    PostsColumns,
+		PrimaryKey: []*schema.Column{PostsColumns[0]},
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString, Size: 2147483647},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -31,7 +34,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
-		LettersTable,
+		PostsTable,
 		UsersTable,
 	}
 )

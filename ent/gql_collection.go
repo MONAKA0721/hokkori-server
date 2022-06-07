@@ -9,15 +9,15 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (l *LetterQuery) CollectFields(ctx context.Context, satisfies ...string) *LetterQuery {
+func (po *PostQuery) CollectFields(ctx context.Context, satisfies ...string) *PostQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
-		l = l.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+		po = po.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
 	}
-	return l
+	return po
 }
 
-func (l *LetterQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *LetterQuery {
-	return l
+func (po *PostQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *PostQuery {
+	return po
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
