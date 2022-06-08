@@ -151,7 +151,7 @@ func (c *Client) newNodeOpts(opts []NodeOption) *nodeOptions {
 // be derived from the id value according to the universal-id configuration.
 //
 //		c.Noder(ctx, id)
-//		c.Noder(ctx, id, ent.WithNodeType(pet.Table))
+//		c.Noder(ctx, id, ent.WithNodeType(typeResolver))
 //
 func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder, err error) {
 	defer func() {
@@ -169,19 +169,25 @@ func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder
 func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error) {
 	switch table {
 	case post.Table:
-		n, err := c.Post.Query().
-			Where(post.ID(id)).
-			CollectFields(ctx, "Post").
-			Only(ctx)
+		query := c.Post.Query().
+			Where(post.ID(id))
+		query, err := query.CollectFields(ctx, "Post")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
 		if err != nil {
 			return nil, err
 		}
 		return n, nil
 	case user.Table:
-		n, err := c.User.Query().
-			Where(user.ID(id)).
-			CollectFields(ctx, "User").
-			Only(ctx)
+		query := c.User.Query().
+			Where(user.ID(id))
+		query, err := query.CollectFields(ctx, "User")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -260,10 +266,13 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	}
 	switch table {
 	case post.Table:
-		nodes, err := c.Post.Query().
-			Where(post.IDIn(ids...)).
-			CollectFields(ctx, "Post").
-			All(ctx)
+		query := c.Post.Query().
+			Where(post.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "Post")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -273,10 +282,13 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 			}
 		}
 	case user.Table:
-		nodes, err := c.User.Query().
-			Where(user.IDIn(ids...)).
-			CollectFields(ctx, "User").
-			All(ctx)
+		query := c.User.Query().
+			Where(user.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "User")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}

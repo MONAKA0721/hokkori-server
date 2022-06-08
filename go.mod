@@ -3,38 +3,38 @@ module github.com/MONAKA0721/hokkori
 go 1.18
 
 require (
-	entgo.io/contrib v0.2.0
-	entgo.io/ent v0.10.1
-	github.com/99designs/gqlgen v0.17.1
+	entgo.io/contrib v0.2.1-0.20220513120443-ee1f1c4f1d3b
+	entgo.io/ent v0.10.2-0.20220512043615-f2e0bef7a803
+	github.com/99designs/gqlgen v0.17.9
 	github.com/auth0/go-jwt-middleware/v2 v2.0.1
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/lib/pq v1.10.4
-	github.com/vektah/gqlparser/v2 v2.4.0
+	github.com/lib/pq v1.10.5
+	github.com/vektah/gqlparser/v2 v2.4.4
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.9
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
 require (
-	ariga.io/atlas v0.3.7 // indirect
+	ariga.io/atlas v0.4.1 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
-	github.com/agnivade/levenshtein v1.1.0 // indirect
+	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/graphql-go/graphql v0.7.10-0.20210411022516-8a92e977c10b // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl/v2 v2.12.0 // indirect
-	github.com/matryer/moq v0.2.3 // indirect
+	github.com/matryer/moq v0.2.7 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
-	github.com/mitchellh/mapstructure v1.4.3 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/urfave/cli/v2 v2.3.0 // indirect
+	github.com/urfave/cli/v2 v2.8.1 // indirect
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
+	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zclconf/go-cty v1.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect

@@ -72,18 +72,18 @@ func TypeValidator(_type Type) error {
 }
 
 // MarshalGQL implements graphql.Marshaler interface.
-func (_type Type) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(_type.String()))
+func (e Type) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
-func (_type *Type) UnmarshalGQL(val interface{}) error {
+func (e *Type) UnmarshalGQL(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
 		return fmt.Errorf("enum %T must be a string", val)
 	}
-	*_type = Type(str)
-	if err := TypeValidator(*_type); err != nil {
+	*e = Type(str)
+	if err := TypeValidator(*e); err != nil {
 		return fmt.Errorf("%s is not a valid Type", str)
 	}
 	return nil
