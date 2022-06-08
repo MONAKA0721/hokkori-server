@@ -50,7 +50,11 @@ func main() {
 	http.Handle("/",
 		playground.Handler("Hokkori", "/query"),
 	)
-	http.Handle("/query", middleware.EnsureValidToken()(srv))
+	if os.Getenv("HOKKORI_ENV") == "local" {
+		http.Handle("/query", srv)
+	} else {
+		http.Handle("/query", middleware.EnsureValidToken()(srv))
+	}
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("http server terminated", err)
