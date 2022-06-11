@@ -2,17 +2,29 @@
 
 package ent
 
-import "github.com/MONAKA0721/hokkori/ent/post"
+import (
+	"time"
+
+	"github.com/MONAKA0721/hokkori/ent/post"
+)
 
 // CreatePostInput represents a mutation input for creating posts.
 type CreatePostInput struct {
-	Title   string
-	Content string
-	Type    post.Type
+	CreateTime *time.Time
+	UpdateTime *time.Time
+	Title      string
+	Content    string
+	Type       post.Type
 }
 
 // Mutate applies the CreatePostInput on the PostCreate builder.
 func (i *CreatePostInput) Mutate(m *PostCreate) {
+	if v := i.CreateTime; v != nil {
+		m.SetCreateTime(*v)
+	}
+	if v := i.UpdateTime; v != nil {
+		m.SetUpdateTime(*v)
+	}
 	m.SetTitle(i.Title)
 	m.SetContent(i.Content)
 	m.SetType(i.Type)
@@ -26,13 +38,17 @@ func (c *PostCreate) SetInput(i CreatePostInput) *PostCreate {
 
 // UpdatePostInput represents a mutation input for updating posts.
 type UpdatePostInput struct {
-	Title   *string
-	Content *string
-	Type    *post.Type
+	UpdateTime *time.Time
+	Title      *string
+	Content    *string
+	Type       *post.Type
 }
 
 // Mutate applies the UpdatePostInput on the PostMutation builder.
 func (i *UpdatePostInput) Mutate(m *PostMutation) {
+	if v := i.UpdateTime; v != nil {
+		m.SetUpdateTime(*v)
+	}
 	if v := i.Title; v != nil {
 		m.SetTitle(*v)
 	}

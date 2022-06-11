@@ -51,14 +51,30 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     po.ID,
 		Type:   "Post",
-		Fields: make([]*Field, 3),
+		Fields: make([]*Field, 5),
 		Edges:  make([]*Edge, 0),
 	}
 	var buf []byte
-	if buf, err = json.Marshal(po.Title); err != nil {
+	if buf, err = json.Marshal(po.CreateTime); err != nil {
 		return nil, err
 	}
 	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "create_time",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(po.UpdateTime); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "update_time",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(po.Title); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "string",
 		Name:  "title",
 		Value: string(buf),
@@ -66,7 +82,7 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 	if buf, err = json.Marshal(po.Content); err != nil {
 		return nil, err
 	}
-	node.Fields[1] = &Field{
+	node.Fields[3] = &Field{
 		Type:  "string",
 		Name:  "content",
 		Value: string(buf),
@@ -74,7 +90,7 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 	if buf, err = json.Marshal(po.Type); err != nil {
 		return nil, err
 	}
-	node.Fields[2] = &Field{
+	node.Fields[4] = &Field{
 		Type:  "post.Type",
 		Name:  "type",
 		Value: string(buf),

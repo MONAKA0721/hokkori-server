@@ -441,6 +441,63 @@ func (po *PostQuery) Paginate(
 	return conn, nil
 }
 
+var (
+	// PostOrderFieldCreateTime orders Post by create_time.
+	PostOrderFieldCreateTime = &PostOrderField{
+		field: post.FieldCreateTime,
+		toCursor: func(po *Post) Cursor {
+			return Cursor{
+				ID:    po.ID,
+				Value: po.CreateTime,
+			}
+		},
+	}
+	// PostOrderFieldUpdateTime orders Post by update_time.
+	PostOrderFieldUpdateTime = &PostOrderField{
+		field: post.FieldUpdateTime,
+		toCursor: func(po *Post) Cursor {
+			return Cursor{
+				ID:    po.ID,
+				Value: po.UpdateTime,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f PostOrderField) String() string {
+	var str string
+	switch f.field {
+	case post.FieldCreateTime:
+		str = "CREATE_TIME"
+	case post.FieldUpdateTime:
+		str = "UPDATE_TIME"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f PostOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *PostOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("PostOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATE_TIME":
+		*f = *PostOrderFieldCreateTime
+	case "UPDATE_TIME":
+		*f = *PostOrderFieldUpdateTime
+	default:
+		return fmt.Errorf("%s is not a valid PostOrderField", str)
+	}
+	return nil
+}
+
 // PostOrderField defines the ordering field of Post.
 type PostOrderField struct {
 	field    string

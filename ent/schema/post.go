@@ -28,9 +28,15 @@ func (Post) Edges() []ent.Edge {
 
 func (Post) Annotations() []schema.Annotation {
 	return []schema.Annotation{
+		entgql.RelayConnection(),
+		entgql.QueryField(),
 		entgql.Mutations(
 			entgql.MutationCreate(),
 			entgql.MutationUpdate(),
 		),
 	}
+}
+
+func (Post) Mixin() []ent.Mixin {
+	return customTimeMixin
 }

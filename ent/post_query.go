@@ -255,12 +255,12 @@ func (pq *PostQuery) Clone() *PostQuery {
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Post.Query().
-//		GroupBy(post.FieldTitle).
+//		GroupBy(post.FieldCreateTime).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
@@ -284,11 +284,11 @@ func (pq *PostQuery) GroupBy(field string, fields ...string) *PostGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty"`
 //	}
 //
 //	client.Post.Query().
-//		Select(post.FieldTitle).
+//		Select(post.FieldCreateTime).
 //		Scan(ctx, &v)
 //
 func (pq *PostQuery) Select(fields ...string) *PostSelect {
