@@ -15,6 +15,7 @@ type CreatePostInput struct {
 	Title      string
 	Content    string
 	Type       post.Type
+	OwnerID    int
 }
 
 // Mutate applies the CreatePostInput on the PostCreate builder.
@@ -28,6 +29,7 @@ func (i *CreatePostInput) Mutate(m *PostCreate) {
 	m.SetTitle(i.Title)
 	m.SetContent(i.Content)
 	m.SetType(i.Type)
+	m.SetOwnerID(i.OwnerID)
 }
 
 // SetInput applies the change-set in the CreatePostInput on the create builder.
@@ -42,6 +44,8 @@ type UpdatePostInput struct {
 	Title      *string
 	Content    *string
 	Type       *post.Type
+	OwnerID    *int
+	ClearOwner bool
 }
 
 // Mutate applies the UpdatePostInput on the PostMutation builder.
@@ -57,6 +61,12 @@ func (i *UpdatePostInput) Mutate(m *PostMutation) {
 	}
 	if v := i.Type; v != nil {
 		m.SetType(*v)
+	}
+	if i.ClearOwner {
+		m.ClearOwner()
+	}
+	if v := i.OwnerID; v != nil {
+		m.SetOwnerID(*v)
 	}
 }
 
@@ -74,12 +84,16 @@ func (u *PostUpdateOne) SetInput(i UpdatePostInput) *PostUpdateOne {
 
 // CreateUserInput represents a mutation input for creating users.
 type CreateUserInput struct {
-	Name string
+	Name    string
+	PostIDs []int
 }
 
 // Mutate applies the CreateUserInput on the UserCreate builder.
 func (i *CreateUserInput) Mutate(m *UserCreate) {
 	m.SetName(i.Name)
+	if ids := i.PostIDs; len(ids) > 0 {
+		m.AddPostIDs(ids...)
+	}
 }
 
 // SetInput applies the change-set in the CreateUserInput on the create builder.
@@ -90,13 +104,21 @@ func (c *UserCreate) SetInput(i CreateUserInput) *UserCreate {
 
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
-	Name *string
+	Name          *string
+	AddPostIDs    []int
+	RemovePostIDs []int
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
 func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	if v := i.Name; v != nil {
 		m.SetName(*v)
+	}
+	if ids := i.AddPostIDs; len(ids) > 0 {
+		m.AddPostIDs(ids...)
+	}
+	if ids := i.RemovePostIDs; len(ids) > 0 {
+		m.RemovePostIDs(ids...)
 	}
 }
 

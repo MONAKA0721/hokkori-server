@@ -83,6 +83,10 @@ type PostWhereInput struct {
 	TypeNEQ   *post.Type  `json:"typeNEQ,omitempty"`
 	TypeIn    []post.Type `json:"typeIn,omitempty"`
 	TypeNotIn []post.Type `json:"typeNotIn,omitempty"`
+
+	// "owner" edge predicates.
+	HasOwner     *bool             `json:"hasOwner,omitempty"`
+	HasOwnerWith []*UserWhereInput `json:"hasOwnerWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -313,6 +317,24 @@ func (i *PostWhereInput) P() (predicate.Post, error) {
 		predicates = append(predicates, post.TypeNotIn(i.TypeNotIn...))
 	}
 
+	if i.HasOwner != nil {
+		p := post.HasOwner()
+		if !*i.HasOwner {
+			p = post.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, post.HasOwnerWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, fmt.Errorf("empty predicate PostWhereInput")
@@ -354,6 +376,10 @@ type UserWhereInput struct {
 	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "posts" edge predicates.
+	HasPosts     *bool             `json:"hasPosts,omitempty"`
+	HasPostsWith []*PostWhereInput `json:"hasPostsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -485,6 +511,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 		predicates = append(predicates, user.NameContainsFold(*i.NameContainsFold))
 	}
 
+	if i.HasPosts != nil {
+		p := user.HasPosts()
+		if !*i.HasPosts {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasPostsWith) > 0 {
+		with := make([]predicate.Post, 0, len(i.HasPostsWith))
+		for _, w := range i.HasPostsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasPostsWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, fmt.Errorf("empty predicate UserWhereInput")

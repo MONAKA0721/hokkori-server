@@ -52,7 +52,7 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 		ID:     po.ID,
 		Type:   "Post",
 		Fields: make([]*Field, 5),
-		Edges:  make([]*Edge, 0),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(po.CreateTime); err != nil {
@@ -95,6 +95,16 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "type",
 		Value: string(buf),
 	}
+	node.Edges[0] = &Edge{
+		Type: "User",
+		Name: "owner",
+	}
+	err = po.QueryOwner().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
 	return node, nil
 }
 
@@ -103,7 +113,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     u.ID,
 		Type:   "User",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 0),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(u.Name); err != nil {
@@ -113,6 +123,16 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		Type:  "string",
 		Name:  "name",
 		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Post",
+		Name: "posts",
+	}
+	err = u.QueryPosts().
+		Select(post.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
 	}
 	return node, nil
 }

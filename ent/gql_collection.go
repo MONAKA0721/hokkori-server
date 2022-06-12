@@ -23,6 +23,19 @@ func (po *PostQuery) CollectFields(ctx context.Context, satisfies ...string) (*P
 
 func (po *PostQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "owner":
+			var (
+				path  = append(path, field.Name)
+				query = &UserQuery{config: po.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			po.withOwner = query
+		}
+	}
 	return nil
 }
 
@@ -91,6 +104,19 @@ func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) (*Us
 
 func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "posts":
+			var (
+				path  = append(path, field.Name)
+				query = &PostQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.withPosts = query
+		}
+	}
 	return nil
 }
 

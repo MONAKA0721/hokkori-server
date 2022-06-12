@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
+	"github.com/MONAKA0721/hokkori/ent/user"
 )
 
 // PostUpdate is the builder for updating Post entities.
@@ -52,9 +53,26 @@ func (pu *PostUpdate) SetType(po post.Type) *PostUpdate {
 	return pu
 }
 
+// SetOwnerID sets the "owner" edge to the User entity by ID.
+func (pu *PostUpdate) SetOwnerID(id int) *PostUpdate {
+	pu.mutation.SetOwnerID(id)
+	return pu
+}
+
+// SetOwner sets the "owner" edge to the User entity.
+func (pu *PostUpdate) SetOwner(u *User) *PostUpdate {
+	return pu.SetOwnerID(u.ID)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (pu *PostUpdate) Mutation() *PostMutation {
 	return pu.mutation
+}
+
+// ClearOwner clears the "owner" edge to the User entity.
+func (pu *PostUpdate) ClearOwner() *PostUpdate {
+	pu.mutation.ClearOwner()
+	return pu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -143,6 +161,9 @@ func (pu *PostUpdate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Post.type": %w`, err)}
 		}
 	}
+	if _, ok := pu.mutation.OwnerID(); pu.mutation.OwnerCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Post.owner"`)
+	}
 	return nil
 }
 
@@ -192,6 +213,41 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: post.FieldType,
 		})
 	}
+	if pu.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.OwnerTable,
+			Columns: []string{post.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.OwnerTable,
+			Columns: []string{post.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{post.Label}
@@ -235,9 +291,26 @@ func (puo *PostUpdateOne) SetType(po post.Type) *PostUpdateOne {
 	return puo
 }
 
+// SetOwnerID sets the "owner" edge to the User entity by ID.
+func (puo *PostUpdateOne) SetOwnerID(id int) *PostUpdateOne {
+	puo.mutation.SetOwnerID(id)
+	return puo
+}
+
+// SetOwner sets the "owner" edge to the User entity.
+func (puo *PostUpdateOne) SetOwner(u *User) *PostUpdateOne {
+	return puo.SetOwnerID(u.ID)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (puo *PostUpdateOne) Mutation() *PostMutation {
 	return puo.mutation
+}
+
+// ClearOwner clears the "owner" edge to the User entity.
+func (puo *PostUpdateOne) ClearOwner() *PostUpdateOne {
+	puo.mutation.ClearOwner()
+	return puo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -339,6 +412,9 @@ func (puo *PostUpdateOne) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Post.type": %w`, err)}
 		}
 	}
+	if _, ok := puo.mutation.OwnerID(); puo.mutation.OwnerCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Post.owner"`)
+	}
 	return nil
 }
 
@@ -404,6 +480,41 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 			Value:  value,
 			Column: post.FieldType,
 		})
+	}
+	if puo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.OwnerTable,
+			Columns: []string{post.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.OwnerTable,
+			Columns: []string{post.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Post{config: puo.config}
 	_spec.Assign = _node.assignValues

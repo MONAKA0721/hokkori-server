@@ -16,12 +16,21 @@ var (
 		{Name: "title", Type: field.TypeString, Size: 2147483647},
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"letter", "praise"}},
+		{Name: "user_posts", Type: field.TypeInt},
 	}
 	// PostsTable holds the schema information for the "posts" table.
 	PostsTable = &schema.Table{
 		Name:       "posts",
 		Columns:    PostsColumns,
 		PrimaryKey: []*schema.Column{PostsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "posts_users_posts",
+				Columns:    []*schema.Column{PostsColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
@@ -42,4 +51,5 @@ var (
 )
 
 func init() {
+	PostsTable.ForeignKeys[0].RefTable = UsersTable
 }

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/MONAKA0721/hokkori/ent/post"
+	"github.com/MONAKA0721/hokkori/ent/user"
 )
 
 // PostCreate is the builder for creating a Post entity.
@@ -64,6 +65,17 @@ func (pc *PostCreate) SetContent(s string) *PostCreate {
 func (pc *PostCreate) SetType(po post.Type) *PostCreate {
 	pc.mutation.SetType(po)
 	return pc
+}
+
+// SetOwnerID sets the "owner" edge to the User entity by ID.
+func (pc *PostCreate) SetOwnerID(id int) *PostCreate {
+	pc.mutation.SetOwnerID(id)
+	return pc
+}
+
+// SetOwner sets the "owner" edge to the User entity.
+func (pc *PostCreate) SetOwner(u *User) *PostCreate {
+	return pc.SetOwnerID(u.ID)
 }
 
 // Mutation returns the PostMutation object of the builder.
@@ -185,6 +197,9 @@ func (pc *PostCreate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Post.type": %w`, err)}
 		}
 	}
+	if _, ok := pc.mutation.OwnerID(); !ok {
+		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "Post.owner"`)}
+	}
 	return nil
 }
 
@@ -251,6 +266,26 @@ func (pc *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 			Column: post.FieldType,
 		})
 		_node.Type = value
+	}
+	if nodes := pc.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.OwnerTable,
+			Columns: []string{post.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.user_posts = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }
