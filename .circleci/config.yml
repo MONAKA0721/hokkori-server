@@ -16,7 +16,7 @@ workflows:
                 - main
           repo: hokkori
           tag: "${CIRCLE_SHA1}"
-          platform: linux/arm64
+          platform: "linux/arm64,linux/amd64"
       - aws-ecs/deploy-service-update:
           filters:
             branches:
