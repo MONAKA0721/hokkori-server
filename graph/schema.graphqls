@@ -6,4 +6,5 @@ scalar Time
 type Mutation {
   createUser(input: CreateUserInput!): User!
   createPost(input: CreatePostInput!): Post!
+  createHashtag(input: CreateHashtagInput!): Hashtag!
 }

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/user"
@@ -64,6 +65,21 @@ func (pu *PostUpdate) SetOwner(u *User) *PostUpdate {
 	return pu.SetOwnerID(u.ID)
 }
 
+// AddHashtagIDs adds the "hashtags" edge to the Hashtag entity by IDs.
+func (pu *PostUpdate) AddHashtagIDs(ids ...int) *PostUpdate {
+	pu.mutation.AddHashtagIDs(ids...)
+	return pu
+}
+
+// AddHashtags adds the "hashtags" edges to the Hashtag entity.
+func (pu *PostUpdate) AddHashtags(h ...*Hashtag) *PostUpdate {
+	ids := make([]int, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return pu.AddHashtagIDs(ids...)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (pu *PostUpdate) Mutation() *PostMutation {
 	return pu.mutation
@@ -73,6 +89,27 @@ func (pu *PostUpdate) Mutation() *PostMutation {
 func (pu *PostUpdate) ClearOwner() *PostUpdate {
 	pu.mutation.ClearOwner()
 	return pu
+}
+
+// ClearHashtags clears all "hashtags" edges to the Hashtag entity.
+func (pu *PostUpdate) ClearHashtags() *PostUpdate {
+	pu.mutation.ClearHashtags()
+	return pu
+}
+
+// RemoveHashtagIDs removes the "hashtags" edge to Hashtag entities by IDs.
+func (pu *PostUpdate) RemoveHashtagIDs(ids ...int) *PostUpdate {
+	pu.mutation.RemoveHashtagIDs(ids...)
+	return pu
+}
+
+// RemoveHashtags removes "hashtags" edges to Hashtag entities.
+func (pu *PostUpdate) RemoveHashtags(h ...*Hashtag) *PostUpdate {
+	ids := make([]int, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return pu.RemoveHashtagIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -248,6 +285,60 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.HashtagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   post.HashtagsTable,
+			Columns: post.HashtagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: hashtag.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedHashtagsIDs(); len(nodes) > 0 && !pu.mutation.HashtagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   post.HashtagsTable,
+			Columns: post.HashtagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: hashtag.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.HashtagsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   post.HashtagsTable,
+			Columns: post.HashtagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: hashtag.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{post.Label}
@@ -302,6 +393,21 @@ func (puo *PostUpdateOne) SetOwner(u *User) *PostUpdateOne {
 	return puo.SetOwnerID(u.ID)
 }
 
+// AddHashtagIDs adds the "hashtags" edge to the Hashtag entity by IDs.
+func (puo *PostUpdateOne) AddHashtagIDs(ids ...int) *PostUpdateOne {
+	puo.mutation.AddHashtagIDs(ids...)
+	return puo
+}
+
+// AddHashtags adds the "hashtags" edges to the Hashtag entity.
+func (puo *PostUpdateOne) AddHashtags(h ...*Hashtag) *PostUpdateOne {
+	ids := make([]int, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return puo.AddHashtagIDs(ids...)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (puo *PostUpdateOne) Mutation() *PostMutation {
 	return puo.mutation
@@ -311,6 +417,27 @@ func (puo *PostUpdateOne) Mutation() *PostMutation {
 func (puo *PostUpdateOne) ClearOwner() *PostUpdateOne {
 	puo.mutation.ClearOwner()
 	return puo
+}
+
+// ClearHashtags clears all "hashtags" edges to the Hashtag entity.
+func (puo *PostUpdateOne) ClearHashtags() *PostUpdateOne {
+	puo.mutation.ClearHashtags()
+	return puo
+}
+
+// RemoveHashtagIDs removes the "hashtags" edge to Hashtag entities by IDs.
+func (puo *PostUpdateOne) RemoveHashtagIDs(ids ...int) *PostUpdateOne {
+	puo.mutation.RemoveHashtagIDs(ids...)
+	return puo
+}
+
+// RemoveHashtags removes "hashtags" edges to Hashtag entities.
+func (puo *PostUpdateOne) RemoveHashtags(h ...*Hashtag) *PostUpdateOne {
+	ids := make([]int, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return puo.RemoveHashtagIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -508,6 +635,60 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.HashtagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   post.HashtagsTable,
+			Columns: post.HashtagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: hashtag.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedHashtagsIDs(); len(nodes) > 0 && !puo.mutation.HashtagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   post.HashtagsTable,
+			Columns: post.HashtagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: hashtag.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.HashtagsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   post.HashtagsTable,
+			Columns: post.HashtagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: hashtag.FieldID,
 				},
 			},
 		}

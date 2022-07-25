@@ -8,6 +8,58 @@ import (
 	"github.com/MONAKA0721/hokkori/ent/post"
 )
 
+// CreateHashtagInput represents a mutation input for creating hashtags.
+type CreateHashtagInput struct {
+	Title   string
+	PostIDs []int
+}
+
+// Mutate applies the CreateHashtagInput on the HashtagCreate builder.
+func (i *CreateHashtagInput) Mutate(m *HashtagCreate) {
+	m.SetTitle(i.Title)
+	if ids := i.PostIDs; len(ids) > 0 {
+		m.AddPostIDs(ids...)
+	}
+}
+
+// SetInput applies the change-set in the CreateHashtagInput on the create builder.
+func (c *HashtagCreate) SetInput(i CreateHashtagInput) *HashtagCreate {
+	i.Mutate(c)
+	return c
+}
+
+// UpdateHashtagInput represents a mutation input for updating hashtags.
+type UpdateHashtagInput struct {
+	Title         *string
+	AddPostIDs    []int
+	RemovePostIDs []int
+}
+
+// Mutate applies the UpdateHashtagInput on the HashtagMutation builder.
+func (i *UpdateHashtagInput) Mutate(m *HashtagMutation) {
+	if v := i.Title; v != nil {
+		m.SetTitle(*v)
+	}
+	if ids := i.AddPostIDs; len(ids) > 0 {
+		m.AddPostIDs(ids...)
+	}
+	if ids := i.RemovePostIDs; len(ids) > 0 {
+		m.RemovePostIDs(ids...)
+	}
+}
+
+// SetInput applies the change-set in the UpdateHashtagInput on the update builder.
+func (u *HashtagUpdate) SetInput(i UpdateHashtagInput) *HashtagUpdate {
+	i.Mutate(u.Mutation())
+	return u
+}
+
+// SetInput applies the change-set in the UpdateHashtagInput on the update-one builder.
+func (u *HashtagUpdateOne) SetInput(i UpdateHashtagInput) *HashtagUpdateOne {
+	i.Mutate(u.Mutation())
+	return u
+}
+
 // CreatePostInput represents a mutation input for creating posts.
 type CreatePostInput struct {
 	CreateTime *time.Time
@@ -16,6 +68,7 @@ type CreatePostInput struct {
 	Content    string
 	Type       post.Type
 	OwnerID    int
+	HashtagIDs []int
 }
 
 // Mutate applies the CreatePostInput on the PostCreate builder.
@@ -30,6 +83,9 @@ func (i *CreatePostInput) Mutate(m *PostCreate) {
 	m.SetContent(i.Content)
 	m.SetType(i.Type)
 	m.SetOwnerID(i.OwnerID)
+	if ids := i.HashtagIDs; len(ids) > 0 {
+		m.AddHashtagIDs(ids...)
+	}
 }
 
 // SetInput applies the change-set in the CreatePostInput on the create builder.
@@ -40,12 +96,14 @@ func (c *PostCreate) SetInput(i CreatePostInput) *PostCreate {
 
 // UpdatePostInput represents a mutation input for updating posts.
 type UpdatePostInput struct {
-	UpdateTime *time.Time
-	Title      *string
-	Content    *string
-	Type       *post.Type
-	OwnerID    *int
-	ClearOwner bool
+	UpdateTime       *time.Time
+	Title            *string
+	Content          *string
+	Type             *post.Type
+	OwnerID          *int
+	ClearOwner       bool
+	AddHashtagIDs    []int
+	RemoveHashtagIDs []int
 }
 
 // Mutate applies the UpdatePostInput on the PostMutation builder.
@@ -67,6 +125,12 @@ func (i *UpdatePostInput) Mutate(m *PostMutation) {
 	}
 	if v := i.OwnerID; v != nil {
 		m.SetOwnerID(*v)
+	}
+	if ids := i.AddHashtagIDs; len(ids) > 0 {
+		m.AddHashtagIDs(ids...)
+	}
+	if ids := i.RemoveHashtagIDs; len(ids) > 0 {
+		m.RemoveHashtagIDs(ids...)
 	}
 }
 

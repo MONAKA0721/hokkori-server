@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
 )
@@ -76,6 +77,21 @@ func (pc *PostCreate) SetOwnerID(id int) *PostCreate {
 // SetOwner sets the "owner" edge to the User entity.
 func (pc *PostCreate) SetOwner(u *User) *PostCreate {
 	return pc.SetOwnerID(u.ID)
+}
+
+// AddHashtagIDs adds the "hashtags" edge to the Hashtag entity by IDs.
+func (pc *PostCreate) AddHashtagIDs(ids ...int) *PostCreate {
+	pc.mutation.AddHashtagIDs(ids...)
+	return pc
+}
+
+// AddHashtags adds the "hashtags" edges to the Hashtag entity.
+func (pc *PostCreate) AddHashtags(h ...*Hashtag) *PostCreate {
+	ids := make([]int, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return pc.AddHashtagIDs(ids...)
 }
 
 // Mutation returns the PostMutation object of the builder.
@@ -285,6 +301,25 @@ func (pc *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.user_posts = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.HashtagsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   post.HashtagsTable,
+			Columns: post.HashtagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: hashtag.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

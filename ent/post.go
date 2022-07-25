@@ -37,11 +37,13 @@ type Post struct {
 type PostEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *User `json:"owner,omitempty"`
+	// Hashtags holds the value of the hashtags edge.
+	Hashtags []*Hashtag `json:"hashtags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]*int
+	totalCount [2]*int
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -56,6 +58,15 @@ func (e PostEdges) OwnerOrErr() (*User, error) {
 		return e.Owner, nil
 	}
 	return nil, &NotLoadedError{edge: "owner"}
+}
+
+// HashtagsOrErr returns the Hashtags value or an error if the edge
+// was not loaded in eager-loading.
+func (e PostEdges) HashtagsOrErr() ([]*Hashtag, error) {
+	if e.loadedTypes[1] {
+		return e.Hashtags, nil
+	}
+	return nil, &NotLoadedError{edge: "hashtags"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -137,6 +148,11 @@ func (po *Post) assignValues(columns []string, values []interface{}) error {
 // QueryOwner queries the "owner" edge of the Post entity.
 func (po *Post) QueryOwner() *UserQuery {
 	return (&PostClient{config: po.config}).QueryOwner(po)
+}
+
+// QueryHashtags queries the "hashtags" edge of the Post entity.
+func (po *Post) QueryHashtags() *HashtagQuery {
+	return (&PostClient{config: po.config}).QueryHashtags(po)
 }
 
 // Update returns a builder for updating this Post.

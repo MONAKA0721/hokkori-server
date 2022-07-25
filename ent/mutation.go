@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/user"
@@ -25,27 +26,435 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypePost = "Post"
-	TypeUser = "User"
+	TypeHashtag = "Hashtag"
+	TypePost    = "Post"
+	TypeUser    = "User"
 )
 
-// PostMutation represents an operation that mutates the Post nodes in the graph.
-type PostMutation struct {
+// HashtagMutation represents an operation that mutates the Hashtag nodes in the graph.
+type HashtagMutation struct {
 	config
 	op            Op
 	typ           string
 	id            *int
-	create_time   *time.Time
-	update_time   *time.Time
 	title         *string
-	content       *string
-	_type         *post.Type
 	clearedFields map[string]struct{}
-	owner         *int
-	clearedowner  bool
+	posts         map[int]struct{}
+	removedposts  map[int]struct{}
+	clearedposts  bool
 	done          bool
-	oldValue      func(context.Context) (*Post, error)
-	predicates    []predicate.Post
+	oldValue      func(context.Context) (*Hashtag, error)
+	predicates    []predicate.Hashtag
+}
+
+var _ ent.Mutation = (*HashtagMutation)(nil)
+
+// hashtagOption allows management of the mutation configuration using functional options.
+type hashtagOption func(*HashtagMutation)
+
+// newHashtagMutation creates new mutation for the Hashtag entity.
+func newHashtagMutation(c config, op Op, opts ...hashtagOption) *HashtagMutation {
+	m := &HashtagMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeHashtag,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withHashtagID sets the ID field of the mutation.
+func withHashtagID(id int) hashtagOption {
+	return func(m *HashtagMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Hashtag
+		)
+		m.oldValue = func(ctx context.Context) (*Hashtag, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Hashtag.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withHashtag sets the old Hashtag of the mutation.
+func withHashtag(node *Hashtag) hashtagOption {
+	return func(m *HashtagMutation) {
+		m.oldValue = func(context.Context) (*Hashtag, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m HashtagMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m HashtagMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *HashtagMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *HashtagMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Hashtag.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetTitle sets the "title" field.
+func (m *HashtagMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *HashtagMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the Hashtag entity.
+// If the Hashtag object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HashtagMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *HashtagMutation) ResetTitle() {
+	m.title = nil
+}
+
+// AddPostIDs adds the "posts" edge to the Post entity by ids.
+func (m *HashtagMutation) AddPostIDs(ids ...int) {
+	if m.posts == nil {
+		m.posts = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.posts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPosts clears the "posts" edge to the Post entity.
+func (m *HashtagMutation) ClearPosts() {
+	m.clearedposts = true
+}
+
+// PostsCleared reports if the "posts" edge to the Post entity was cleared.
+func (m *HashtagMutation) PostsCleared() bool {
+	return m.clearedposts
+}
+
+// RemovePostIDs removes the "posts" edge to the Post entity by IDs.
+func (m *HashtagMutation) RemovePostIDs(ids ...int) {
+	if m.removedposts == nil {
+		m.removedposts = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.posts, ids[i])
+		m.removedposts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPosts returns the removed IDs of the "posts" edge to the Post entity.
+func (m *HashtagMutation) RemovedPostsIDs() (ids []int) {
+	for id := range m.removedposts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PostsIDs returns the "posts" edge IDs in the mutation.
+func (m *HashtagMutation) PostsIDs() (ids []int) {
+	for id := range m.posts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPosts resets all changes to the "posts" edge.
+func (m *HashtagMutation) ResetPosts() {
+	m.posts = nil
+	m.clearedposts = false
+	m.removedposts = nil
+}
+
+// Where appends a list predicates to the HashtagMutation builder.
+func (m *HashtagMutation) Where(ps ...predicate.Hashtag) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *HashtagMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Hashtag).
+func (m *HashtagMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *HashtagMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.title != nil {
+		fields = append(fields, hashtag.FieldTitle)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *HashtagMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case hashtag.FieldTitle:
+		return m.Title()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *HashtagMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case hashtag.FieldTitle:
+		return m.OldTitle(ctx)
+	}
+	return nil, fmt.Errorf("unknown Hashtag field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *HashtagMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case hashtag.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Hashtag field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *HashtagMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *HashtagMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *HashtagMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Hashtag numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *HashtagMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *HashtagMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *HashtagMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Hashtag nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *HashtagMutation) ResetField(name string) error {
+	switch name {
+	case hashtag.FieldTitle:
+		m.ResetTitle()
+		return nil
+	}
+	return fmt.Errorf("unknown Hashtag field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *HashtagMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.posts != nil {
+		edges = append(edges, hashtag.EdgePosts)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *HashtagMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case hashtag.EdgePosts:
+		ids := make([]ent.Value, 0, len(m.posts))
+		for id := range m.posts {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *HashtagMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedposts != nil {
+		edges = append(edges, hashtag.EdgePosts)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *HashtagMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case hashtag.EdgePosts:
+		ids := make([]ent.Value, 0, len(m.removedposts))
+		for id := range m.removedposts {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *HashtagMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedposts {
+		edges = append(edges, hashtag.EdgePosts)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *HashtagMutation) EdgeCleared(name string) bool {
+	switch name {
+	case hashtag.EdgePosts:
+		return m.clearedposts
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *HashtagMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Hashtag unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *HashtagMutation) ResetEdge(name string) error {
+	switch name {
+	case hashtag.EdgePosts:
+		m.ResetPosts()
+		return nil
+	}
+	return fmt.Errorf("unknown Hashtag edge %s", name)
+}
+
+// PostMutation represents an operation that mutates the Post nodes in the graph.
+type PostMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *int
+	create_time     *time.Time
+	update_time     *time.Time
+	title           *string
+	content         *string
+	_type           *post.Type
+	clearedFields   map[string]struct{}
+	owner           *int
+	clearedowner    bool
+	hashtags        map[int]struct{}
+	removedhashtags map[int]struct{}
+	clearedhashtags bool
+	done            bool
+	oldValue        func(context.Context) (*Post, error)
+	predicates      []predicate.Post
 }
 
 var _ ent.Mutation = (*PostMutation)(nil)
@@ -365,6 +774,60 @@ func (m *PostMutation) ResetOwner() {
 	m.clearedowner = false
 }
 
+// AddHashtagIDs adds the "hashtags" edge to the Hashtag entity by ids.
+func (m *PostMutation) AddHashtagIDs(ids ...int) {
+	if m.hashtags == nil {
+		m.hashtags = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.hashtags[ids[i]] = struct{}{}
+	}
+}
+
+// ClearHashtags clears the "hashtags" edge to the Hashtag entity.
+func (m *PostMutation) ClearHashtags() {
+	m.clearedhashtags = true
+}
+
+// HashtagsCleared reports if the "hashtags" edge to the Hashtag entity was cleared.
+func (m *PostMutation) HashtagsCleared() bool {
+	return m.clearedhashtags
+}
+
+// RemoveHashtagIDs removes the "hashtags" edge to the Hashtag entity by IDs.
+func (m *PostMutation) RemoveHashtagIDs(ids ...int) {
+	if m.removedhashtags == nil {
+		m.removedhashtags = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.hashtags, ids[i])
+		m.removedhashtags[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedHashtags returns the removed IDs of the "hashtags" edge to the Hashtag entity.
+func (m *PostMutation) RemovedHashtagsIDs() (ids []int) {
+	for id := range m.removedhashtags {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// HashtagsIDs returns the "hashtags" edge IDs in the mutation.
+func (m *PostMutation) HashtagsIDs() (ids []int) {
+	for id := range m.hashtags {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetHashtags resets all changes to the "hashtags" edge.
+func (m *PostMutation) ResetHashtags() {
+	m.hashtags = nil
+	m.clearedhashtags = false
+	m.removedhashtags = nil
+}
+
 // Where appends a list predicates to the PostMutation builder.
 func (m *PostMutation) Where(ps ...predicate.Post) {
 	m.predicates = append(m.predicates, ps...)
@@ -551,9 +1014,12 @@ func (m *PostMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PostMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.owner != nil {
 		edges = append(edges, post.EdgeOwner)
+	}
+	if m.hashtags != nil {
+		edges = append(edges, post.EdgeHashtags)
 	}
 	return edges
 }
@@ -566,13 +1032,22 @@ func (m *PostMutation) AddedIDs(name string) []ent.Value {
 		if id := m.owner; id != nil {
 			return []ent.Value{*id}
 		}
+	case post.EdgeHashtags:
+		ids := make([]ent.Value, 0, len(m.hashtags))
+		for id := range m.hashtags {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PostMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedhashtags != nil {
+		edges = append(edges, post.EdgeHashtags)
+	}
 	return edges
 }
 
@@ -580,15 +1055,24 @@ func (m *PostMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *PostMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case post.EdgeHashtags:
+		ids := make([]ent.Value, 0, len(m.removedhashtags))
+		for id := range m.removedhashtags {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PostMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedowner {
 		edges = append(edges, post.EdgeOwner)
+	}
+	if m.clearedhashtags {
+		edges = append(edges, post.EdgeHashtags)
 	}
 	return edges
 }
@@ -599,6 +1083,8 @@ func (m *PostMutation) EdgeCleared(name string) bool {
 	switch name {
 	case post.EdgeOwner:
 		return m.clearedowner
+	case post.EdgeHashtags:
+		return m.clearedhashtags
 	}
 	return false
 }
@@ -620,6 +1106,9 @@ func (m *PostMutation) ResetEdge(name string) error {
 	switch name {
 	case post.EdgeOwner:
 		m.ResetOwner()
+		return nil
+	case post.EdgeHashtags:
+		m.ResetHashtags()
 		return nil
 	}
 	return fmt.Errorf("unknown Post edge %s", name)

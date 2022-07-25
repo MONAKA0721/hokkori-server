@@ -26,6 +26,8 @@ const (
 	FieldType = "type"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
+	// EdgeHashtags holds the string denoting the hashtags edge name in mutations.
+	EdgeHashtags = "hashtags"
 	// Table holds the table name of the post in the database.
 	Table = "posts"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -35,6 +37,11 @@ const (
 	OwnerInverseTable = "users"
 	// OwnerColumn is the table column denoting the owner relation/edge.
 	OwnerColumn = "user_posts"
+	// HashtagsTable is the table that holds the hashtags relation/edge. The primary key declared below.
+	HashtagsTable = "post_hashtags"
+	// HashtagsInverseTable is the table name for the Hashtag entity.
+	// It exists in this package in order to avoid circular dependency with the "hashtag" package.
+	HashtagsInverseTable = "hashtags"
 )
 
 // Columns holds all SQL columns for post fields.
@@ -52,6 +59,12 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"user_posts",
 }
+
+var (
+	// HashtagsPrimaryKey and HashtagsColumn2 are the table columns denoting the
+	// primary key for the hashtags relation (M2M).
+	HashtagsPrimaryKey = []string{"post_id", "hashtag_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

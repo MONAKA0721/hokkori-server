@@ -571,6 +571,34 @@ func HasOwnerWith(preds ...predicate.User) predicate.Post {
 	})
 }
 
+// HasHashtags applies the HasEdge predicate on the "hashtags" edge.
+func HasHashtags() predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(HashtagsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, HashtagsTable, HashtagsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasHashtagsWith applies the HasEdge predicate on the "hashtags" edge with a given conditions (other predicates).
+func HasHashtagsWith(preds ...predicate.Hashtag) predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(HashtagsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, HashtagsTable, HashtagsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Post) predicate.Post {
 	return predicate.Post(func(s *sql.Selector) {

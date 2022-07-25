@@ -9,6 +9,7 @@ import (
 
 	"github.com/MONAKA0721/hokkori/ent/migrate"
 
+	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
 
@@ -22,6 +23,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Hashtag is the client for interacting with the Hashtag builders.
+	Hashtag *HashtagClient
 	// Post is the client for interacting with the Post builders.
 	Post *PostClient
 	// User is the client for interacting with the User builders.
@@ -41,6 +44,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Hashtag = NewHashtagClient(c.config)
 	c.Post = NewPostClient(c.config)
 	c.User = NewUserClient(c.config)
 }
@@ -74,10 +78,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Post:   NewPostClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:     ctx,
+		config:  cfg,
+		Hashtag: NewHashtagClient(cfg),
+		Post:    NewPostClient(cfg),
+		User:    NewUserClient(cfg),
 	}, nil
 }
 
@@ -95,17 +100,18 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Post:   NewPostClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:     ctx,
+		config:  cfg,
+		Hashtag: NewHashtagClient(cfg),
+		Post:    NewPostClient(cfg),
+		User:    NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Post.
+//		Hashtag.
 //		Query().
 //		Count(ctx)
 //
@@ -128,8 +134,115 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Hashtag.Use(hooks...)
 	c.Post.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// HashtagClient is a client for the Hashtag schema.
+type HashtagClient struct {
+	config
+}
+
+// NewHashtagClient returns a client for the Hashtag from the given config.
+func NewHashtagClient(c config) *HashtagClient {
+	return &HashtagClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `hashtag.Hooks(f(g(h())))`.
+func (c *HashtagClient) Use(hooks ...Hook) {
+	c.hooks.Hashtag = append(c.hooks.Hashtag, hooks...)
+}
+
+// Create returns a create builder for Hashtag.
+func (c *HashtagClient) Create() *HashtagCreate {
+	mutation := newHashtagMutation(c.config, OpCreate)
+	return &HashtagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Hashtag entities.
+func (c *HashtagClient) CreateBulk(builders ...*HashtagCreate) *HashtagCreateBulk {
+	return &HashtagCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Hashtag.
+func (c *HashtagClient) Update() *HashtagUpdate {
+	mutation := newHashtagMutation(c.config, OpUpdate)
+	return &HashtagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *HashtagClient) UpdateOne(h *Hashtag) *HashtagUpdateOne {
+	mutation := newHashtagMutation(c.config, OpUpdateOne, withHashtag(h))
+	return &HashtagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *HashtagClient) UpdateOneID(id int) *HashtagUpdateOne {
+	mutation := newHashtagMutation(c.config, OpUpdateOne, withHashtagID(id))
+	return &HashtagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Hashtag.
+func (c *HashtagClient) Delete() *HashtagDelete {
+	mutation := newHashtagMutation(c.config, OpDelete)
+	return &HashtagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *HashtagClient) DeleteOne(h *Hashtag) *HashtagDeleteOne {
+	return c.DeleteOneID(h.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *HashtagClient) DeleteOneID(id int) *HashtagDeleteOne {
+	builder := c.Delete().Where(hashtag.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &HashtagDeleteOne{builder}
+}
+
+// Query returns a query builder for Hashtag.
+func (c *HashtagClient) Query() *HashtagQuery {
+	return &HashtagQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Hashtag entity by its id.
+func (c *HashtagClient) Get(ctx context.Context, id int) (*Hashtag, error) {
+	return c.Query().Where(hashtag.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *HashtagClient) GetX(ctx context.Context, id int) *Hashtag {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryPosts queries the posts edge of a Hashtag.
+func (c *HashtagClient) QueryPosts(h *Hashtag) *PostQuery {
+	query := &PostQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := h.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hashtag.Table, hashtag.FieldID, id),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, hashtag.PostsTable, hashtag.PostsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(h.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *HashtagClient) Hooks() []Hook {
+	return c.hooks.Hashtag
 }
 
 // PostClient is a client for the Post schema.
@@ -226,6 +339,22 @@ func (c *PostClient) QueryOwner(po *Post) *UserQuery {
 			sqlgraph.From(post.Table, post.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, post.OwnerTable, post.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryHashtags queries the hashtags edge of a Post.
+func (c *PostClient) QueryHashtags(po *Post) *HashtagQuery {
+	query := &HashtagQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(hashtag.Table, hashtag.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, post.HashtagsTable, post.HashtagsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
 		return fromV, nil

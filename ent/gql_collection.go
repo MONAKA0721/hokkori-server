@@ -10,6 +10,65 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (h *HashtagQuery) CollectFields(ctx context.Context, satisfies ...string) (*HashtagQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return h, nil
+	}
+	if err := h.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return h, nil
+}
+
+func (h *HashtagQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "posts":
+			var (
+				path  = append(path, field.Name)
+				query = &PostQuery{config: h.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			h.withPosts = query
+		}
+	}
+	return nil
+}
+
+type hashtagPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []HashtagPaginateOption
+}
+
+func newHashtagPaginateArgs(rv map[string]interface{}) *hashtagPaginateArgs {
+	args := &hashtagPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*HashtagWhereInput); ok {
+		args.opts = append(args.opts, WithHashtagFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (po *PostQuery) CollectFields(ctx context.Context, satisfies ...string) (*PostQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -34,6 +93,15 @@ func (po *PostQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				return err
 			}
 			po.withOwner = query
+		case "hashtags":
+			var (
+				path  = append(path, field.Name)
+				query = &HashtagQuery{config: po.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			po.withHashtags = query
 		}
 	}
 	return nil

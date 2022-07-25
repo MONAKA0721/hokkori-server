@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
+	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -240,6 +241,239 @@ func paginateLimit(first, last *int) int {
 		limit = *last + 1
 	}
 	return limit
+}
+
+// HashtagEdge is the edge representation of Hashtag.
+type HashtagEdge struct {
+	Node   *Hashtag `json:"node"`
+	Cursor Cursor   `json:"cursor"`
+}
+
+// HashtagConnection is the connection containing edges to Hashtag.
+type HashtagConnection struct {
+	Edges      []*HashtagEdge `json:"edges"`
+	PageInfo   PageInfo       `json:"pageInfo"`
+	TotalCount int            `json:"totalCount"`
+}
+
+func (c *HashtagConnection) build(nodes []*Hashtag, pager *hashtagPager, first, last *int) {
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *Hashtag
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Hashtag {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Hashtag {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*HashtagEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &HashtagEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// HashtagPaginateOption enables pagination customization.
+type HashtagPaginateOption func(*hashtagPager) error
+
+// WithHashtagOrder configures pagination ordering.
+func WithHashtagOrder(order *HashtagOrder) HashtagPaginateOption {
+	if order == nil {
+		order = DefaultHashtagOrder
+	}
+	o := *order
+	return func(pager *hashtagPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultHashtagOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithHashtagFilter configures pagination filter.
+func WithHashtagFilter(filter func(*HashtagQuery) (*HashtagQuery, error)) HashtagPaginateOption {
+	return func(pager *hashtagPager) error {
+		if filter == nil {
+			return errors.New("HashtagQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type hashtagPager struct {
+	order  *HashtagOrder
+	filter func(*HashtagQuery) (*HashtagQuery, error)
+}
+
+func newHashtagPager(opts []HashtagPaginateOption) (*hashtagPager, error) {
+	pager := &hashtagPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultHashtagOrder
+	}
+	return pager, nil
+}
+
+func (p *hashtagPager) applyFilter(query *HashtagQuery) (*HashtagQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *hashtagPager) toCursor(h *Hashtag) Cursor {
+	return p.order.Field.toCursor(h)
+}
+
+func (p *hashtagPager) applyCursors(query *HashtagQuery, after, before *Cursor) *HashtagQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultHashtagOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *hashtagPager) applyOrder(query *HashtagQuery, reverse bool) *HashtagQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultHashtagOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultHashtagOrder.Field.field))
+	}
+	return query
+}
+
+func (p *hashtagPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultHashtagOrder.Field {
+			b.Comma().Ident(DefaultHashtagOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Hashtag.
+func (h *HashtagQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...HashtagPaginateOption,
+) (*HashtagConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newHashtagPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if h, err = pager.applyFilter(h); err != nil {
+		return nil, err
+	}
+	conn := &HashtagConnection{Edges: []*HashtagEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+			if conn.TotalCount, err = h.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := h.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	h = pager.applyCursors(h, after, before)
+	h = pager.applyOrder(h, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		h.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := h.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := h.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+	conn.build(nodes, pager, first, last)
+	return conn, nil
+}
+
+// HashtagOrderField defines the ordering field of Hashtag.
+type HashtagOrderField struct {
+	field    string
+	toCursor func(*Hashtag) Cursor
+}
+
+// HashtagOrder defines the ordering of Hashtag.
+type HashtagOrder struct {
+	Direction OrderDirection     `json:"direction"`
+	Field     *HashtagOrderField `json:"field"`
+}
+
+// DefaultHashtagOrder is the default ordering of Hashtag.
+var DefaultHashtagOrder = &HashtagOrder{
+	Direction: OrderDirectionAsc,
+	Field: &HashtagOrderField{
+		field: hashtag.FieldID,
+		toCursor: func(h *Hashtag) Cursor {
+			return Cursor{ID: h.ID}
+		},
+	},
+}
+
+// ToEdge converts Hashtag into HashtagEdge.
+func (h *Hashtag) ToEdge(order *HashtagOrder) *HashtagEdge {
+	if order == nil {
+		order = DefaultHashtagOrder
+	}
+	return &HashtagEdge{
+		Node:   h,
+		Cursor: order.Field.toCursor(h),
+	}
 }
 
 // PostEdge is the edge representation of Post.

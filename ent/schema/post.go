@@ -26,6 +26,7 @@ func (Post) Fields() []ent.Field {
 func (Post) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("owner", User.Type).Ref("posts").Unique().Required(),
+		edge.To("hashtags", Hashtag.Type),
 	}
 }
 

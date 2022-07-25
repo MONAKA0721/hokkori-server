@@ -5,6 +5,7 @@ package ent
 import (
 	"time"
 
+	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/schema"
 	"github.com/MONAKA0721/hokkori/ent/user"
@@ -14,6 +15,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	hashtagFields := schema.Hashtag{}.Fields()
+	_ = hashtagFields
+	// hashtagDescTitle is the schema descriptor for title field.
+	hashtagDescTitle := hashtagFields[0].Descriptor()
+	// hashtag.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	hashtag.TitleValidator = hashtagDescTitle.Validators[0].(func(string) error)
 	postMixin := schema.Post{}.Mixin()
 	postMixinFields0 := postMixin[0].Fields()
 	_ = postMixinFields0

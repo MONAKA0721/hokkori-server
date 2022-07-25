@@ -4,12 +4,14 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/user"
@@ -25,10 +27,11 @@ type PostQuery struct {
 	fields     []string
 	predicates []predicate.Post
 	// eager-loading edges.
-	withOwner *UserQuery
-	withFKs   bool
-	modifiers []func(*sql.Selector)
-	loadTotal []func(context.Context, []*Post) error
+	withOwner    *UserQuery
+	withHashtags *HashtagQuery
+	withFKs      bool
+	modifiers    []func(*sql.Selector)
+	loadTotal    []func(context.Context, []*Post) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -80,6 +83,28 @@ func (pq *PostQuery) QueryOwner() *UserQuery {
 			sqlgraph.From(post.Table, post.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, post.OwnerTable, post.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryHashtags chains the current query on the "hashtags" edge.
+func (pq *PostQuery) QueryHashtags() *HashtagQuery {
+	query := &HashtagQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, selector),
+			sqlgraph.To(hashtag.Table, hashtag.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, post.HashtagsTable, post.HashtagsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -263,12 +288,13 @@ func (pq *PostQuery) Clone() *PostQuery {
 		return nil
 	}
 	return &PostQuery{
-		config:     pq.config,
-		limit:      pq.limit,
-		offset:     pq.offset,
-		order:      append([]OrderFunc{}, pq.order...),
-		predicates: append([]predicate.Post{}, pq.predicates...),
-		withOwner:  pq.withOwner.Clone(),
+		config:       pq.config,
+		limit:        pq.limit,
+		offset:       pq.offset,
+		order:        append([]OrderFunc{}, pq.order...),
+		predicates:   append([]predicate.Post{}, pq.predicates...),
+		withOwner:    pq.withOwner.Clone(),
+		withHashtags: pq.withHashtags.Clone(),
 		// clone intermediate query.
 		sql:    pq.sql.Clone(),
 		path:   pq.path,
@@ -284,6 +310,17 @@ func (pq *PostQuery) WithOwner(opts ...func(*UserQuery)) *PostQuery {
 		opt(query)
 	}
 	pq.withOwner = query
+	return pq
+}
+
+// WithHashtags tells the query-builder to eager-load the nodes that are connected to
+// the "hashtags" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithHashtags(opts ...func(*HashtagQuery)) *PostQuery {
+	query := &HashtagQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withHashtags = query
 	return pq
 }
 
@@ -358,8 +395,9 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 		nodes       = []*Post{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			pq.withOwner != nil,
+			pq.withHashtags != nil,
 		}
 	)
 	if pq.withOwner != nil {
@@ -415,6 +453,59 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 			}
 			for i := range nodes {
 				nodes[i].Edges.Owner = n
+			}
+		}
+	}
+
+	if query := pq.withHashtags; query != nil {
+		edgeids := make([]driver.Value, len(nodes))
+		byid := make(map[int]*Post)
+		nids := make(map[int]map[*Post]struct{})
+		for i, node := range nodes {
+			edgeids[i] = node.ID
+			byid[node.ID] = node
+			node.Edges.Hashtags = []*Hashtag{}
+		}
+		query.Where(func(s *sql.Selector) {
+			joinT := sql.Table(post.HashtagsTable)
+			s.Join(joinT).On(s.C(hashtag.FieldID), joinT.C(post.HashtagsPrimaryKey[1]))
+			s.Where(sql.InValues(joinT.C(post.HashtagsPrimaryKey[0]), edgeids...))
+			columns := s.SelectedColumns()
+			s.Select(joinT.C(post.HashtagsPrimaryKey[0]))
+			s.AppendSelect(columns...)
+			s.SetDistinct(false)
+		})
+		neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]interface{}, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]interface{}{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []interface{}) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Post]struct{}{byid[outValue]: struct{}{}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byid[outValue]] = struct{}{}
+				return nil
+			}
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "hashtags" node returned %v`, n.ID)
+			}
+			for kn := range nodes {
+				kn.Edges.Hashtags = append(kn.Edges.Hashtags, n)
 			}
 		}
 	}

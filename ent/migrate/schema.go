@@ -8,6 +8,17 @@ import (
 )
 
 var (
+	// HashtagsColumns holds the columns for the "hashtags" table.
+	HashtagsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "title", Type: field.TypeString, Size: 2147483647},
+	}
+	// HashtagsTable holds the schema information for the "hashtags" table.
+	HashtagsTable = &schema.Table{
+		Name:       "hashtags",
+		Columns:    HashtagsColumns,
+		PrimaryKey: []*schema.Column{HashtagsColumns[0]},
+	}
 	// PostsColumns holds the columns for the "posts" table.
 	PostsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -43,13 +54,42 @@ var (
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 	}
+	// PostHashtagsColumns holds the columns for the "post_hashtags" table.
+	PostHashtagsColumns = []*schema.Column{
+		{Name: "post_id", Type: field.TypeInt},
+		{Name: "hashtag_id", Type: field.TypeInt},
+	}
+	// PostHashtagsTable holds the schema information for the "post_hashtags" table.
+	PostHashtagsTable = &schema.Table{
+		Name:       "post_hashtags",
+		Columns:    PostHashtagsColumns,
+		PrimaryKey: []*schema.Column{PostHashtagsColumns[0], PostHashtagsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "post_hashtags_post_id",
+				Columns:    []*schema.Column{PostHashtagsColumns[0]},
+				RefColumns: []*schema.Column{PostsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "post_hashtags_hashtag_id",
+				Columns:    []*schema.Column{PostHashtagsColumns[1]},
+				RefColumns: []*schema.Column{HashtagsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		HashtagsTable,
 		PostsTable,
 		UsersTable,
+		PostHashtagsTable,
 	}
 )
 
 func init() {
 	PostsTable.ForeignKeys[0].RefTable = UsersTable
+	PostHashtagsTable.ForeignKeys[0].RefTable = PostsTable
+	PostHashtagsTable.ForeignKeys[1].RefTable = HashtagsTable
 }

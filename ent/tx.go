@@ -12,6 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Hashtag is the client for interacting with the Hashtag builders.
+	Hashtag *HashtagClient
 	// Post is the client for interacting with the Post builders.
 	Post *PostClient
 	// User is the client for interacting with the User builders.
@@ -151,6 +153,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Hashtag = NewHashtagClient(tx.config)
 	tx.Post = NewPostClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
@@ -162,7 +165,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Post.QueryXXX(), the query will be executed
+// applies a query, for example: Hashtag.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.
