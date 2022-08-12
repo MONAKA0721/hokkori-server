@@ -5,18 +5,22 @@ package graph
 
 import (
 	"context"
+
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/graph/generated"
 )
 
+// CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input ent.CreateUserInput) (*ent.User, error) {
 	return r.client.User.Create().SetInput(input).Save(ctx)
 }
 
+// CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input ent.CreatePostInput) (*ent.Post, error) {
 	return r.client.Post.Create().SetInput(input).Save(ctx)
 }
 
+// CreateHashtag is the resolver for the createHashtag field.
 func (r *mutationResolver) CreateHashtag(ctx context.Context, input ent.CreateHashtagInput) (*ent.Hashtag, error) {
 	return r.client.Hashtag.Create().SetInput(input).Save(ctx)
 }

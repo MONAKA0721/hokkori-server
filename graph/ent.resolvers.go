@@ -10,14 +10,17 @@ import (
 	"github.com/MONAKA0721/hokkori/graph/generated"
 )
 
+// Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 	return r.client.Noder(ctx, id)
 }
 
+// Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
 	return r.client.Noders(ctx, ids)
 }
 
+// Hashtags is the resolver for the hashtags field.
 func (r *queryResolver) Hashtags(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) (*ent.HashtagConnection, error) {
 	return r.client.Hashtag.Query().
 		Paginate(ctx, after, first, before, last,
@@ -25,6 +28,7 @@ func (r *queryResolver) Hashtags(ctx context.Context, after *ent.Cursor, first *
 		)
 }
 
+// Posts is the resolver for the posts field.
 func (r *queryResolver) Posts(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.PostOrder, where *ent.PostWhereInput) (*ent.PostConnection, error) {
 	return r.client.Post.Query().
 		Paginate(ctx, after, first, before, last,
