@@ -15,6 +15,16 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input ent.CreateUserI
 	return r.client.User.Create().SetInput(input).Save(ctx)
 }
 
+// CreatePosts is the resolver for the createPosts field.
+func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput) (*ent.Post, error) {
+	_, err := r.client.Post.Create().SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.client.Post.Create().SetInput(input2).Save(ctx)
+}
+
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input ent.CreatePostInput) (*ent.Post, error) {
 	return r.client.Post.Create().SetInput(input).Save(ctx)
@@ -23,6 +33,11 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input ent.CreatePostI
 // CreateHashtag is the resolver for the createHashtag field.
 func (r *mutationResolver) CreateHashtag(ctx context.Context, input ent.CreateHashtagInput) (*ent.Hashtag, error) {
 	return r.client.Hashtag.Create().SetInput(input).Save(ctx)
+}
+
+// CreateWork is the resolver for the createWork field.
+func (r *mutationResolver) CreateWork(ctx context.Context, input ent.CreateWorkInput) (*ent.Work, error) {
+	return r.client.Work.Create().SetInput(input).Save(ctx)
 }
 
 // Mutation returns generated.MutationResolver implementation.

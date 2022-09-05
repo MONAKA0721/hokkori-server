@@ -13,6 +13,7 @@ import (
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
+	"github.com/MONAKA0721/hokkori/ent/work"
 )
 
 // PostCreate is the builder for creating a Post entity.
@@ -68,6 +69,12 @@ func (pc *PostCreate) SetType(po post.Type) *PostCreate {
 	return pc
 }
 
+// SetSpoiled sets the "spoiled" field.
+func (pc *PostCreate) SetSpoiled(b bool) *PostCreate {
+	pc.mutation.SetSpoiled(b)
+	return pc
+}
+
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (pc *PostCreate) SetOwnerID(id int) *PostCreate {
 	pc.mutation.SetOwnerID(id)
@@ -92,6 +99,17 @@ func (pc *PostCreate) AddHashtags(h ...*Hashtag) *PostCreate {
 		ids[i] = h[i].ID
 	}
 	return pc.AddHashtagIDs(ids...)
+}
+
+// SetWorkID sets the "work" edge to the Work entity by ID.
+func (pc *PostCreate) SetWorkID(id int) *PostCreate {
+	pc.mutation.SetWorkID(id)
+	return pc
+}
+
+// SetWork sets the "work" edge to the Work entity.
+func (pc *PostCreate) SetWork(w *Work) *PostCreate {
+	return pc.SetWorkID(w.ID)
 }
 
 // Mutation returns the PostMutation object of the builder.
@@ -213,8 +231,14 @@ func (pc *PostCreate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Post.type": %w`, err)}
 		}
 	}
+	if _, ok := pc.mutation.Spoiled(); !ok {
+		return &ValidationError{Name: "spoiled", err: errors.New(`ent: missing required field "Post.spoiled"`)}
+	}
 	if _, ok := pc.mutation.OwnerID(); !ok {
 		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "Post.owner"`)}
+	}
+	if _, ok := pc.mutation.WorkID(); !ok {
+		return &ValidationError{Name: "work", err: errors.New(`ent: missing required edge "Post.work"`)}
 	}
 	return nil
 }
@@ -283,6 +307,14 @@ func (pc *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 		})
 		_node.Type = value
 	}
+	if value, ok := pc.mutation.Spoiled(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: post.FieldSpoiled,
+		})
+		_node.Spoiled = value
+	}
 	if nodes := pc.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -320,6 +352,26 @@ func (pc *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.WorkIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.WorkTable,
+			Columns: []string{post.WorkColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: work.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.work_posts = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

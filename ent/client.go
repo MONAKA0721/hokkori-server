@@ -369,6 +369,22 @@ func (c *PostClient) QueryHashtags(po *Post) *HashtagQuery {
 	return query
 }
 
+// QueryWork queries the work edge of a Post.
+func (c *PostClient) QueryWork(po *Post) *WorkQuery {
+	query := &WorkQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(work.Table, work.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, post.WorkTable, post.WorkColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *PostClient) Hooks() []Hook {
 	return c.hooks.Post
@@ -563,6 +579,22 @@ func (c *WorkClient) GetX(ctx context.Context, id int) *Work {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryPosts queries the posts edge of a Work.
+func (c *WorkClient) QueryPosts(w *Work) *PostQuery {
+	query := &PostQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := w.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(work.Table, work.FieldID, id),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, work.PostsTable, work.PostsColumn),
+		)
+		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

@@ -37,6 +37,14 @@ func (r *queryResolver) Posts(ctx context.Context, after *ent.Cursor, first *int
 		)
 }
 
+// Works is the resolver for the works field.
+func (r *queryResolver) Works(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) (*ent.WorkConnection, error) {
+	return r.client.Work.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithWorkFilter(where.Filter),
+		)
+}
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 

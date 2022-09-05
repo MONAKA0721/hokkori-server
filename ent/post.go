@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
+	"github.com/MONAKA0721/hokkori/ent/work"
 )
 
 // Post is the model entity for the Post schema.
@@ -27,10 +28,13 @@ type Post struct {
 	Content string `json:"content,omitempty"`
 	// Type holds the value of the "type" field.
 	Type post.Type `json:"type,omitempty"`
+	// Spoiled holds the value of the "spoiled" field.
+	Spoiled bool `json:"spoiled,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PostQuery when eager-loading is set.
 	Edges      PostEdges `json:"edges"`
 	user_posts *int
+	work_posts *int
 }
 
 // PostEdges holds the relations/edges for other nodes in the graph.
@@ -39,11 +43,13 @@ type PostEdges struct {
 	Owner *User `json:"owner,omitempty"`
 	// Hashtags holds the value of the hashtags edge.
 	Hashtags []*Hashtag `json:"hashtags,omitempty"`
+	// Work holds the value of the work edge.
+	Work *Work `json:"work,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]*int
+	totalCount [3]*int
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -68,11 +74,26 @@ func (e PostEdges) HashtagsOrErr() ([]*Hashtag, error) {
 	return nil, &NotLoadedError{edge: "hashtags"}
 }
 
+// WorkOrErr returns the Work value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PostEdges) WorkOrErr() (*Work, error) {
+	if e.loadedTypes[2] {
+		if e.Work == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: work.Label}
+		}
+		return e.Work, nil
+	}
+	return nil, &NotLoadedError{edge: "work"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Post) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case post.FieldSpoiled:
+			values[i] = new(sql.NullBool)
 		case post.FieldID:
 			values[i] = new(sql.NullInt64)
 		case post.FieldTitle, post.FieldContent, post.FieldType:
@@ -80,6 +101,8 @@ func (*Post) scanValues(columns []string) ([]interface{}, error) {
 		case post.FieldCreateTime, post.FieldUpdateTime:
 			values[i] = new(sql.NullTime)
 		case post.ForeignKeys[0]: // user_posts
+			values[i] = new(sql.NullInt64)
+		case post.ForeignKeys[1]: // work_posts
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Post", columns[i])
@@ -132,12 +155,25 @@ func (po *Post) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				po.Type = post.Type(value.String)
 			}
+		case post.FieldSpoiled:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field spoiled", values[i])
+			} else if value.Valid {
+				po.Spoiled = value.Bool
+			}
 		case post.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field user_posts", value)
 			} else if value.Valid {
 				po.user_posts = new(int)
 				*po.user_posts = int(value.Int64)
+			}
+		case post.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field work_posts", value)
+			} else if value.Valid {
+				po.work_posts = new(int)
+				*po.work_posts = int(value.Int64)
 			}
 		}
 	}
@@ -152,6 +188,11 @@ func (po *Post) QueryOwner() *UserQuery {
 // QueryHashtags queries the "hashtags" edge of the Post entity.
 func (po *Post) QueryHashtags() *HashtagQuery {
 	return (&PostClient{config: po.config}).QueryHashtags(po)
+}
+
+// QueryWork queries the "work" edge of the Post entity.
+func (po *Post) QueryWork() *WorkQuery {
+	return (&PostClient{config: po.config}).QueryWork(po)
 }
 
 // Update returns a builder for updating this Post.
@@ -191,6 +232,9 @@ func (po *Post) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", po.Type))
+	builder.WriteString(", ")
+	builder.WriteString("spoiled=")
+	builder.WriteString(fmt.Sprintf("%v", po.Spoiled))
 	builder.WriteByte(')')
 	return builder.String()
 }

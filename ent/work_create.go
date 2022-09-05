@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/work"
 )
 
@@ -23,6 +24,21 @@ type WorkCreate struct {
 func (wc *WorkCreate) SetTitle(s string) *WorkCreate {
 	wc.mutation.SetTitle(s)
 	return wc
+}
+
+// AddPostIDs adds the "posts" edge to the Post entity by IDs.
+func (wc *WorkCreate) AddPostIDs(ids ...int) *WorkCreate {
+	wc.mutation.AddPostIDs(ids...)
+	return wc
+}
+
+// AddPosts adds the "posts" edges to the Post entity.
+func (wc *WorkCreate) AddPosts(p ...*Post) *WorkCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return wc.AddPostIDs(ids...)
 }
 
 // Mutation returns the WorkMutation object of the builder.
@@ -143,6 +159,25 @@ func (wc *WorkCreate) createSpec() (*Work, *sqlgraph.CreateSpec) {
 			Column: work.FieldTitle,
 		})
 		_node.Title = value
+	}
+	if nodes := wc.mutation.PostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.PostsTable,
+			Columns: []string{work.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

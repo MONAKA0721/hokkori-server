@@ -109,6 +109,13 @@ func Content(v string) predicate.Post {
 	})
 }
 
+// Spoiled applies equality check predicate on the "spoiled" field. It's identical to SpoiledEQ.
+func Spoiled(v bool) predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSpoiled), v))
+	})
+}
+
 // CreateTimeEQ applies the EQ predicate on the "create_time" field.
 func CreateTimeEQ(v time.Time) predicate.Post {
 	return predicate.Post(func(s *sql.Selector) {
@@ -471,6 +478,20 @@ func TypeNotIn(vs ...Type) predicate.Post {
 	})
 }
 
+// SpoiledEQ applies the EQ predicate on the "spoiled" field.
+func SpoiledEQ(v bool) predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSpoiled), v))
+	})
+}
+
+// SpoiledNEQ applies the NEQ predicate on the "spoiled" field.
+func SpoiledNEQ(v bool) predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldSpoiled), v))
+	})
+}
+
 // HasOwner applies the HasEdge predicate on the "owner" edge.
 func HasOwner() predicate.Post {
 	return predicate.Post(func(s *sql.Selector) {
@@ -518,6 +539,34 @@ func HasHashtagsWith(preds ...predicate.Hashtag) predicate.Post {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(HashtagsInverseTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, HashtagsTable, HashtagsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasWork applies the HasEdge predicate on the "work" edge.
+func HasWork() predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(WorkTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, WorkTable, WorkColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasWorkWith applies the HasEdge predicate on the "work" edge with a given conditions (other predicates).
+func HasWorkWith(preds ...predicate.Work) predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(WorkInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, WorkTable, WorkColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

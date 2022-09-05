@@ -67,8 +67,10 @@ type CreatePostInput struct {
 	Title      string
 	Content    string
 	Type       post.Type
+	Spoiled    bool
 	OwnerID    int
 	HashtagIDs []int
+	WorkID     int
 }
 
 // Mutate applies the CreatePostInput on the PostMutation builder.
@@ -82,10 +84,12 @@ func (i *CreatePostInput) Mutate(m *PostMutation) {
 	m.SetTitle(i.Title)
 	m.SetContent(i.Content)
 	m.SetType(i.Type)
+	m.SetSpoiled(i.Spoiled)
 	m.SetOwnerID(i.OwnerID)
 	if v := i.HashtagIDs; len(v) > 0 {
 		m.AddHashtagIDs(v...)
 	}
+	m.SetWorkID(i.WorkID)
 }
 
 // SetInput applies the change-set in the CreatePostInput on the PostCreate builder.
@@ -100,10 +104,13 @@ type UpdatePostInput struct {
 	Title            *string
 	Content          *string
 	Type             *post.Type
+	Spoiled          *bool
 	ClearOwner       bool
 	OwnerID          *int
 	AddHashtagIDs    []int
 	RemoveHashtagIDs []int
+	ClearWork        bool
+	WorkID           *int
 }
 
 // Mutate applies the UpdatePostInput on the PostMutation builder.
@@ -120,6 +127,9 @@ func (i *UpdatePostInput) Mutate(m *PostMutation) {
 	if v := i.Type; v != nil {
 		m.SetType(*v)
 	}
+	if v := i.Spoiled; v != nil {
+		m.SetSpoiled(*v)
+	}
 	if i.ClearOwner {
 		m.ClearOwner()
 	}
@@ -131,6 +141,12 @@ func (i *UpdatePostInput) Mutate(m *PostMutation) {
 	}
 	if v := i.RemoveHashtagIDs; len(v) > 0 {
 		m.RemoveHashtagIDs(v...)
+	}
+	if i.ClearWork {
+		m.ClearWork()
+	}
+	if v := i.WorkID; v != nil {
+		m.SetWorkID(*v)
 	}
 }
 
@@ -194,6 +210,58 @@ func (c *UserUpdate) SetInput(i UpdateUserInput) *UserUpdate {
 
 // SetInput applies the change-set in the UpdateUserInput on the UserUpdateOne builder.
 func (c *UserUpdateOne) SetInput(i UpdateUserInput) *UserUpdateOne {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// CreateWorkInput represents a mutation input for creating works.
+type CreateWorkInput struct {
+	Title   string
+	PostIDs []int
+}
+
+// Mutate applies the CreateWorkInput on the WorkMutation builder.
+func (i *CreateWorkInput) Mutate(m *WorkMutation) {
+	m.SetTitle(i.Title)
+	if v := i.PostIDs; len(v) > 0 {
+		m.AddPostIDs(v...)
+	}
+}
+
+// SetInput applies the change-set in the CreateWorkInput on the WorkCreate builder.
+func (c *WorkCreate) SetInput(i CreateWorkInput) *WorkCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// UpdateWorkInput represents a mutation input for updating works.
+type UpdateWorkInput struct {
+	Title         *string
+	AddPostIDs    []int
+	RemovePostIDs []int
+}
+
+// Mutate applies the UpdateWorkInput on the WorkMutation builder.
+func (i *UpdateWorkInput) Mutate(m *WorkMutation) {
+	if v := i.Title; v != nil {
+		m.SetTitle(*v)
+	}
+	if v := i.AddPostIDs; len(v) > 0 {
+		m.AddPostIDs(v...)
+	}
+	if v := i.RemovePostIDs; len(v) > 0 {
+		m.RemovePostIDs(v...)
+	}
+}
+
+// SetInput applies the change-set in the UpdateWorkInput on the WorkUpdate builder.
+func (c *WorkUpdate) SetInput(i UpdateWorkInput) *WorkUpdate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// SetInput applies the change-set in the UpdateWorkInput on the WorkUpdateOne builder.
+func (c *WorkUpdateOne) SetInput(i UpdateWorkInput) *WorkUpdateOne {
 	i.Mutate(c.Mutation())
 	return c
 }

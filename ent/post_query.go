@@ -15,6 +15,7 @@ import (
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/user"
+	"github.com/MONAKA0721/hokkori/ent/work"
 )
 
 // PostQuery is the builder for querying Post entities.
@@ -28,6 +29,7 @@ type PostQuery struct {
 	predicates   []predicate.Post
 	withOwner    *UserQuery
 	withHashtags *HashtagQuery
+	withWork     *WorkQuery
 	withFKs      bool
 	modifiers    []func(*sql.Selector)
 	loadTotal    []func(context.Context, []*Post) error
@@ -104,6 +106,28 @@ func (pq *PostQuery) QueryHashtags() *HashtagQuery {
 			sqlgraph.From(post.Table, post.FieldID, selector),
 			sqlgraph.To(hashtag.Table, hashtag.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, post.HashtagsTable, post.HashtagsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryWork chains the current query on the "work" edge.
+func (pq *PostQuery) QueryWork() *WorkQuery {
+	query := &WorkQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, selector),
+			sqlgraph.To(work.Table, work.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, post.WorkTable, post.WorkColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -294,6 +318,7 @@ func (pq *PostQuery) Clone() *PostQuery {
 		predicates:   append([]predicate.Post{}, pq.predicates...),
 		withOwner:    pq.withOwner.Clone(),
 		withHashtags: pq.withHashtags.Clone(),
+		withWork:     pq.withWork.Clone(),
 		// clone intermediate query.
 		sql:    pq.sql.Clone(),
 		path:   pq.path,
@@ -320,6 +345,17 @@ func (pq *PostQuery) WithHashtags(opts ...func(*HashtagQuery)) *PostQuery {
 		opt(query)
 	}
 	pq.withHashtags = query
+	return pq
+}
+
+// WithWork tells the query-builder to eager-load the nodes that are connected to
+// the "work" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithWork(opts ...func(*WorkQuery)) *PostQuery {
+	query := &WorkQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withWork = query
 	return pq
 }
 
@@ -392,12 +428,13 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 		nodes       = []*Post{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			pq.withOwner != nil,
 			pq.withHashtags != nil,
+			pq.withWork != nil,
 		}
 	)
-	if pq.withOwner != nil {
+	if pq.withOwner != nil || pq.withWork != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -434,6 +471,12 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 		if err := pq.loadHashtags(ctx, query, nodes,
 			func(n *Post) { n.Edges.Hashtags = []*Hashtag{} },
 			func(n *Post, e *Hashtag) { n.Edges.Hashtags = append(n.Edges.Hashtags, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withWork; query != nil {
+		if err := pq.loadWork(ctx, query, nodes, nil,
+			func(n *Post, e *Work) { n.Edges.Work = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -528,6 +571,35 @@ func (pq *PostQuery) loadHashtags(ctx context.Context, query *HashtagQuery, node
 		}
 		for kn := range nodes {
 			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (pq *PostQuery) loadWork(ctx context.Context, query *WorkQuery, nodes []*Post, init func(*Post), assign func(*Post, *Work)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Post)
+	for i := range nodes {
+		if nodes[i].work_posts == nil {
+			continue
+		}
+		fk := *nodes[i].work_posts
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	query.Where(work.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "work_posts" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
 		}
 	}
 	return nil

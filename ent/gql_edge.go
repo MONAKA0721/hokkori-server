@@ -28,10 +28,26 @@ func (po *Post) Hashtags(ctx context.Context) ([]*Hashtag, error) {
 	return result, err
 }
 
+func (po *Post) Work(ctx context.Context) (*Work, error) {
+	result, err := po.Edges.WorkOrErr()
+	if IsNotLoaded(err) {
+		result, err = po.QueryWork().Only(ctx)
+	}
+	return result, err
+}
+
 func (u *User) Posts(ctx context.Context) ([]*Post, error) {
 	result, err := u.Edges.PostsOrErr()
 	if IsNotLoaded(err) {
 		result, err = u.QueryPosts().All(ctx)
+	}
+	return result, err
+}
+
+func (w *Work) Posts(ctx context.Context) ([]*Post, error) {
+	result, err := w.Edges.PostsOrErr()
+	if IsNotLoaded(err) {
+		result, err = w.QueryPosts().All(ctx)
 	}
 	return result, err
 }

@@ -287,6 +287,10 @@ type PostWhereInput struct {
 	TypeIn    []post.Type `json:"typeIn,omitempty"`
 	TypeNotIn []post.Type `json:"typeNotIn,omitempty"`
 
+	// "spoiled" field predicates.
+	Spoiled    *bool `json:"spoiled,omitempty"`
+	SpoiledNEQ *bool `json:"spoiledNEQ,omitempty"`
+
 	// "owner" edge predicates.
 	HasOwner     *bool             `json:"hasOwner,omitempty"`
 	HasOwnerWith []*UserWhereInput `json:"hasOwnerWith,omitempty"`
@@ -294,6 +298,10 @@ type PostWhereInput struct {
 	// "hashtags" edge predicates.
 	HasHashtags     *bool                `json:"hasHashtags,omitempty"`
 	HasHashtagsWith []*HashtagWhereInput `json:"hasHashtagsWith,omitempty"`
+
+	// "work" edge predicates.
+	HasWork     *bool             `json:"hasWork,omitempty"`
+	HasWorkWith []*WorkWhereInput `json:"hasWorkWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -529,6 +537,12 @@ func (i *PostWhereInput) P() (predicate.Post, error) {
 	if len(i.TypeNotIn) > 0 {
 		predicates = append(predicates, post.TypeNotIn(i.TypeNotIn...))
 	}
+	if i.Spoiled != nil {
+		predicates = append(predicates, post.SpoiledEQ(*i.Spoiled))
+	}
+	if i.SpoiledNEQ != nil {
+		predicates = append(predicates, post.SpoiledNEQ(*i.SpoiledNEQ))
+	}
 
 	if i.HasOwner != nil {
 		p := post.HasOwner()
@@ -565,6 +579,24 @@ func (i *PostWhereInput) P() (predicate.Post, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, post.HasHashtagsWith(with...))
+	}
+	if i.HasWork != nil {
+		p := post.HasWork()
+		if !*i.HasWork {
+			p = post.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasWorkWith) > 0 {
+		with := make([]predicate.Work, 0, len(i.HasWorkWith))
+		for _, w := range i.HasWorkWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasWorkWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, post.HasWorkWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -807,6 +839,10 @@ type WorkWhereInput struct {
 	TitleHasSuffix    *string  `json:"titleHasSuffix,omitempty"`
 	TitleEqualFold    *string  `json:"titleEqualFold,omitempty"`
 	TitleContainsFold *string  `json:"titleContainsFold,omitempty"`
+
+	// "posts" edge predicates.
+	HasPosts     *bool             `json:"hasPosts,omitempty"`
+	HasPostsWith []*PostWhereInput `json:"hasPostsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -944,6 +980,24 @@ func (i *WorkWhereInput) P() (predicate.Work, error) {
 		predicates = append(predicates, work.TitleContainsFold(*i.TitleContainsFold))
 	}
 
+	if i.HasPosts != nil {
+		p := work.HasPosts()
+		if !*i.HasPosts {
+			p = work.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasPostsWith) > 0 {
+		with := make([]predicate.Post, 0, len(i.HasPostsWith))
+		for _, w := range i.HasPostsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasPostsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, work.HasPostsWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyWorkWhereInput

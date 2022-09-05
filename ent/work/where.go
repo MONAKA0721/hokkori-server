@@ -4,6 +4,7 @@ package work
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 )
 
@@ -181,6 +182,34 @@ func TitleEqualFold(v string) predicate.Work {
 func TitleContainsFold(v string) predicate.Work {
 	return predicate.Work(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldTitle), v))
+	})
+}
+
+// HasPosts applies the HasEdge predicate on the "posts" edge.
+func HasPosts() predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PostsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PostsTable, PostsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPostsWith applies the HasEdge predicate on the "posts" edge with a given conditions (other predicates).
+func HasPostsWith(preds ...predicate.Post) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PostsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PostsTable, PostsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

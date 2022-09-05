@@ -15,6 +15,7 @@ import (
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/user"
+	"github.com/MONAKA0721/hokkori/ent/work"
 )
 
 // PostUpdate is the builder for updating Post entities.
@@ -54,6 +55,12 @@ func (pu *PostUpdate) SetType(po post.Type) *PostUpdate {
 	return pu
 }
 
+// SetSpoiled sets the "spoiled" field.
+func (pu *PostUpdate) SetSpoiled(b bool) *PostUpdate {
+	pu.mutation.SetSpoiled(b)
+	return pu
+}
+
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (pu *PostUpdate) SetOwnerID(id int) *PostUpdate {
 	pu.mutation.SetOwnerID(id)
@@ -78,6 +85,17 @@ func (pu *PostUpdate) AddHashtags(h ...*Hashtag) *PostUpdate {
 		ids[i] = h[i].ID
 	}
 	return pu.AddHashtagIDs(ids...)
+}
+
+// SetWorkID sets the "work" edge to the Work entity by ID.
+func (pu *PostUpdate) SetWorkID(id int) *PostUpdate {
+	pu.mutation.SetWorkID(id)
+	return pu
+}
+
+// SetWork sets the "work" edge to the Work entity.
+func (pu *PostUpdate) SetWork(w *Work) *PostUpdate {
+	return pu.SetWorkID(w.ID)
 }
 
 // Mutation returns the PostMutation object of the builder.
@@ -110,6 +128,12 @@ func (pu *PostUpdate) RemoveHashtags(h ...*Hashtag) *PostUpdate {
 		ids[i] = h[i].ID
 	}
 	return pu.RemoveHashtagIDs(ids...)
+}
+
+// ClearWork clears the "work" edge to the Work entity.
+func (pu *PostUpdate) ClearWork() *PostUpdate {
+	pu.mutation.ClearWork()
+	return pu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -201,6 +225,9 @@ func (pu *PostUpdate) check() error {
 	if _, ok := pu.mutation.OwnerID(); pu.mutation.OwnerCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Post.owner"`)
 	}
+	if _, ok := pu.mutation.WorkID(); pu.mutation.WorkCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Post.work"`)
+	}
 	return nil
 }
 
@@ -248,6 +275,13 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeEnum,
 			Value:  value,
 			Column: post.FieldType,
+		})
+	}
+	if value, ok := pu.mutation.Spoiled(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: post.FieldSpoiled,
 		})
 	}
 	if pu.mutation.OwnerCleared() {
@@ -339,6 +373,41 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.WorkCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.WorkTable,
+			Columns: []string{post.WorkColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: work.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.WorkIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.WorkTable,
+			Columns: []string{post.WorkColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: work.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{post.Label}
@@ -382,6 +451,12 @@ func (puo *PostUpdateOne) SetType(po post.Type) *PostUpdateOne {
 	return puo
 }
 
+// SetSpoiled sets the "spoiled" field.
+func (puo *PostUpdateOne) SetSpoiled(b bool) *PostUpdateOne {
+	puo.mutation.SetSpoiled(b)
+	return puo
+}
+
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (puo *PostUpdateOne) SetOwnerID(id int) *PostUpdateOne {
 	puo.mutation.SetOwnerID(id)
@@ -406,6 +481,17 @@ func (puo *PostUpdateOne) AddHashtags(h ...*Hashtag) *PostUpdateOne {
 		ids[i] = h[i].ID
 	}
 	return puo.AddHashtagIDs(ids...)
+}
+
+// SetWorkID sets the "work" edge to the Work entity by ID.
+func (puo *PostUpdateOne) SetWorkID(id int) *PostUpdateOne {
+	puo.mutation.SetWorkID(id)
+	return puo
+}
+
+// SetWork sets the "work" edge to the Work entity.
+func (puo *PostUpdateOne) SetWork(w *Work) *PostUpdateOne {
+	return puo.SetWorkID(w.ID)
 }
 
 // Mutation returns the PostMutation object of the builder.
@@ -438,6 +524,12 @@ func (puo *PostUpdateOne) RemoveHashtags(h ...*Hashtag) *PostUpdateOne {
 		ids[i] = h[i].ID
 	}
 	return puo.RemoveHashtagIDs(ids...)
+}
+
+// ClearWork clears the "work" edge to the Work entity.
+func (puo *PostUpdateOne) ClearWork() *PostUpdateOne {
+	puo.mutation.ClearWork()
+	return puo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -542,6 +634,9 @@ func (puo *PostUpdateOne) check() error {
 	if _, ok := puo.mutation.OwnerID(); puo.mutation.OwnerCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Post.owner"`)
 	}
+	if _, ok := puo.mutation.WorkID(); puo.mutation.WorkCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Post.work"`)
+	}
 	return nil
 }
 
@@ -606,6 +701,13 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 			Type:   field.TypeEnum,
 			Value:  value,
 			Column: post.FieldType,
+		})
+	}
+	if value, ok := puo.mutation.Spoiled(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: post.FieldSpoiled,
 		})
 	}
 	if puo.mutation.OwnerCleared() {
@@ -689,6 +791,41 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: hashtag.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.WorkCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.WorkTable,
+			Columns: []string{post.WorkColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: work.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.WorkIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   post.WorkTable,
+			Columns: []string{post.WorkColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: work.FieldID,
 				},
 			},
 		}

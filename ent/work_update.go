@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/work"
 )
@@ -33,9 +34,45 @@ func (wu *WorkUpdate) SetTitle(s string) *WorkUpdate {
 	return wu
 }
 
+// AddPostIDs adds the "posts" edge to the Post entity by IDs.
+func (wu *WorkUpdate) AddPostIDs(ids ...int) *WorkUpdate {
+	wu.mutation.AddPostIDs(ids...)
+	return wu
+}
+
+// AddPosts adds the "posts" edges to the Post entity.
+func (wu *WorkUpdate) AddPosts(p ...*Post) *WorkUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return wu.AddPostIDs(ids...)
+}
+
 // Mutation returns the WorkMutation object of the builder.
 func (wu *WorkUpdate) Mutation() *WorkMutation {
 	return wu.mutation
+}
+
+// ClearPosts clears all "posts" edges to the Post entity.
+func (wu *WorkUpdate) ClearPosts() *WorkUpdate {
+	wu.mutation.ClearPosts()
+	return wu
+}
+
+// RemovePostIDs removes the "posts" edge to Post entities by IDs.
+func (wu *WorkUpdate) RemovePostIDs(ids ...int) *WorkUpdate {
+	wu.mutation.RemovePostIDs(ids...)
+	return wu
+}
+
+// RemovePosts removes "posts" edges to Post entities.
+func (wu *WorkUpdate) RemovePosts(p ...*Post) *WorkUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return wu.RemovePostIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -133,6 +170,60 @@ func (wu *WorkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: work.FieldTitle,
 		})
 	}
+	if wu.mutation.PostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.PostsTable,
+			Columns: []string{work.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wu.mutation.RemovedPostsIDs(); len(nodes) > 0 && !wu.mutation.PostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.PostsTable,
+			Columns: []string{work.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wu.mutation.PostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.PostsTable,
+			Columns: []string{work.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, wu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{work.Label}
@@ -158,9 +249,45 @@ func (wuo *WorkUpdateOne) SetTitle(s string) *WorkUpdateOne {
 	return wuo
 }
 
+// AddPostIDs adds the "posts" edge to the Post entity by IDs.
+func (wuo *WorkUpdateOne) AddPostIDs(ids ...int) *WorkUpdateOne {
+	wuo.mutation.AddPostIDs(ids...)
+	return wuo
+}
+
+// AddPosts adds the "posts" edges to the Post entity.
+func (wuo *WorkUpdateOne) AddPosts(p ...*Post) *WorkUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return wuo.AddPostIDs(ids...)
+}
+
 // Mutation returns the WorkMutation object of the builder.
 func (wuo *WorkUpdateOne) Mutation() *WorkMutation {
 	return wuo.mutation
+}
+
+// ClearPosts clears all "posts" edges to the Post entity.
+func (wuo *WorkUpdateOne) ClearPosts() *WorkUpdateOne {
+	wuo.mutation.ClearPosts()
+	return wuo
+}
+
+// RemovePostIDs removes the "posts" edge to Post entities by IDs.
+func (wuo *WorkUpdateOne) RemovePostIDs(ids ...int) *WorkUpdateOne {
+	wuo.mutation.RemovePostIDs(ids...)
+	return wuo
+}
+
+// RemovePosts removes "posts" edges to Post entities.
+func (wuo *WorkUpdateOne) RemovePosts(p ...*Post) *WorkUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return wuo.RemovePostIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -287,6 +414,60 @@ func (wuo *WorkUpdateOne) sqlSave(ctx context.Context) (_node *Work, err error) 
 			Value:  value,
 			Column: work.FieldTitle,
 		})
+	}
+	if wuo.mutation.PostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.PostsTable,
+			Columns: []string{work.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wuo.mutation.RemovedPostsIDs(); len(nodes) > 0 && !wuo.mutation.PostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.PostsTable,
+			Columns: []string{work.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wuo.mutation.PostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.PostsTable,
+			Columns: []string{work.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Work{config: wuo.config}
 	_spec.Assign = _node.assignValues

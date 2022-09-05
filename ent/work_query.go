@@ -4,12 +4,14 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/work"
 )
@@ -23,6 +25,7 @@ type WorkQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Work
+	withPosts  *PostQuery
 	modifiers  []func(*sql.Selector)
 	loadTotal  []func(context.Context, []*Work) error
 	// intermediate query (i.e. traversal path).
@@ -59,6 +62,28 @@ func (wq *WorkQuery) Unique(unique bool) *WorkQuery {
 func (wq *WorkQuery) Order(o ...OrderFunc) *WorkQuery {
 	wq.order = append(wq.order, o...)
 	return wq
+}
+
+// QueryPosts chains the current query on the "posts" edge.
+func (wq *WorkQuery) QueryPosts() *PostQuery {
+	query := &PostQuery{config: wq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(work.Table, work.FieldID, selector),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, work.PostsTable, work.PostsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(wq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Work entity from the query.
@@ -242,11 +267,23 @@ func (wq *WorkQuery) Clone() *WorkQuery {
 		offset:     wq.offset,
 		order:      append([]OrderFunc{}, wq.order...),
 		predicates: append([]predicate.Work{}, wq.predicates...),
+		withPosts:  wq.withPosts.Clone(),
 		// clone intermediate query.
 		sql:    wq.sql.Clone(),
 		path:   wq.path,
 		unique: wq.unique,
 	}
+}
+
+// WithPosts tells the query-builder to eager-load the nodes that are connected to
+// the "posts" edge. The optional arguments are used to configure the query builder of the edge.
+func (wq *WorkQuery) WithPosts(opts ...func(*PostQuery)) *WorkQuery {
+	query := &PostQuery{config: wq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	wq.withPosts = query
+	return wq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -315,8 +352,11 @@ func (wq *WorkQuery) prepareQuery(ctx context.Context) error {
 
 func (wq *WorkQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Work, error) {
 	var (
-		nodes = []*Work{}
-		_spec = wq.querySpec()
+		nodes       = []*Work{}
+		_spec       = wq.querySpec()
+		loadedTypes = [1]bool{
+			wq.withPosts != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		return (*Work).scanValues(nil, columns)
@@ -324,6 +364,7 @@ func (wq *WorkQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Work, e
 	_spec.Assign = func(columns []string, values []interface{}) error {
 		node := &Work{config: wq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(wq.modifiers) > 0 {
@@ -338,12 +379,51 @@ func (wq *WorkQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Work, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := wq.withPosts; query != nil {
+		if err := wq.loadPosts(ctx, query, nodes,
+			func(n *Work) { n.Edges.Posts = []*Post{} },
+			func(n *Work, e *Post) { n.Edges.Posts = append(n.Edges.Posts, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for i := range wq.loadTotal {
 		if err := wq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
+}
+
+func (wq *WorkQuery) loadPosts(ctx context.Context, query *PostQuery, nodes []*Work, init func(*Work), assign func(*Work, *Post)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Work)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Post(func(s *sql.Selector) {
+		s.Where(sql.InValues(work.PostsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.work_posts
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "work_posts" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "work_posts" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (wq *WorkQuery) sqlCount(ctx context.Context) (int, error) {

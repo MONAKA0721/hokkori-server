@@ -19,6 +19,7 @@ func (Post) Fields() []ent.Field {
 		field.Text("title").NotEmpty(),
 		field.Text("content").NotEmpty(),
 		field.Enum("type").Values("letter", "praise"),
+		field.Bool("spoiled"),
 	}
 }
 
@@ -27,6 +28,7 @@ func (Post) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("owner", User.Type).Ref("posts").Unique().Required(),
 		edge.To("hashtags", Hashtag.Type),
+		edge.From("work", Work.Type).Ref("posts").Unique().Required(),
 	}
 }
 

@@ -82,8 +82,8 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     po.ID,
 		Type:   "Post",
-		Fields: make([]*Field, 5),
-		Edges:  make([]*Edge, 2),
+		Fields: make([]*Field, 6),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(po.CreateTime); err != nil {
@@ -126,6 +126,14 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "type",
 		Value: string(buf),
 	}
+	if buf, err = json.Marshal(po.Spoiled); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
+		Type:  "bool",
+		Name:  "spoiled",
+		Value: string(buf),
+	}
 	node.Edges[0] = &Edge{
 		Type: "User",
 		Name: "owner",
@@ -143,6 +151,16 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 	err = po.QueryHashtags().
 		Select(hashtag.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "Work",
+		Name: "work",
+	}
+	err = po.QueryWork().
+		Select(work.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +201,7 @@ func (w *Work) Node(ctx context.Context) (node *Node, err error) {
 		ID:     w.ID,
 		Type:   "Work",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 0),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(w.Title); err != nil {
@@ -193,6 +211,16 @@ func (w *Work) Node(ctx context.Context) (node *Node, err error) {
 		Type:  "string",
 		Name:  "title",
 		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Post",
+		Name: "posts",
+	}
+	err = w.QueryPosts().
+		Select(post.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
 	}
 	return node, nil
 }

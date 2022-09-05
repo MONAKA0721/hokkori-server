@@ -24,10 +24,14 @@ const (
 	FieldContent = "content"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
+	// FieldSpoiled holds the string denoting the spoiled field in the database.
+	FieldSpoiled = "spoiled"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeHashtags holds the string denoting the hashtags edge name in mutations.
 	EdgeHashtags = "hashtags"
+	// EdgeWork holds the string denoting the work edge name in mutations.
+	EdgeWork = "work"
 	// Table holds the table name of the post in the database.
 	Table = "posts"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -42,6 +46,13 @@ const (
 	// HashtagsInverseTable is the table name for the Hashtag entity.
 	// It exists in this package in order to avoid circular dependency with the "hashtag" package.
 	HashtagsInverseTable = "hashtags"
+	// WorkTable is the table that holds the work relation/edge.
+	WorkTable = "posts"
+	// WorkInverseTable is the table name for the Work entity.
+	// It exists in this package in order to avoid circular dependency with the "work" package.
+	WorkInverseTable = "works"
+	// WorkColumn is the table column denoting the work relation/edge.
+	WorkColumn = "work_posts"
 )
 
 // Columns holds all SQL columns for post fields.
@@ -52,12 +63,14 @@ var Columns = []string{
 	FieldTitle,
 	FieldContent,
 	FieldType,
+	FieldSpoiled,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "posts"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"user_posts",
+	"work_posts",
 }
 
 var (

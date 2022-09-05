@@ -102,6 +102,15 @@ func (po *PostQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				return err
 			}
 			po.withHashtags = query
+		case "work":
+			var (
+				path  = append(path, field.Name)
+				query = &WorkQuery{config: po.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			po.withWork = query
 		}
 	}
 	return nil
@@ -231,6 +240,19 @@ func (w *WorkQuery) CollectFields(ctx context.Context, satisfies ...string) (*Wo
 
 func (w *WorkQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "posts":
+			var (
+				path  = append(path, field.Name)
+				query = &PostQuery{config: w.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			w.withPosts = query
+		}
+	}
 	return nil
 }
 

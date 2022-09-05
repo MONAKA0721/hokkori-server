@@ -17,6 +17,29 @@ type Work struct {
 	ID int `json:"id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the WorkQuery when eager-loading is set.
+	Edges WorkEdges `json:"edges"`
+}
+
+// WorkEdges holds the relations/edges for other nodes in the graph.
+type WorkEdges struct {
+	// Posts holds the value of the posts edge.
+	Posts []*Post `json:"posts,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+	// totalCount holds the count of the edges above.
+	totalCount [1]*int
+}
+
+// PostsOrErr returns the Posts value or an error if the edge
+// was not loaded in eager-loading.
+func (e WorkEdges) PostsOrErr() ([]*Post, error) {
+	if e.loadedTypes[0] {
+		return e.Posts, nil
+	}
+	return nil, &NotLoadedError{edge: "posts"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -58,6 +81,11 @@ func (w *Work) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryPosts queries the "posts" edge of the Work entity.
+func (w *Work) QueryPosts() *PostQuery {
+	return (&WorkClient{config: w.config}).QueryPosts(w)
 }
 
 // Update returns a builder for updating this Work.
