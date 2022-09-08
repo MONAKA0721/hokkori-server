@@ -17,6 +17,7 @@ type Work struct {
 func (Work) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("title").NotEmpty(),
+		field.Text("thumbnail").NotEmpty().Optional(),
 	}
 }
 

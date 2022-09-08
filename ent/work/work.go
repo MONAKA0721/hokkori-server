@@ -9,6 +9,8 @@ const (
 	FieldID = "id"
 	// FieldTitle holds the string denoting the title field in the database.
 	FieldTitle = "title"
+	// FieldThumbnail holds the string denoting the thumbnail field in the database.
+	FieldThumbnail = "thumbnail"
 	// EdgePosts holds the string denoting the posts edge name in mutations.
 	EdgePosts = "posts"
 	// Table holds the table name of the work in the database.
@@ -26,6 +28,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldTitle,
+	FieldThumbnail,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -41,4 +44,6 @@ func ValidColumn(column string) bool {
 var (
 	// TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	TitleValidator func(string) error
+	// ThumbnailValidator is a validator for the "thumbnail" field. It is called by the builders before save.
+	ThumbnailValidator func(string) error
 )

@@ -66,6 +66,7 @@ var (
 	WorksColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "title", Type: field.TypeString, Size: 2147483647},
+		{Name: "thumbnail", Type: field.TypeString, Nullable: true, Size: 2147483647},
 	}
 	// WorksTable holds the schema information for the "works" table.
 	WorksTable = &schema.Table{

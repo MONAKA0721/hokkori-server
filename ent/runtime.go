@@ -59,4 +59,8 @@ func init() {
 	workDescTitle := workFields[0].Descriptor()
 	// work.TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	work.TitleValidator = workDescTitle.Validators[0].(func(string) error)
+	// workDescThumbnail is the schema descriptor for thumbnail field.
+	workDescThumbnail := workFields[1].Descriptor()
+	// work.ThumbnailValidator is a validator for the "thumbnail" field. It is called by the builders before save.
+	work.ThumbnailValidator = workDescThumbnail.Validators[0].(func(string) error)
 }

@@ -840,6 +840,23 @@ type WorkWhereInput struct {
 	TitleEqualFold    *string  `json:"titleEqualFold,omitempty"`
 	TitleContainsFold *string  `json:"titleContainsFold,omitempty"`
 
+	// "thumbnail" field predicates.
+	Thumbnail             *string  `json:"thumbnail,omitempty"`
+	ThumbnailNEQ          *string  `json:"thumbnailNEQ,omitempty"`
+	ThumbnailIn           []string `json:"thumbnailIn,omitempty"`
+	ThumbnailNotIn        []string `json:"thumbnailNotIn,omitempty"`
+	ThumbnailGT           *string  `json:"thumbnailGT,omitempty"`
+	ThumbnailGTE          *string  `json:"thumbnailGTE,omitempty"`
+	ThumbnailLT           *string  `json:"thumbnailLT,omitempty"`
+	ThumbnailLTE          *string  `json:"thumbnailLTE,omitempty"`
+	ThumbnailContains     *string  `json:"thumbnailContains,omitempty"`
+	ThumbnailHasPrefix    *string  `json:"thumbnailHasPrefix,omitempty"`
+	ThumbnailHasSuffix    *string  `json:"thumbnailHasSuffix,omitempty"`
+	ThumbnailIsNil        bool     `json:"thumbnailIsNil,omitempty"`
+	ThumbnailNotNil       bool     `json:"thumbnailNotNil,omitempty"`
+	ThumbnailEqualFold    *string  `json:"thumbnailEqualFold,omitempty"`
+	ThumbnailContainsFold *string  `json:"thumbnailContainsFold,omitempty"`
+
 	// "posts" edge predicates.
 	HasPosts     *bool             `json:"hasPosts,omitempty"`
 	HasPostsWith []*PostWhereInput `json:"hasPostsWith,omitempty"`
@@ -978,6 +995,51 @@ func (i *WorkWhereInput) P() (predicate.Work, error) {
 	}
 	if i.TitleContainsFold != nil {
 		predicates = append(predicates, work.TitleContainsFold(*i.TitleContainsFold))
+	}
+	if i.Thumbnail != nil {
+		predicates = append(predicates, work.ThumbnailEQ(*i.Thumbnail))
+	}
+	if i.ThumbnailNEQ != nil {
+		predicates = append(predicates, work.ThumbnailNEQ(*i.ThumbnailNEQ))
+	}
+	if len(i.ThumbnailIn) > 0 {
+		predicates = append(predicates, work.ThumbnailIn(i.ThumbnailIn...))
+	}
+	if len(i.ThumbnailNotIn) > 0 {
+		predicates = append(predicates, work.ThumbnailNotIn(i.ThumbnailNotIn...))
+	}
+	if i.ThumbnailGT != nil {
+		predicates = append(predicates, work.ThumbnailGT(*i.ThumbnailGT))
+	}
+	if i.ThumbnailGTE != nil {
+		predicates = append(predicates, work.ThumbnailGTE(*i.ThumbnailGTE))
+	}
+	if i.ThumbnailLT != nil {
+		predicates = append(predicates, work.ThumbnailLT(*i.ThumbnailLT))
+	}
+	if i.ThumbnailLTE != nil {
+		predicates = append(predicates, work.ThumbnailLTE(*i.ThumbnailLTE))
+	}
+	if i.ThumbnailContains != nil {
+		predicates = append(predicates, work.ThumbnailContains(*i.ThumbnailContains))
+	}
+	if i.ThumbnailHasPrefix != nil {
+		predicates = append(predicates, work.ThumbnailHasPrefix(*i.ThumbnailHasPrefix))
+	}
+	if i.ThumbnailHasSuffix != nil {
+		predicates = append(predicates, work.ThumbnailHasSuffix(*i.ThumbnailHasSuffix))
+	}
+	if i.ThumbnailIsNil {
+		predicates = append(predicates, work.ThumbnailIsNil())
+	}
+	if i.ThumbnailNotNil {
+		predicates = append(predicates, work.ThumbnailNotNil())
+	}
+	if i.ThumbnailEqualFold != nil {
+		predicates = append(predicates, work.ThumbnailEqualFold(*i.ThumbnailEqualFold))
+	}
+	if i.ThumbnailContainsFold != nil {
+		predicates = append(predicates, work.ThumbnailContainsFold(*i.ThumbnailContainsFold))
 	}
 
 	if i.HasPosts != nil {

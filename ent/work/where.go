@@ -86,6 +86,13 @@ func Title(v string) predicate.Work {
 	})
 }
 
+// Thumbnail applies equality check predicate on the "thumbnail" field. It's identical to ThumbnailEQ.
+func Thumbnail(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldThumbnail), v))
+	})
+}
+
 // TitleEQ applies the EQ predicate on the "title" field.
 func TitleEQ(v string) predicate.Work {
 	return predicate.Work(func(s *sql.Selector) {
@@ -182,6 +189,119 @@ func TitleEqualFold(v string) predicate.Work {
 func TitleContainsFold(v string) predicate.Work {
 	return predicate.Work(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldTitle), v))
+	})
+}
+
+// ThumbnailEQ applies the EQ predicate on the "thumbnail" field.
+func ThumbnailEQ(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailNEQ applies the NEQ predicate on the "thumbnail" field.
+func ThumbnailNEQ(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailIn applies the In predicate on the "thumbnail" field.
+func ThumbnailIn(vs ...string) predicate.Work {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.In(s.C(FieldThumbnail), v...))
+	})
+}
+
+// ThumbnailNotIn applies the NotIn predicate on the "thumbnail" field.
+func ThumbnailNotIn(vs ...string) predicate.Work {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.NotIn(s.C(FieldThumbnail), v...))
+	})
+}
+
+// ThumbnailGT applies the GT predicate on the "thumbnail" field.
+func ThumbnailGT(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailGTE applies the GTE predicate on the "thumbnail" field.
+func ThumbnailGTE(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailLT applies the LT predicate on the "thumbnail" field.
+func ThumbnailLT(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailLTE applies the LTE predicate on the "thumbnail" field.
+func ThumbnailLTE(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailContains applies the Contains predicate on the "thumbnail" field.
+func ThumbnailContains(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailHasPrefix applies the HasPrefix predicate on the "thumbnail" field.
+func ThumbnailHasPrefix(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailHasSuffix applies the HasSuffix predicate on the "thumbnail" field.
+func ThumbnailHasSuffix(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailIsNil applies the IsNil predicate on the "thumbnail" field.
+func ThumbnailIsNil() predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldThumbnail)))
+	})
+}
+
+// ThumbnailNotNil applies the NotNil predicate on the "thumbnail" field.
+func ThumbnailNotNil() predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldThumbnail)))
+	})
+}
+
+// ThumbnailEqualFold applies the EqualFold predicate on the "thumbnail" field.
+func ThumbnailEqualFold(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldThumbnail), v))
+	})
+}
+
+// ThumbnailContainsFold applies the ContainsFold predicate on the "thumbnail" field.
+func ThumbnailContainsFold(v string) predicate.Work {
+	return predicate.Work(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldThumbnail), v))
 	})
 }
 

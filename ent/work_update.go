@@ -34,6 +34,26 @@ func (wu *WorkUpdate) SetTitle(s string) *WorkUpdate {
 	return wu
 }
 
+// SetThumbnail sets the "thumbnail" field.
+func (wu *WorkUpdate) SetThumbnail(s string) *WorkUpdate {
+	wu.mutation.SetThumbnail(s)
+	return wu
+}
+
+// SetNillableThumbnail sets the "thumbnail" field if the given value is not nil.
+func (wu *WorkUpdate) SetNillableThumbnail(s *string) *WorkUpdate {
+	if s != nil {
+		wu.SetThumbnail(*s)
+	}
+	return wu
+}
+
+// ClearThumbnail clears the value of the "thumbnail" field.
+func (wu *WorkUpdate) ClearThumbnail() *WorkUpdate {
+	wu.mutation.ClearThumbnail()
+	return wu
+}
+
 // AddPostIDs adds the "posts" edge to the Post entity by IDs.
 func (wu *WorkUpdate) AddPostIDs(ids ...int) *WorkUpdate {
 	wu.mutation.AddPostIDs(ids...)
@@ -142,6 +162,11 @@ func (wu *WorkUpdate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Work.title": %w`, err)}
 		}
 	}
+	if v, ok := wu.mutation.Thumbnail(); ok {
+		if err := work.ThumbnailValidator(v); err != nil {
+			return &ValidationError{Name: "thumbnail", err: fmt.Errorf(`ent: validator failed for field "Work.thumbnail": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -168,6 +193,19 @@ func (wu *WorkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: work.FieldTitle,
+		})
+	}
+	if value, ok := wu.mutation.Thumbnail(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: work.FieldThumbnail,
+		})
+	}
+	if wu.mutation.ThumbnailCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: work.FieldThumbnail,
 		})
 	}
 	if wu.mutation.PostsCleared() {
@@ -246,6 +284,26 @@ type WorkUpdateOne struct {
 // SetTitle sets the "title" field.
 func (wuo *WorkUpdateOne) SetTitle(s string) *WorkUpdateOne {
 	wuo.mutation.SetTitle(s)
+	return wuo
+}
+
+// SetThumbnail sets the "thumbnail" field.
+func (wuo *WorkUpdateOne) SetThumbnail(s string) *WorkUpdateOne {
+	wuo.mutation.SetThumbnail(s)
+	return wuo
+}
+
+// SetNillableThumbnail sets the "thumbnail" field if the given value is not nil.
+func (wuo *WorkUpdateOne) SetNillableThumbnail(s *string) *WorkUpdateOne {
+	if s != nil {
+		wuo.SetThumbnail(*s)
+	}
+	return wuo
+}
+
+// ClearThumbnail clears the value of the "thumbnail" field.
+func (wuo *WorkUpdateOne) ClearThumbnail() *WorkUpdateOne {
+	wuo.mutation.ClearThumbnail()
 	return wuo
 }
 
@@ -370,6 +428,11 @@ func (wuo *WorkUpdateOne) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Work.title": %w`, err)}
 		}
 	}
+	if v, ok := wuo.mutation.Thumbnail(); ok {
+		if err := work.ThumbnailValidator(v); err != nil {
+			return &ValidationError{Name: "thumbnail", err: fmt.Errorf(`ent: validator failed for field "Work.thumbnail": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -413,6 +476,19 @@ func (wuo *WorkUpdateOne) sqlSave(ctx context.Context) (_node *Work, err error) 
 			Type:   field.TypeString,
 			Value:  value,
 			Column: work.FieldTitle,
+		})
+	}
+	if value, ok := wuo.mutation.Thumbnail(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: work.FieldThumbnail,
+		})
+	}
+	if wuo.mutation.ThumbnailCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: work.FieldThumbnail,
 		})
 	}
 	if wuo.mutation.PostsCleared() {

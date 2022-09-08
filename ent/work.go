@@ -17,6 +17,8 @@ type Work struct {
 	ID int `json:"id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
+	// Thumbnail holds the value of the "thumbnail" field.
+	Thumbnail string `json:"thumbnail,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkQuery when eager-loading is set.
 	Edges WorkEdges `json:"edges"`
@@ -49,7 +51,7 @@ func (*Work) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case work.FieldID:
 			values[i] = new(sql.NullInt64)
-		case work.FieldTitle:
+		case work.FieldTitle, work.FieldThumbnail:
 			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Work", columns[i])
@@ -77,6 +79,12 @@ func (w *Work) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field title", values[i])
 			} else if value.Valid {
 				w.Title = value.String
+			}
+		case work.FieldThumbnail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field thumbnail", values[i])
+			} else if value.Valid {
+				w.Thumbnail = value.String
 			}
 		}
 	}
@@ -113,6 +121,9 @@ func (w *Work) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", w.ID))
 	builder.WriteString("title=")
 	builder.WriteString(w.Title)
+	builder.WriteString(", ")
+	builder.WriteString("thumbnail=")
+	builder.WriteString(w.Thumbnail)
 	builder.WriteByte(')')
 	return builder.String()
 }

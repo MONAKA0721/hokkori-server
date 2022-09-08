@@ -26,6 +26,20 @@ func (wc *WorkCreate) SetTitle(s string) *WorkCreate {
 	return wc
 }
 
+// SetThumbnail sets the "thumbnail" field.
+func (wc *WorkCreate) SetThumbnail(s string) *WorkCreate {
+	wc.mutation.SetThumbnail(s)
+	return wc
+}
+
+// SetNillableThumbnail sets the "thumbnail" field if the given value is not nil.
+func (wc *WorkCreate) SetNillableThumbnail(s *string) *WorkCreate {
+	if s != nil {
+		wc.SetThumbnail(*s)
+	}
+	return wc
+}
+
 // AddPostIDs adds the "posts" edge to the Post entity by IDs.
 func (wc *WorkCreate) AddPostIDs(ids ...int) *WorkCreate {
 	wc.mutation.AddPostIDs(ids...)
@@ -125,6 +139,11 @@ func (wc *WorkCreate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Work.title": %w`, err)}
 		}
 	}
+	if v, ok := wc.mutation.Thumbnail(); ok {
+		if err := work.ThumbnailValidator(v); err != nil {
+			return &ValidationError{Name: "thumbnail", err: fmt.Errorf(`ent: validator failed for field "Work.thumbnail": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -159,6 +178,14 @@ func (wc *WorkCreate) createSpec() (*Work, *sqlgraph.CreateSpec) {
 			Column: work.FieldTitle,
 		})
 		_node.Title = value
+	}
+	if value, ok := wc.mutation.Thumbnail(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: work.FieldThumbnail,
+		})
+		_node.Thumbnail = value
 	}
 	if nodes := wc.mutation.PostsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

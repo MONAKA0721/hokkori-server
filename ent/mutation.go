@@ -1640,6 +1640,7 @@ type WorkMutation struct {
 	typ           string
 	id            *int
 	title         *string
+	thumbnail     *string
 	clearedFields map[string]struct{}
 	posts         map[int]struct{}
 	removedposts  map[int]struct{}
@@ -1783,6 +1784,55 @@ func (m *WorkMutation) ResetTitle() {
 	m.title = nil
 }
 
+// SetThumbnail sets the "thumbnail" field.
+func (m *WorkMutation) SetThumbnail(s string) {
+	m.thumbnail = &s
+}
+
+// Thumbnail returns the value of the "thumbnail" field in the mutation.
+func (m *WorkMutation) Thumbnail() (r string, exists bool) {
+	v := m.thumbnail
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldThumbnail returns the old "thumbnail" field's value of the Work entity.
+// If the Work object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkMutation) OldThumbnail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldThumbnail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldThumbnail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldThumbnail: %w", err)
+	}
+	return oldValue.Thumbnail, nil
+}
+
+// ClearThumbnail clears the value of the "thumbnail" field.
+func (m *WorkMutation) ClearThumbnail() {
+	m.thumbnail = nil
+	m.clearedFields[work.FieldThumbnail] = struct{}{}
+}
+
+// ThumbnailCleared returns if the "thumbnail" field was cleared in this mutation.
+func (m *WorkMutation) ThumbnailCleared() bool {
+	_, ok := m.clearedFields[work.FieldThumbnail]
+	return ok
+}
+
+// ResetThumbnail resets all changes to the "thumbnail" field.
+func (m *WorkMutation) ResetThumbnail() {
+	m.thumbnail = nil
+	delete(m.clearedFields, work.FieldThumbnail)
+}
+
 // AddPostIDs adds the "posts" edge to the Post entity by ids.
 func (m *WorkMutation) AddPostIDs(ids ...int) {
 	if m.posts == nil {
@@ -1856,9 +1906,12 @@ func (m *WorkMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 2)
 	if m.title != nil {
 		fields = append(fields, work.FieldTitle)
+	}
+	if m.thumbnail != nil {
+		fields = append(fields, work.FieldThumbnail)
 	}
 	return fields
 }
@@ -1870,6 +1923,8 @@ func (m *WorkMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case work.FieldTitle:
 		return m.Title()
+	case work.FieldThumbnail:
+		return m.Thumbnail()
 	}
 	return nil, false
 }
@@ -1881,6 +1936,8 @@ func (m *WorkMutation) OldField(ctx context.Context, name string) (ent.Value, er
 	switch name {
 	case work.FieldTitle:
 		return m.OldTitle(ctx)
+	case work.FieldThumbnail:
+		return m.OldThumbnail(ctx)
 	}
 	return nil, fmt.Errorf("unknown Work field %s", name)
 }
@@ -1896,6 +1953,13 @@ func (m *WorkMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTitle(v)
+		return nil
+	case work.FieldThumbnail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetThumbnail(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Work field %s", name)
@@ -1926,7 +1990,11 @@ func (m *WorkMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *WorkMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(work.FieldThumbnail) {
+		fields = append(fields, work.FieldThumbnail)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1939,6 +2007,11 @@ func (m *WorkMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *WorkMutation) ClearField(name string) error {
+	switch name {
+	case work.FieldThumbnail:
+		m.ClearThumbnail()
+		return nil
+	}
 	return fmt.Errorf("unknown Work nullable field %s", name)
 }
 
@@ -1948,6 +2021,9 @@ func (m *WorkMutation) ResetField(name string) error {
 	switch name {
 	case work.FieldTitle:
 		m.ResetTitle()
+		return nil
+	case work.FieldThumbnail:
+		m.ResetThumbnail()
 		return nil
 	}
 	return fmt.Errorf("unknown Work field %s", name)

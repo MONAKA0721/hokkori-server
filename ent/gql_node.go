@@ -200,7 +200,7 @@ func (w *Work) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     w.ID,
 		Type:   "Work",
-		Fields: make([]*Field, 1),
+		Fields: make([]*Field, 2),
 		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
@@ -210,6 +210,14 @@ func (w *Work) Node(ctx context.Context) (node *Node, err error) {
 	node.Fields[0] = &Field{
 		Type:  "string",
 		Name:  "title",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(w.Thumbnail); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "thumbnail",
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{

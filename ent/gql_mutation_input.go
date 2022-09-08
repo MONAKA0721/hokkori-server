@@ -216,13 +216,17 @@ func (c *UserUpdateOne) SetInput(i UpdateUserInput) *UserUpdateOne {
 
 // CreateWorkInput represents a mutation input for creating works.
 type CreateWorkInput struct {
-	Title   string
-	PostIDs []int
+	Title     string
+	Thumbnail *string
+	PostIDs   []int
 }
 
 // Mutate applies the CreateWorkInput on the WorkMutation builder.
 func (i *CreateWorkInput) Mutate(m *WorkMutation) {
 	m.SetTitle(i.Title)
+	if v := i.Thumbnail; v != nil {
+		m.SetThumbnail(*v)
+	}
 	if v := i.PostIDs; len(v) > 0 {
 		m.AddPostIDs(v...)
 	}
@@ -236,15 +240,23 @@ func (c *WorkCreate) SetInput(i CreateWorkInput) *WorkCreate {
 
 // UpdateWorkInput represents a mutation input for updating works.
 type UpdateWorkInput struct {
-	Title         *string
-	AddPostIDs    []int
-	RemovePostIDs []int
+	Title          *string
+	ClearThumbnail bool
+	Thumbnail      *string
+	AddPostIDs     []int
+	RemovePostIDs  []int
 }
 
 // Mutate applies the UpdateWorkInput on the WorkMutation builder.
 func (i *UpdateWorkInput) Mutate(m *WorkMutation) {
 	if v := i.Title; v != nil {
 		m.SetTitle(*v)
+	}
+	if i.ClearThumbnail {
+		m.ClearThumbnail()
+	}
+	if v := i.Thumbnail; v != nil {
+		m.SetThumbnail(*v)
 	}
 	if v := i.AddPostIDs; len(v) > 0 {
 		m.AddPostIDs(v...)
