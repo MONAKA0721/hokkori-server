@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/99designs/gqlgen/graphql"
 	"log"
 	"net/http"
 	"os"
@@ -47,11 +48,11 @@ func main() {
 
 	srv := handler.NewDefaultServer(graph.NewSchema(client))
 	// クエリを吐く設定
-	//srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
-	//	oc := graphql.GetOperationContext(ctx)
-	//	fmt.Printf("around: %s %s", oc.OperationName, oc.RawQuery)
-	//	return next(ctx)
-	//})
+	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+		oc := graphql.GetOperationContext(ctx)
+		fmt.Printf("around: %s %s %s", oc.OperationName, oc.RawQuery, oc.Variables)
+		return next(ctx)
+	})
 
 	http.Handle("/",
 		playground.Handler("Hokkori", "/query"),
