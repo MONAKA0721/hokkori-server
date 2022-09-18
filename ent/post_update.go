@@ -98,6 +98,21 @@ func (pu *PostUpdate) SetWork(w *Work) *PostUpdate {
 	return pu.SetWorkID(w.ID)
 }
 
+// AddLikedUserIDs adds the "liked_users" edge to the User entity by IDs.
+func (pu *PostUpdate) AddLikedUserIDs(ids ...int) *PostUpdate {
+	pu.mutation.AddLikedUserIDs(ids...)
+	return pu
+}
+
+// AddLikedUsers adds the "liked_users" edges to the User entity.
+func (pu *PostUpdate) AddLikedUsers(u ...*User) *PostUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return pu.AddLikedUserIDs(ids...)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (pu *PostUpdate) Mutation() *PostMutation {
 	return pu.mutation
@@ -134,6 +149,27 @@ func (pu *PostUpdate) RemoveHashtags(h ...*Hashtag) *PostUpdate {
 func (pu *PostUpdate) ClearWork() *PostUpdate {
 	pu.mutation.ClearWork()
 	return pu
+}
+
+// ClearLikedUsers clears all "liked_users" edges to the User entity.
+func (pu *PostUpdate) ClearLikedUsers() *PostUpdate {
+	pu.mutation.ClearLikedUsers()
+	return pu
+}
+
+// RemoveLikedUserIDs removes the "liked_users" edge to User entities by IDs.
+func (pu *PostUpdate) RemoveLikedUserIDs(ids ...int) *PostUpdate {
+	pu.mutation.RemoveLikedUserIDs(ids...)
+	return pu
+}
+
+// RemoveLikedUsers removes "liked_users" edges to User entities.
+func (pu *PostUpdate) RemoveLikedUsers(u ...*User) *PostUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return pu.RemoveLikedUserIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -408,6 +444,72 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.LikedUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.LikedUsersTable,
+			Columns: post.LikedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		createE := &LikeCreate{config: pu.config, mutation: newLikeMutation(pu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedLikedUsersIDs(); len(nodes) > 0 && !pu.mutation.LikedUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.LikedUsersTable,
+			Columns: post.LikedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &LikeCreate{config: pu.config, mutation: newLikeMutation(pu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.LikedUsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.LikedUsersTable,
+			Columns: post.LikedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &LikeCreate{config: pu.config, mutation: newLikeMutation(pu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{post.Label}
@@ -494,6 +596,21 @@ func (puo *PostUpdateOne) SetWork(w *Work) *PostUpdateOne {
 	return puo.SetWorkID(w.ID)
 }
 
+// AddLikedUserIDs adds the "liked_users" edge to the User entity by IDs.
+func (puo *PostUpdateOne) AddLikedUserIDs(ids ...int) *PostUpdateOne {
+	puo.mutation.AddLikedUserIDs(ids...)
+	return puo
+}
+
+// AddLikedUsers adds the "liked_users" edges to the User entity.
+func (puo *PostUpdateOne) AddLikedUsers(u ...*User) *PostUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return puo.AddLikedUserIDs(ids...)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (puo *PostUpdateOne) Mutation() *PostMutation {
 	return puo.mutation
@@ -530,6 +647,27 @@ func (puo *PostUpdateOne) RemoveHashtags(h ...*Hashtag) *PostUpdateOne {
 func (puo *PostUpdateOne) ClearWork() *PostUpdateOne {
 	puo.mutation.ClearWork()
 	return puo
+}
+
+// ClearLikedUsers clears all "liked_users" edges to the User entity.
+func (puo *PostUpdateOne) ClearLikedUsers() *PostUpdateOne {
+	puo.mutation.ClearLikedUsers()
+	return puo
+}
+
+// RemoveLikedUserIDs removes the "liked_users" edge to User entities by IDs.
+func (puo *PostUpdateOne) RemoveLikedUserIDs(ids ...int) *PostUpdateOne {
+	puo.mutation.RemoveLikedUserIDs(ids...)
+	return puo
+}
+
+// RemoveLikedUsers removes "liked_users" edges to User entities.
+func (puo *PostUpdateOne) RemoveLikedUsers(u ...*User) *PostUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return puo.RemoveLikedUserIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -832,6 +970,72 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.LikedUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.LikedUsersTable,
+			Columns: post.LikedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		createE := &LikeCreate{config: puo.config, mutation: newLikeMutation(puo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedLikedUsersIDs(); len(nodes) > 0 && !puo.mutation.LikedUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.LikedUsersTable,
+			Columns: post.LikedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &LikeCreate{config: puo.config, mutation: newLikeMutation(puo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.LikedUsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.LikedUsersTable,
+			Columns: post.LikedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &LikeCreate{config: puo.config, mutation: newLikeMutation(puo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Post{config: puo.config}

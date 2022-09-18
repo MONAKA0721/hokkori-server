@@ -11,6 +11,10 @@ const (
 	FieldName = "name"
 	// EdgePosts holds the string denoting the posts edge name in mutations.
 	EdgePosts = "posts"
+	// EdgeLikedPosts holds the string denoting the liked_posts edge name in mutations.
+	EdgeLikedPosts = "liked_posts"
+	// EdgeLikes holds the string denoting the likes edge name in mutations.
+	EdgeLikes = "likes"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PostsTable is the table that holds the posts relation/edge.
@@ -20,6 +24,18 @@ const (
 	PostsInverseTable = "posts"
 	// PostsColumn is the table column denoting the posts relation/edge.
 	PostsColumn = "user_posts"
+	// LikedPostsTable is the table that holds the liked_posts relation/edge. The primary key declared below.
+	LikedPostsTable = "likes"
+	// LikedPostsInverseTable is the table name for the Post entity.
+	// It exists in this package in order to avoid circular dependency with the "post" package.
+	LikedPostsInverseTable = "posts"
+	// LikesTable is the table that holds the likes relation/edge.
+	LikesTable = "likes"
+	// LikesInverseTable is the table name for the Like entity.
+	// It exists in this package in order to avoid circular dependency with the "like" package.
+	LikesInverseTable = "likes"
+	// LikesColumn is the table column denoting the likes relation/edge.
+	LikesColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -27,6 +43,12 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 }
+
+var (
+	// LikedPostsPrimaryKey and LikedPostsColumn2 are the table columns denoting the
+	// primary key for the liked_posts relation (M2M).
+	LikedPostsPrimaryKey = []string{"user_id", "post_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

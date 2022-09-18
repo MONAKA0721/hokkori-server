@@ -26,11 +26,15 @@ type User struct {
 type UserEdges struct {
 	// Posts holds the value of the posts edge.
 	Posts []*Post `json:"posts,omitempty"`
+	// LikedPosts holds the value of the liked_posts edge.
+	LikedPosts []*Post `json:"liked_posts,omitempty"`
+	// Likes holds the value of the likes edge.
+	Likes []*Like `json:"likes,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]*int
+	totalCount [2]*int
 }
 
 // PostsOrErr returns the Posts value or an error if the edge
@@ -40,6 +44,24 @@ func (e UserEdges) PostsOrErr() ([]*Post, error) {
 		return e.Posts, nil
 	}
 	return nil, &NotLoadedError{edge: "posts"}
+}
+
+// LikedPostsOrErr returns the LikedPosts value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) LikedPostsOrErr() ([]*Post, error) {
+	if e.loadedTypes[1] {
+		return e.LikedPosts, nil
+	}
+	return nil, &NotLoadedError{edge: "liked_posts"}
+}
+
+// LikesOrErr returns the Likes value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) LikesOrErr() ([]*Like, error) {
+	if e.loadedTypes[2] {
+		return e.Likes, nil
+	}
+	return nil, &NotLoadedError{edge: "likes"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -86,6 +108,16 @@ func (u *User) assignValues(columns []string, values []interface{}) error {
 // QueryPosts queries the "posts" edge of the User entity.
 func (u *User) QueryPosts() *PostQuery {
 	return (&UserClient{config: u.config}).QueryPosts(u)
+}
+
+// QueryLikedPosts queries the "liked_posts" edge of the User entity.
+func (u *User) QueryLikedPosts() *PostQuery {
+	return (&UserClient{config: u.config}).QueryLikedPosts(u)
+}
+
+// QueryLikes queries the "likes" edge of the User entity.
+func (u *User) QueryLikes() *LikeQuery {
+	return (&UserClient{config: u.config}).QueryLikes(u)
 }
 
 // Update returns a builder for updating this User.

@@ -19,6 +19,32 @@ var (
 		Columns:    HashtagsColumns,
 		PrimaryKey: []*schema.Column{HashtagsColumns[0]},
 	}
+	// LikesColumns holds the columns for the "likes" table.
+	LikesColumns = []*schema.Column{
+		{Name: "liked_at", Type: field.TypeTime},
+		{Name: "user_id", Type: field.TypeInt},
+		{Name: "post_id", Type: field.TypeInt},
+	}
+	// LikesTable holds the schema information for the "likes" table.
+	LikesTable = &schema.Table{
+		Name:       "likes",
+		Columns:    LikesColumns,
+		PrimaryKey: []*schema.Column{LikesColumns[1], LikesColumns[2]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "likes_users_user",
+				Columns:    []*schema.Column{LikesColumns[1]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "likes_posts_post",
+				Columns:    []*schema.Column{LikesColumns[2]},
+				RefColumns: []*schema.Column{PostsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// PostsColumns holds the columns for the "posts" table.
 	PostsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -102,6 +128,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		HashtagsTable,
+		LikesTable,
 		PostsTable,
 		UsersTable,
 		WorksTable,
@@ -110,6 +137,8 @@ var (
 )
 
 func init() {
+	LikesTable.ForeignKeys[0].RefTable = UsersTable
+	LikesTable.ForeignKeys[1].RefTable = PostsTable
 	PostsTable.ForeignKeys[0].RefTable = UsersTable
 	PostsTable.ForeignKeys[1].RefTable = WorksTable
 	PostHashtagsTable.ForeignKeys[0].RefTable = PostsTable

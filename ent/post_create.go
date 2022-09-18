@@ -112,6 +112,21 @@ func (pc *PostCreate) SetWork(w *Work) *PostCreate {
 	return pc.SetWorkID(w.ID)
 }
 
+// AddLikedUserIDs adds the "liked_users" edge to the User entity by IDs.
+func (pc *PostCreate) AddLikedUserIDs(ids ...int) *PostCreate {
+	pc.mutation.AddLikedUserIDs(ids...)
+	return pc
+}
+
+// AddLikedUsers adds the "liked_users" edges to the User entity.
+func (pc *PostCreate) AddLikedUsers(u ...*User) *PostCreate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return pc.AddLikedUserIDs(ids...)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (pc *PostCreate) Mutation() *PostMutation {
 	return pc.mutation
@@ -372,6 +387,29 @@ func (pc *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.work_posts = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.LikedUsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.LikedUsersTable,
+			Columns: post.LikedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &LikeCreate{config: pc.config, mutation: newLikeMutation(pc.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

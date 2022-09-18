@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
+	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/schema"
 	"github.com/MONAKA0721/hokkori/ent/user"
@@ -22,6 +23,12 @@ func init() {
 	hashtagDescTitle := hashtagFields[0].Descriptor()
 	// hashtag.TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	hashtag.TitleValidator = hashtagDescTitle.Validators[0].(func(string) error)
+	likeFields := schema.Like{}.Fields()
+	_ = likeFields
+	// likeDescLikedAt is the schema descriptor for liked_at field.
+	likeDescLikedAt := likeFields[0].Descriptor()
+	// like.DefaultLikedAt holds the default value on creation for the liked_at field.
+	like.DefaultLikedAt = likeDescLikedAt.Default.(func() time.Time)
 	postMixin := schema.Post{}.Mixin()
 	postMixinFields0 := postMixin[0].Fields()
 	_ = postMixinFields0

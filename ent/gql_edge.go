@@ -36,10 +36,26 @@ func (po *Post) Work(ctx context.Context) (*Work, error) {
 	return result, err
 }
 
+func (po *Post) LikedUsers(ctx context.Context) ([]*User, error) {
+	result, err := po.Edges.LikedUsersOrErr()
+	if IsNotLoaded(err) {
+		result, err = po.QueryLikedUsers().All(ctx)
+	}
+	return result, err
+}
+
 func (u *User) Posts(ctx context.Context) ([]*Post, error) {
 	result, err := u.Edges.PostsOrErr()
 	if IsNotLoaded(err) {
 		result, err = u.QueryPosts().All(ctx)
+	}
+	return result, err
+}
+
+func (u *User) LikedPosts(ctx context.Context) ([]*Post, error) {
+	result, err := u.Edges.LikedPostsOrErr()
+	if IsNotLoaded(err) {
+		result, err = u.QueryLikedPosts().All(ctx)
 	}
 	return result, err
 }

@@ -10,3 +10,15 @@ type Mutation {
   createHashtag(input: CreateHashtagInput!): Hashtag!
   createWork(input: CreateWorkInput!): Work!
 }
+
+extend type Query {
+  topPraises(
+    first: Int!
+  ): [PostCount]!
+}
+
+type PostCount {
+  id: ID!
+  title: String!
+  count: Int!
+}

@@ -111,6 +111,15 @@ func (po *PostQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				return err
 			}
 			po.withWork = query
+		case "likedUsers", "liked_users":
+			var (
+				path  = append(path, field.Name)
+				query = &UserQuery{config: po.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			po.withLikedUsers = query
 		}
 	}
 	return nil
@@ -192,6 +201,15 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			u.withPosts = query
+		case "likedPosts", "liked_posts":
+			var (
+				path  = append(path, field.Name)
+				query = &PostQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.withLikedPosts = query
 		}
 	}
 	return nil

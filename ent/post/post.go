@@ -32,6 +32,10 @@ const (
 	EdgeHashtags = "hashtags"
 	// EdgeWork holds the string denoting the work edge name in mutations.
 	EdgeWork = "work"
+	// EdgeLikedUsers holds the string denoting the liked_users edge name in mutations.
+	EdgeLikedUsers = "liked_users"
+	// EdgeLikes holds the string denoting the likes edge name in mutations.
+	EdgeLikes = "likes"
 	// Table holds the table name of the post in the database.
 	Table = "posts"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -53,6 +57,18 @@ const (
 	WorkInverseTable = "works"
 	// WorkColumn is the table column denoting the work relation/edge.
 	WorkColumn = "work_posts"
+	// LikedUsersTable is the table that holds the liked_users relation/edge. The primary key declared below.
+	LikedUsersTable = "likes"
+	// LikedUsersInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
+	LikedUsersInverseTable = "users"
+	// LikesTable is the table that holds the likes relation/edge.
+	LikesTable = "likes"
+	// LikesInverseTable is the table name for the Like entity.
+	// It exists in this package in order to avoid circular dependency with the "like" package.
+	LikesInverseTable = "likes"
+	// LikesColumn is the table column denoting the likes relation/edge.
+	LikesColumn = "post_id"
 )
 
 // Columns holds all SQL columns for post fields.
@@ -77,6 +93,9 @@ var (
 	// HashtagsPrimaryKey and HashtagsColumn2 are the table columns denoting the
 	// primary key for the hashtags relation (M2M).
 	HashtagsPrimaryKey = []string{"post_id", "hashtag_id"}
+	// LikedUsersPrimaryKey and LikedUsersColumn2 are the table columns denoting the
+	// primary key for the liked_users relation (M2M).
+	LikedUsersPrimaryKey = []string{"user_id", "post_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

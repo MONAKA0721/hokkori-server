@@ -302,6 +302,10 @@ type PostWhereInput struct {
 	// "work" edge predicates.
 	HasWork     *bool             `json:"hasWork,omitempty"`
 	HasWorkWith []*WorkWhereInput `json:"hasWorkWith,omitempty"`
+
+	// "liked_users" edge predicates.
+	HasLikedUsers     *bool             `json:"hasLikedUsers,omitempty"`
+	HasLikedUsersWith []*UserWhereInput `json:"hasLikedUsersWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -598,6 +602,24 @@ func (i *PostWhereInput) P() (predicate.Post, error) {
 		}
 		predicates = append(predicates, post.HasWorkWith(with...))
 	}
+	if i.HasLikedUsers != nil {
+		p := post.HasLikedUsers()
+		if !*i.HasLikedUsers {
+			p = post.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasLikedUsersWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasLikedUsersWith))
+		for _, w := range i.HasLikedUsersWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasLikedUsersWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, post.HasLikedUsersWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyPostWhereInput
@@ -643,6 +665,10 @@ type UserWhereInput struct {
 	// "posts" edge predicates.
 	HasPosts     *bool             `json:"hasPosts,omitempty"`
 	HasPostsWith []*PostWhereInput `json:"hasPostsWith,omitempty"`
+
+	// "liked_posts" edge predicates.
+	HasLikedPosts     *bool             `json:"hasLikedPosts,omitempty"`
+	HasLikedPostsWith []*PostWhereInput `json:"hasLikedPostsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -797,6 +823,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasPostsWith(with...))
+	}
+	if i.HasLikedPosts != nil {
+		p := user.HasLikedPosts()
+		if !*i.HasLikedPosts {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasLikedPostsWith) > 0 {
+		with := make([]predicate.Post, 0, len(i.HasLikedPostsWith))
+		for _, w := range i.HasLikedPostsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasLikedPostsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasLikedPostsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

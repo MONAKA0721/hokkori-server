@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
+	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
 	"github.com/MONAKA0721/hokkori/ent/work"
@@ -35,6 +36,7 @@ type OrderFunc func(*sql.Selector)
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
 		hashtag.Table: hashtag.ValidColumn,
+		like.Table:    like.ValidColumn,
 		post.Table:    post.ValidColumn,
 		user.Table:    user.ValidColumn,
 		work.Table:    work.ValidColumn,

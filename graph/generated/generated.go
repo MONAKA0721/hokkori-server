@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/ent/post"
+	"github.com/MONAKA0721/hokkori/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -83,6 +84,7 @@ type ComplexityRoot struct {
 		CreateTime func(childComplexity int) int
 		Hashtags   func(childComplexity int) int
 		ID         func(childComplexity int) int
+		LikedUsers func(childComplexity int) int
 		Owner      func(childComplexity int) int
 		Spoiled    func(childComplexity int) int
 		Title      func(childComplexity int) int
@@ -97,23 +99,31 @@ type ComplexityRoot struct {
 		TotalCount func(childComplexity int) int
 	}
 
+	PostCount struct {
+		Count func(childComplexity int) int
+		ID    func(childComplexity int) int
+		Title func(childComplexity int) int
+	}
+
 	PostEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
 	}
 
 	Query struct {
-		Hashtags func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) int
-		Node     func(childComplexity int, id int) int
-		Nodes    func(childComplexity int, ids []int) int
-		Posts    func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.PostOrder, where *ent.PostWhereInput) int
-		Works    func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) int
+		Hashtags   func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) int
+		Node       func(childComplexity int, id int) int
+		Nodes      func(childComplexity int, ids []int) int
+		Posts      func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.PostOrder, where *ent.PostWhereInput) int
+		TopPraises func(childComplexity int, first int) int
+		Works      func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) int
 	}
 
 	User struct {
-		ID    func(childComplexity int) int
-		Name  func(childComplexity int) int
-		Posts func(childComplexity int) int
+		ID         func(childComplexity int) int
+		LikedPosts func(childComplexity int) int
+		Name       func(childComplexity int) int
+		Posts      func(childComplexity int) int
 	}
 
 	Work struct {
@@ -148,6 +158,7 @@ type QueryResolver interface {
 	Hashtags(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) (*ent.HashtagConnection, error)
 	Posts(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.PostOrder, where *ent.PostWhereInput) (*ent.PostConnection, error)
 	Works(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) (*ent.WorkConnection, error)
+	TopPraises(ctx context.Context, first int) ([]*model.PostCount, error)
 }
 
 type executableSchema struct {
@@ -337,6 +348,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Post.ID(childComplexity), true
 
+	case "Post.likedUsers":
+		if e.complexity.Post.LikedUsers == nil {
+			break
+		}
+
+		return e.complexity.Post.LikedUsers(childComplexity), true
+
 	case "Post.owner":
 		if e.complexity.Post.Owner == nil {
 			break
@@ -400,6 +418,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PostConnection.TotalCount(childComplexity), true
 
+	case "PostCount.count":
+		if e.complexity.PostCount.Count == nil {
+			break
+		}
+
+		return e.complexity.PostCount.Count(childComplexity), true
+
+	case "PostCount.id":
+		if e.complexity.PostCount.ID == nil {
+			break
+		}
+
+		return e.complexity.PostCount.ID(childComplexity), true
+
+	case "PostCount.title":
+		if e.complexity.PostCount.Title == nil {
+			break
+		}
+
+		return e.complexity.PostCount.Title(childComplexity), true
+
 	case "PostEdge.cursor":
 		if e.complexity.PostEdge.Cursor == nil {
 			break
@@ -462,6 +501,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Posts(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["orderBy"].(*ent.PostOrder), args["where"].(*ent.PostWhereInput)), true
 
+	case "Query.topPraises":
+		if e.complexity.Query.TopPraises == nil {
+			break
+		}
+
+		args, err := ec.field_Query_topPraises_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.TopPraises(childComplexity, args["first"].(int)), true
+
 	case "Query.works":
 		if e.complexity.Query.Works == nil {
 			break
@@ -480,6 +531,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+
+	case "User.likedPosts":
+		if e.complexity.User.LikedPosts == nil {
+			break
+		}
+
+		return e.complexity.User.LikedPosts(childComplexity), true
 
 	case "User.name":
 		if e.complexity.User.Name == nil {
@@ -663,6 +721,7 @@ input CreatePostInput {
   ownerID: ID!
   hashtagIDs: [ID!]
   workID: ID!
+  likedUserIDs: [ID!]
 }
 """
 CreateUserInput is used for create User object.
@@ -671,6 +730,7 @@ Input was generated by ent.
 input CreateUserInput {
   name: String!
   postIDs: [ID!]
+  likedPostIDs: [ID!]
 }
 """
 CreateWorkInput is used for create Work object.
@@ -782,6 +842,7 @@ type Post implements Node {
   owner: User!
   hashtags: [Hashtag!]
   work: Work!
+  likedUsers: [User!]
 }
 """A connection to a list of items."""
 type PostConnection {
@@ -896,6 +957,9 @@ input PostWhereInput {
   """work edge predicates"""
   hasWork: Boolean
   hasWorkWith: [WorkWhereInput!]
+  """liked_users edge predicates"""
+  hasLikedUsers: Boolean
+  hasLikedUsersWith: [UserWhereInput!]
 }
 type Query {
   """Fetches an object given its ID."""
@@ -985,6 +1049,8 @@ input UpdatePostInput {
   removeHashtagIDs: [ID!]
   clearWork: Boolean
   workID: ID
+  addLikedUserIDs: [ID!]
+  removeLikedUserIDs: [ID!]
 }
 """
 UpdateUserInput is used for update User object.
@@ -994,6 +1060,8 @@ input UpdateUserInput {
   name: String
   addPostIDs: [ID!]
   removePostIDs: [ID!]
+  addLikedPostIDs: [ID!]
+  removeLikedPostIDs: [ID!]
 }
 """
 UpdateWorkInput is used for update Work object.
@@ -1010,6 +1078,7 @@ type User implements Node {
   id: ID!
   name: String!
   posts: [Post!]
+  likedPosts: [Post!]
 }
 """
 UserWhereInput is used for filtering User objects.
@@ -1045,6 +1114,9 @@ input UserWhereInput {
   """posts edge predicates"""
   hasPosts: Boolean
   hasPostsWith: [PostWhereInput!]
+  """liked_posts edge predicates"""
+  hasLikedPosts: Boolean
+  hasLikedPostsWith: [PostWhereInput!]
 }
 type Work implements Node {
   id: ID!
@@ -1132,7 +1204,18 @@ type Mutation {
   createHashtag(input: CreateHashtagInput!): Hashtag!
   createWork(input: CreateWorkInput!): Work!
 }
-`, BuiltIn: false},
+
+extend type Query {
+  topPraises(
+    first: Int!
+  ): [PostCount]!
+}
+
+type PostCount {
+  id: ID!
+  title: String!
+  count: Int!
+}`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -1380,6 +1463,21 @@ func (ec *executionContext) field_Query_posts_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_topPraises_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_works_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1613,6 +1711,8 @@ func (ec *executionContext) fieldContext_Hashtag_posts(ctx context.Context, fiel
 				return ec.fieldContext_Post_hashtags(ctx, field)
 			case "work":
 				return ec.fieldContext_Post_work(ctx, field)
+			case "likedUsers":
+				return ec.fieldContext_Post_likedUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
@@ -1903,6 +2003,8 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_name(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
+			case "likedPosts":
+				return ec.fieldContext_User_likedPosts(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1980,6 +2082,8 @@ func (ec *executionContext) fieldContext_Mutation_createPosts(ctx context.Contex
 				return ec.fieldContext_Post_hashtags(ctx, field)
 			case "work":
 				return ec.fieldContext_Post_work(ctx, field)
+			case "likedUsers":
+				return ec.fieldContext_Post_likedUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
@@ -2057,6 +2161,8 @@ func (ec *executionContext) fieldContext_Mutation_createPost(ctx context.Context
 				return ec.fieldContext_Post_hashtags(ctx, field)
 			case "work":
 				return ec.fieldContext_Post_work(ctx, field)
+			case "likedUsers":
+				return ec.fieldContext_Post_likedUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
@@ -2726,6 +2832,8 @@ func (ec *executionContext) fieldContext_Post_owner(ctx context.Context, field g
 				return ec.fieldContext_User_name(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
+			case "likedPosts":
+				return ec.fieldContext_User_likedPosts(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2831,6 +2939,57 @@ func (ec *executionContext) fieldContext_Post_work(ctx context.Context, field gr
 				return ec.fieldContext_Work_posts(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Work", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Post_likedUsers(ctx context.Context, field graphql.CollectedField, obj *ent.Post) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Post_likedUsers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LikedUsers(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Post_likedUsers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "posts":
+				return ec.fieldContext_User_posts(ctx, field)
+			case "likedPosts":
+				return ec.fieldContext_User_likedPosts(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -2981,6 +3140,138 @@ func (ec *executionContext) fieldContext_PostConnection_totalCount(ctx context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _PostCount_id(ctx context.Context, field graphql.CollectedField, obj *model.PostCount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostCount_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostCount_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostCount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PostCount_title(ctx context.Context, field graphql.CollectedField, obj *model.PostCount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostCount_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostCount_title(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostCount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PostCount_count(ctx context.Context, field graphql.CollectedField, obj *model.PostCount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostCount_count(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Count, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostCount_count(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostCount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PostEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.PostEdge) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PostEdge_node(ctx, field)
 	if err != nil {
@@ -3037,6 +3328,8 @@ func (ec *executionContext) fieldContext_PostEdge_node(ctx context.Context, fiel
 				return ec.fieldContext_Post_hashtags(ctx, field)
 			case "work":
 				return ec.fieldContext_Post_work(ctx, field)
+			case "likedUsers":
+				return ec.fieldContext_Post_likedUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
@@ -3384,6 +3677,69 @@ func (ec *executionContext) fieldContext_Query_works(ctx context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_topPraises(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_topPraises(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().TopPraises(rctx, fc.Args["first"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.PostCount)
+	fc.Result = res
+	return ec.marshalNPostCount2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐPostCount(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_topPraises(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PostCount_id(ctx, field)
+			case "title":
+				return ec.fieldContext_PostCount_title(ctx, field)
+			case "count":
+				return ec.fieldContext_PostCount_count(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PostCount", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_topPraises_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query___type(ctx, field)
 	if err != nil {
@@ -3657,6 +4013,73 @@ func (ec *executionContext) fieldContext_User_posts(ctx context.Context, field g
 				return ec.fieldContext_Post_hashtags(ctx, field)
 			case "work":
 				return ec.fieldContext_Post_work(ctx, field)
+			case "likedUsers":
+				return ec.fieldContext_Post_likedUsers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_likedPosts(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_likedPosts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LikedPosts(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Post)
+	fc.Result = res
+	return ec.marshalOPost2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐPostᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_likedPosts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Post_id(ctx, field)
+			case "createTime":
+				return ec.fieldContext_Post_createTime(ctx, field)
+			case "updateTime":
+				return ec.fieldContext_Post_updateTime(ctx, field)
+			case "title":
+				return ec.fieldContext_Post_title(ctx, field)
+			case "content":
+				return ec.fieldContext_Post_content(ctx, field)
+			case "type":
+				return ec.fieldContext_Post_type(ctx, field)
+			case "spoiled":
+				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "owner":
+				return ec.fieldContext_Post_owner(ctx, field)
+			case "hashtags":
+				return ec.fieldContext_Post_hashtags(ctx, field)
+			case "work":
+				return ec.fieldContext_Post_work(ctx, field)
+			case "likedUsers":
+				return ec.fieldContext_Post_likedUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
@@ -3849,6 +4272,8 @@ func (ec *executionContext) fieldContext_Work_posts(ctx context.Context, field g
 				return ec.fieldContext_Post_hashtags(ctx, field)
 			case "work":
 				return ec.fieldContext_Post_work(ctx, field)
+			case "likedUsers":
+				return ec.fieldContext_Post_likedUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
@@ -5912,7 +6337,7 @@ func (ec *executionContext) unmarshalInputCreatePostInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"createTime", "updateTime", "title", "content", "type", "spoiled", "ownerID", "hashtagIDs", "workID"}
+	fieldsInOrder := [...]string{"createTime", "updateTime", "title", "content", "type", "spoiled", "ownerID", "hashtagIDs", "workID", "likedUserIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5991,6 +6416,14 @@ func (ec *executionContext) unmarshalInputCreatePostInput(ctx context.Context, o
 			if err != nil {
 				return it, err
 			}
+		case "likedUserIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("likedUserIDs"))
+			it.LikedUserIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -6004,7 +6437,7 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "postIDs"}
+	fieldsInOrder := [...]string{"name", "postIDs", "likedPostIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6024,6 +6457,14 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postIDs"))
 			it.PostIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "likedPostIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("likedPostIDs"))
+			it.LikedPostIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6352,7 +6793,7 @@ func (ec *executionContext) unmarshalInputPostWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createTime", "createTimeNEQ", "createTimeIn", "createTimeNotIn", "createTimeGT", "createTimeGTE", "createTimeLT", "createTimeLTE", "updateTime", "updateTimeNEQ", "updateTimeIn", "updateTimeNotIn", "updateTimeGT", "updateTimeGTE", "updateTimeLT", "updateTimeLTE", "title", "titleNEQ", "titleIn", "titleNotIn", "titleGT", "titleGTE", "titleLT", "titleLTE", "titleContains", "titleHasPrefix", "titleHasSuffix", "titleEqualFold", "titleContainsFold", "content", "contentNEQ", "contentIn", "contentNotIn", "contentGT", "contentGTE", "contentLT", "contentLTE", "contentContains", "contentHasPrefix", "contentHasSuffix", "contentEqualFold", "contentContainsFold", "type", "typeNEQ", "typeIn", "typeNotIn", "spoiled", "spoiledNEQ", "hasOwner", "hasOwnerWith", "hasHashtags", "hasHashtagsWith", "hasWork", "hasWorkWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createTime", "createTimeNEQ", "createTimeIn", "createTimeNotIn", "createTimeGT", "createTimeGTE", "createTimeLT", "createTimeLTE", "updateTime", "updateTimeNEQ", "updateTimeIn", "updateTimeNotIn", "updateTimeGT", "updateTimeGTE", "updateTimeLT", "updateTimeLTE", "title", "titleNEQ", "titleIn", "titleNotIn", "titleGT", "titleGTE", "titleLT", "titleLTE", "titleContains", "titleHasPrefix", "titleHasSuffix", "titleEqualFold", "titleContainsFold", "content", "contentNEQ", "contentIn", "contentNotIn", "contentGT", "contentGTE", "contentLT", "contentLTE", "contentContains", "contentHasPrefix", "contentHasSuffix", "contentEqualFold", "contentContainsFold", "type", "typeNEQ", "typeIn", "typeNotIn", "spoiled", "spoiledNEQ", "hasOwner", "hasOwnerWith", "hasHashtags", "hasHashtagsWith", "hasWork", "hasWorkWith", "hasLikedUsers", "hasLikedUsersWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6879,6 +7320,22 @@ func (ec *executionContext) unmarshalInputPostWhereInput(ctx context.Context, ob
 			if err != nil {
 				return it, err
 			}
+		case "hasLikedUsers":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLikedUsers"))
+			it.HasLikedUsers, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLikedUsersWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLikedUsersWith"))
+			it.HasLikedUsersWith, err = ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -6936,7 +7393,7 @@ func (ec *executionContext) unmarshalInputUpdatePostInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"updateTime", "title", "content", "type", "spoiled", "clearOwner", "ownerID", "addHashtagIDs", "removeHashtagIDs", "clearWork", "workID"}
+	fieldsInOrder := [...]string{"updateTime", "title", "content", "type", "spoiled", "clearOwner", "ownerID", "addHashtagIDs", "removeHashtagIDs", "clearWork", "workID", "addLikedUserIDs", "removeLikedUserIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7031,6 +7488,22 @@ func (ec *executionContext) unmarshalInputUpdatePostInput(ctx context.Context, o
 			if err != nil {
 				return it, err
 			}
+		case "addLikedUserIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("addLikedUserIDs"))
+			it.AddLikedUserIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "removeLikedUserIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("removeLikedUserIDs"))
+			it.RemoveLikedUserIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -7044,7 +7517,7 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "addPostIDs", "removePostIDs"}
+	fieldsInOrder := [...]string{"name", "addPostIDs", "removePostIDs", "addLikedPostIDs", "removeLikedPostIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7072,6 +7545,22 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("removePostIDs"))
 			it.RemovePostIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "addLikedPostIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("addLikedPostIDs"))
+			it.AddLikedPostIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "removeLikedPostIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("removeLikedPostIDs"))
+			it.RemoveLikedPostIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7148,7 +7637,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "hasPosts", "hasPostsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "hasPosts", "hasPostsWith", "hasLikedPosts", "hasLikedPostsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7360,6 +7849,22 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasPostsWith"))
 			it.HasPostsWith, err = ec.unmarshalOPostWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐPostWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLikedPosts":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLikedPosts"))
+			it.HasLikedPosts, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLikedPostsWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLikedPostsWith"))
+			it.HasLikedPostsWith, err = ec.unmarshalOPostWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐPostWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8111,6 +8616,23 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 				return innerFunc(ctx)
 
 			})
+		case "likedUsers":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Post_likedUsers(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8146,6 +8668,48 @@ func (ec *executionContext) _PostConnection(ctx context.Context, sel ast.Selecti
 		case "totalCount":
 
 			out.Values[i] = ec._PostConnection_totalCount(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var postCountImplementors = []string{"PostCount"}
+
+func (ec *executionContext) _PostCount(ctx context.Context, sel ast.SelectionSet, obj *model.PostCount) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, postCountImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PostCount")
+		case "id":
+
+			out.Values[i] = ec._PostCount_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "title":
+
+			out.Values[i] = ec._PostCount_title(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "count":
+
+			out.Values[i] = ec._PostCount_count(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -8324,6 +8888,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "topPraises":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_topPraises(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "__type":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -8381,6 +8968,23 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_posts(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "likedPosts":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_likedPosts(ctx, field, obj)
 				return res
 			}
 
@@ -9064,6 +9668,44 @@ func (ec *executionContext) marshalNPostConnection2ᚖgithubᚗcomᚋMONAKA0721�
 	return ec._PostConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNPostCount2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐPostCount(ctx context.Context, sel ast.SelectionSet, v []*model.PostCount) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOPostCount2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐPostCount(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNPostOrderField2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐPostOrderField(ctx context.Context, v interface{}) (*ent.PostOrderField, error) {
 	var res = new(ent.PostOrderField)
 	err := res.UnmarshalGQL(v)
@@ -9733,6 +10375,13 @@ func (ec *executionContext) marshalOPost2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkori�
 	return ec._Post(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOPostCount2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐPostCount(ctx context.Context, sel ast.SelectionSet, v *model.PostCount) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._PostCount(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOPostEdge2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐPostEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.PostEdge) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -10016,6 +10665,53 @@ func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel
 	}
 	res := graphql.MarshalTime(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.UserWhereInput, error) {

@@ -45,11 +45,15 @@ type PostEdges struct {
 	Hashtags []*Hashtag `json:"hashtags,omitempty"`
 	// Work holds the value of the work edge.
 	Work *Work `json:"work,omitempty"`
+	// LikedUsers holds the value of the liked_users edge.
+	LikedUsers []*User `json:"liked_users,omitempty"`
+	// Likes holds the value of the likes edge.
+	Likes []*Like `json:"likes,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]*int
+	totalCount [4]*int
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -85,6 +89,24 @@ func (e PostEdges) WorkOrErr() (*Work, error) {
 		return e.Work, nil
 	}
 	return nil, &NotLoadedError{edge: "work"}
+}
+
+// LikedUsersOrErr returns the LikedUsers value or an error if the edge
+// was not loaded in eager-loading.
+func (e PostEdges) LikedUsersOrErr() ([]*User, error) {
+	if e.loadedTypes[3] {
+		return e.LikedUsers, nil
+	}
+	return nil, &NotLoadedError{edge: "liked_users"}
+}
+
+// LikesOrErr returns the Likes value or an error if the edge
+// was not loaded in eager-loading.
+func (e PostEdges) LikesOrErr() ([]*Like, error) {
+	if e.loadedTypes[4] {
+		return e.Likes, nil
+	}
+	return nil, &NotLoadedError{edge: "likes"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -193,6 +215,16 @@ func (po *Post) QueryHashtags() *HashtagQuery {
 // QueryWork queries the "work" edge of the Post entity.
 func (po *Post) QueryWork() *WorkQuery {
 	return (&PostClient{config: po.config}).QueryWork(po)
+}
+
+// QueryLikedUsers queries the "liked_users" edge of the Post entity.
+func (po *Post) QueryLikedUsers() *UserQuery {
+	return (&PostClient{config: po.config}).QueryLikedUsers(po)
+}
+
+// QueryLikes queries the "likes" edge of the Post entity.
+func (po *Post) QueryLikes() *LikeQuery {
+	return (&PostClient{config: po.config}).QueryLikes(po)
 }
 
 // Update returns a builder for updating this Post.
