@@ -10,6 +10,65 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (c *CategoryQuery) CollectFields(ctx context.Context, satisfies ...string) (*CategoryQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return c, nil
+	}
+	if err := c.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (c *CategoryQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "post":
+			var (
+				path  = append(path, field.Name)
+				query = &PostQuery{config: c.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			c.withPost = query
+		}
+	}
+	return nil
+}
+
+type categoryPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CategoryPaginateOption
+}
+
+func newCategoryPaginateArgs(rv map[string]interface{}) *categoryPaginateArgs {
+	args := &categoryPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CategoryWhereInput); ok {
+		args.opts = append(args.opts, WithCategoryFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (h *HashtagQuery) CollectFields(ctx context.Context, satisfies ...string) (*HashtagQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -111,6 +170,15 @@ func (po *PostQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				return err
 			}
 			po.withWork = query
+		case "category":
+			var (
+				path  = append(path, field.Name)
+				query = &CategoryQuery{config: po.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			po.withCategory = query
 		case "likedUsers", "liked_users":
 			var (
 				path  = append(path, field.Name)

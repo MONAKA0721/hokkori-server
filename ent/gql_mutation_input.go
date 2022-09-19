@@ -71,6 +71,7 @@ type CreatePostInput struct {
 	OwnerID      int
 	HashtagIDs   []int
 	WorkID       int
+	CategoryID   int
 	LikedUserIDs []int
 }
 
@@ -91,6 +92,7 @@ func (i *CreatePostInput) Mutate(m *PostMutation) {
 		m.AddHashtagIDs(v...)
 	}
 	m.SetWorkID(i.WorkID)
+	m.SetCategoryID(i.CategoryID)
 	if v := i.LikedUserIDs; len(v) > 0 {
 		m.AddLikedUserIDs(v...)
 	}
@@ -115,6 +117,8 @@ type UpdatePostInput struct {
 	RemoveHashtagIDs   []int
 	ClearWork          bool
 	WorkID             *int
+	ClearCategory      bool
+	CategoryID         *int
 	AddLikedUserIDs    []int
 	RemoveLikedUserIDs []int
 }
@@ -153,6 +157,12 @@ func (i *UpdatePostInput) Mutate(m *PostMutation) {
 	}
 	if v := i.WorkID; v != nil {
 		m.SetWorkID(*v)
+	}
+	if i.ClearCategory {
+		m.ClearCategory()
+	}
+	if v := i.CategoryID; v != nil {
+		m.SetCategoryID(*v)
 	}
 	if v := i.AddLikedUserIDs; len(v) > 0 {
 		m.AddLikedUserIDs(v...)

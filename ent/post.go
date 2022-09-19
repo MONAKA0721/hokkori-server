@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/MONAKA0721/hokkori/ent/category"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
 	"github.com/MONAKA0721/hokkori/ent/work"
@@ -32,9 +33,10 @@ type Post struct {
 	Spoiled bool `json:"spoiled,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PostQuery when eager-loading is set.
-	Edges      PostEdges `json:"edges"`
-	user_posts *int
-	work_posts *int
+	Edges         PostEdges `json:"edges"`
+	post_category *int
+	user_posts    *int
+	work_posts    *int
 }
 
 // PostEdges holds the relations/edges for other nodes in the graph.
@@ -45,15 +47,17 @@ type PostEdges struct {
 	Hashtags []*Hashtag `json:"hashtags,omitempty"`
 	// Work holds the value of the work edge.
 	Work *Work `json:"work,omitempty"`
+	// Category holds the value of the category edge.
+	Category *Category `json:"category,omitempty"`
 	// LikedUsers holds the value of the liked_users edge.
 	LikedUsers []*User `json:"liked_users,omitempty"`
 	// Likes holds the value of the likes edge.
 	Likes []*Like `json:"likes,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 	// totalCount holds the count of the edges above.
-	totalCount [4]*int
+	totalCount [5]*int
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -91,10 +95,23 @@ func (e PostEdges) WorkOrErr() (*Work, error) {
 	return nil, &NotLoadedError{edge: "work"}
 }
 
+// CategoryOrErr returns the Category value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PostEdges) CategoryOrErr() (*Category, error) {
+	if e.loadedTypes[3] {
+		if e.Category == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: category.Label}
+		}
+		return e.Category, nil
+	}
+	return nil, &NotLoadedError{edge: "category"}
+}
+
 // LikedUsersOrErr returns the LikedUsers value or an error if the edge
 // was not loaded in eager-loading.
 func (e PostEdges) LikedUsersOrErr() ([]*User, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.LikedUsers, nil
 	}
 	return nil, &NotLoadedError{edge: "liked_users"}
@@ -103,7 +120,7 @@ func (e PostEdges) LikedUsersOrErr() ([]*User, error) {
 // LikesOrErr returns the Likes value or an error if the edge
 // was not loaded in eager-loading.
 func (e PostEdges) LikesOrErr() ([]*Like, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.Likes, nil
 	}
 	return nil, &NotLoadedError{edge: "likes"}
@@ -122,9 +139,11 @@ func (*Post) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case post.FieldCreateTime, post.FieldUpdateTime:
 			values[i] = new(sql.NullTime)
-		case post.ForeignKeys[0]: // user_posts
+		case post.ForeignKeys[0]: // post_category
 			values[i] = new(sql.NullInt64)
-		case post.ForeignKeys[1]: // work_posts
+		case post.ForeignKeys[1]: // user_posts
+			values[i] = new(sql.NullInt64)
+		case post.ForeignKeys[2]: // work_posts
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Post", columns[i])
@@ -185,12 +204,19 @@ func (po *Post) assignValues(columns []string, values []interface{}) error {
 			}
 		case post.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field post_category", value)
+			} else if value.Valid {
+				po.post_category = new(int)
+				*po.post_category = int(value.Int64)
+			}
+		case post.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field user_posts", value)
 			} else if value.Valid {
 				po.user_posts = new(int)
 				*po.user_posts = int(value.Int64)
 			}
-		case post.ForeignKeys[1]:
+		case post.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field work_posts", value)
 			} else if value.Valid {
@@ -215,6 +241,11 @@ func (po *Post) QueryHashtags() *HashtagQuery {
 // QueryWork queries the "work" edge of the Post entity.
 func (po *Post) QueryWork() *WorkQuery {
 	return (&PostClient{config: po.config}).QueryWork(po)
+}
+
+// QueryCategory queries the "category" edge of the Post entity.
+func (po *Post) QueryCategory() *CategoryQuery {
+	return (&PostClient{config: po.config}).QueryCategory(po)
 }
 
 // QueryLikedUsers queries the "liked_users" edge of the Post entity.

@@ -7,12 +7,213 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MONAKA0721/hokkori/ent/category"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/user"
 	"github.com/MONAKA0721/hokkori/ent/work"
 )
+
+// CategoryWhereInput represents a where input for filtering Category queries.
+type CategoryWhereInput struct {
+	Predicates []predicate.Category  `json:"-"`
+	Not        *CategoryWhereInput   `json:"not,omitempty"`
+	Or         []*CategoryWhereInput `json:"or,omitempty"`
+	And        []*CategoryWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "post" edge predicates.
+	HasPost     *bool             `json:"hasPost,omitempty"`
+	HasPostWith []*PostWhereInput `json:"hasPostWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *CategoryWhereInput) AddPredicates(predicates ...predicate.Category) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the CategoryWhereInput filter on the CategoryQuery builder.
+func (i *CategoryWhereInput) Filter(q *CategoryQuery) (*CategoryQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyCategoryWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyCategoryWhereInput is returned in case the CategoryWhereInput is empty.
+var ErrEmptyCategoryWhereInput = errors.New("ent: empty predicate CategoryWhereInput")
+
+// P returns a predicate for filtering categories.
+// An error is returned if the input is empty or invalid.
+func (i *CategoryWhereInput) P() (predicate.Category, error) {
+	var predicates []predicate.Category
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, category.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Category, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, category.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Category, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, category.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, category.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, category.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, category.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, category.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, category.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, category.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, category.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, category.IDLTE(*i.IDLTE))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, category.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, category.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, category.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, category.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, category.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, category.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, category.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, category.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, category.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, category.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, category.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, category.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, category.NameContainsFold(*i.NameContainsFold))
+	}
+
+	if i.HasPost != nil {
+		p := category.HasPost()
+		if !*i.HasPost {
+			p = category.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasPostWith) > 0 {
+		with := make([]predicate.Post, 0, len(i.HasPostWith))
+		for _, w := range i.HasPostWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasPostWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, category.HasPostWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyCategoryWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return category.And(predicates...), nil
+	}
+}
 
 // HashtagWhereInput represents a where input for filtering Hashtag queries.
 type HashtagWhereInput struct {
@@ -302,6 +503,10 @@ type PostWhereInput struct {
 	// "work" edge predicates.
 	HasWork     *bool             `json:"hasWork,omitempty"`
 	HasWorkWith []*WorkWhereInput `json:"hasWorkWith,omitempty"`
+
+	// "category" edge predicates.
+	HasCategory     *bool                 `json:"hasCategory,omitempty"`
+	HasCategoryWith []*CategoryWhereInput `json:"hasCategoryWith,omitempty"`
 
 	// "liked_users" edge predicates.
 	HasLikedUsers     *bool             `json:"hasLikedUsers,omitempty"`
@@ -601,6 +806,24 @@ func (i *PostWhereInput) P() (predicate.Post, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, post.HasWorkWith(with...))
+	}
+	if i.HasCategory != nil {
+		p := post.HasCategory()
+		if !*i.HasCategory {
+			p = post.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasCategoryWith) > 0 {
+		with := make([]predicate.Category, 0, len(i.HasCategoryWith))
+		for _, w := range i.HasCategoryWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasCategoryWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, post.HasCategoryWith(with...))
 	}
 	if i.HasLikedUsers != nil {
 		p := post.HasLikedUsers()

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/category"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
@@ -31,6 +32,7 @@ type PostQuery struct {
 	withOwner      *UserQuery
 	withHashtags   *HashtagQuery
 	withWork       *WorkQuery
+	withCategory   *CategoryQuery
 	withLikedUsers *UserQuery
 	withLikes      *LikeQuery
 	withFKs        bool
@@ -131,6 +133,28 @@ func (pq *PostQuery) QueryWork() *WorkQuery {
 			sqlgraph.From(post.Table, post.FieldID, selector),
 			sqlgraph.To(work.Table, work.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, post.WorkTable, post.WorkColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCategory chains the current query on the "category" edge.
+func (pq *PostQuery) QueryCategory() *CategoryQuery {
+	query := &CategoryQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, selector),
+			sqlgraph.To(category.Table, category.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, post.CategoryTable, post.CategoryColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -366,6 +390,7 @@ func (pq *PostQuery) Clone() *PostQuery {
 		withOwner:      pq.withOwner.Clone(),
 		withHashtags:   pq.withHashtags.Clone(),
 		withWork:       pq.withWork.Clone(),
+		withCategory:   pq.withCategory.Clone(),
 		withLikedUsers: pq.withLikedUsers.Clone(),
 		withLikes:      pq.withLikes.Clone(),
 		// clone intermediate query.
@@ -405,6 +430,17 @@ func (pq *PostQuery) WithWork(opts ...func(*WorkQuery)) *PostQuery {
 		opt(query)
 	}
 	pq.withWork = query
+	return pq
+}
+
+// WithCategory tells the query-builder to eager-load the nodes that are connected to
+// the "category" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithCategory(opts ...func(*CategoryQuery)) *PostQuery {
+	query := &CategoryQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withCategory = query
 	return pq
 }
 
@@ -499,15 +535,16 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 		nodes       = []*Post{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			pq.withOwner != nil,
 			pq.withHashtags != nil,
 			pq.withWork != nil,
+			pq.withCategory != nil,
 			pq.withLikedUsers != nil,
 			pq.withLikes != nil,
 		}
 	)
-	if pq.withOwner != nil || pq.withWork != nil {
+	if pq.withOwner != nil || pq.withWork != nil || pq.withCategory != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -550,6 +587,12 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 	if query := pq.withWork; query != nil {
 		if err := pq.loadWork(ctx, query, nodes, nil,
 			func(n *Post, e *Work) { n.Edges.Work = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withCategory; query != nil {
+		if err := pq.loadCategory(ctx, query, nodes, nil,
+			func(n *Post, e *Category) { n.Edges.Category = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -684,6 +727,35 @@ func (pq *PostQuery) loadWork(ctx context.Context, query *WorkQuery, nodes []*Po
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "work_posts" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (pq *PostQuery) loadCategory(ctx context.Context, query *CategoryQuery, nodes []*Post, init func(*Post), assign func(*Post, *Category)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Post)
+	for i := range nodes {
+		if nodes[i].post_category == nil {
+			continue
+		}
+		fk := *nodes[i].post_category
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	query.Where(category.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "post_category" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

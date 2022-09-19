@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/MONAKA0721/hokkori/ent/category"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
@@ -35,11 +36,12 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		hashtag.Table: hashtag.ValidColumn,
-		like.Table:    like.ValidColumn,
-		post.Table:    post.ValidColumn,
-		user.Table:    user.ValidColumn,
-		work.Table:    work.ValidColumn,
+		category.Table: category.ValidColumn,
+		hashtag.Table:  hashtag.ValidColumn,
+		like.Table:     like.ValidColumn,
+		post.Table:     post.ValidColumn,
+		user.Table:     user.ValidColumn,
+		work.Table:     work.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

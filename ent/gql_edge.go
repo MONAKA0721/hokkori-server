@@ -4,6 +4,14 @@ package ent
 
 import "context"
 
+func (c *Category) Post(ctx context.Context) ([]*Post, error) {
+	result, err := c.Edges.PostOrErr()
+	if IsNotLoaded(err) {
+		result, err = c.QueryPost().All(ctx)
+	}
+	return result, err
+}
+
 func (h *Hashtag) Posts(ctx context.Context) ([]*Post, error) {
 	result, err := h.Edges.PostsOrErr()
 	if IsNotLoaded(err) {
@@ -32,6 +40,14 @@ func (po *Post) Work(ctx context.Context) (*Work, error) {
 	result, err := po.Edges.WorkOrErr()
 	if IsNotLoaded(err) {
 		result, err = po.QueryWork().Only(ctx)
+	}
+	return result, err
+}
+
+func (po *Post) Category(ctx context.Context) (*Category, error) {
+	result, err := po.Edges.CategoryOrErr()
+	if IsNotLoaded(err) {
+		result, err = po.QueryCategory().Only(ctx)
 	}
 	return result, err
 }

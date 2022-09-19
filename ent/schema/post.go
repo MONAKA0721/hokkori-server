@@ -29,6 +29,7 @@ func (Post) Edges() []ent.Edge {
 		edge.From("owner", User.Type).Ref("posts").Unique().Required(),
 		edge.To("hashtags", Hashtag.Type),
 		edge.From("work", Work.Type).Ref("posts").Unique().Required(),
+		edge.To("category", Category.Type).Unique().Required(),
 		edge.From("liked_users", User.Type).
 			Ref("liked_posts").
 			Through("likes", Like.Type),

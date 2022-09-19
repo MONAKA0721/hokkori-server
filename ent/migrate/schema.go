@@ -8,6 +8,17 @@ import (
 )
 
 var (
+	// CategoriesColumns holds the columns for the "categories" table.
+	CategoriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString, Size: 2147483647},
+	}
+	// CategoriesTable holds the schema information for the "categories" table.
+	CategoriesTable = &schema.Table{
+		Name:       "categories",
+		Columns:    CategoriesColumns,
+		PrimaryKey: []*schema.Column{CategoriesColumns[0]},
+	}
 	// HashtagsColumns holds the columns for the "hashtags" table.
 	HashtagsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -54,6 +65,7 @@ var (
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"letter", "praise"}},
 		{Name: "spoiled", Type: field.TypeBool},
+		{Name: "post_category", Type: field.TypeInt},
 		{Name: "user_posts", Type: field.TypeInt},
 		{Name: "work_posts", Type: field.TypeInt},
 	}
@@ -64,14 +76,20 @@ var (
 		PrimaryKey: []*schema.Column{PostsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "posts_users_posts",
+				Symbol:     "posts_categories_category",
 				Columns:    []*schema.Column{PostsColumns[7]},
+				RefColumns: []*schema.Column{CategoriesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "posts_users_posts",
+				Columns:    []*schema.Column{PostsColumns[8]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "posts_works_posts",
-				Columns:    []*schema.Column{PostsColumns[8]},
+				Columns:    []*schema.Column{PostsColumns[9]},
 				RefColumns: []*schema.Column{WorksColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -127,6 +145,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		CategoriesTable,
 		HashtagsTable,
 		LikesTable,
 		PostsTable,
@@ -139,8 +158,9 @@ var (
 func init() {
 	LikesTable.ForeignKeys[0].RefTable = UsersTable
 	LikesTable.ForeignKeys[1].RefTable = PostsTable
-	PostsTable.ForeignKeys[0].RefTable = UsersTable
-	PostsTable.ForeignKeys[1].RefTable = WorksTable
+	PostsTable.ForeignKeys[0].RefTable = CategoriesTable
+	PostsTable.ForeignKeys[1].RefTable = UsersTable
+	PostsTable.ForeignKeys[2].RefTable = WorksTable
 	PostHashtagsTable.ForeignKeys[0].RefTable = PostsTable
 	PostHashtagsTable.ForeignKeys[1].RefTable = HashtagsTable
 }

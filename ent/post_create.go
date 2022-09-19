@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/category"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
@@ -110,6 +111,17 @@ func (pc *PostCreate) SetWorkID(id int) *PostCreate {
 // SetWork sets the "work" edge to the Work entity.
 func (pc *PostCreate) SetWork(w *Work) *PostCreate {
 	return pc.SetWorkID(w.ID)
+}
+
+// SetCategoryID sets the "category" edge to the Category entity by ID.
+func (pc *PostCreate) SetCategoryID(id int) *PostCreate {
+	pc.mutation.SetCategoryID(id)
+	return pc
+}
+
+// SetCategory sets the "category" edge to the Category entity.
+func (pc *PostCreate) SetCategory(c *Category) *PostCreate {
+	return pc.SetCategoryID(c.ID)
 }
 
 // AddLikedUserIDs adds the "liked_users" edge to the User entity by IDs.
@@ -255,6 +267,9 @@ func (pc *PostCreate) check() error {
 	if _, ok := pc.mutation.WorkID(); !ok {
 		return &ValidationError{Name: "work", err: errors.New(`ent: missing required edge "Post.work"`)}
 	}
+	if _, ok := pc.mutation.CategoryID(); !ok {
+		return &ValidationError{Name: "category", err: errors.New(`ent: missing required edge "Post.category"`)}
+	}
 	return nil
 }
 
@@ -387,6 +402,26 @@ func (pc *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.work_posts = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.CategoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   post.CategoryTable,
+			Columns: []string{post.CategoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: category.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.post_category = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.LikedUsersIDs(); len(nodes) > 0 {

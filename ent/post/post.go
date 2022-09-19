@@ -32,6 +32,8 @@ const (
 	EdgeHashtags = "hashtags"
 	// EdgeWork holds the string denoting the work edge name in mutations.
 	EdgeWork = "work"
+	// EdgeCategory holds the string denoting the category edge name in mutations.
+	EdgeCategory = "category"
 	// EdgeLikedUsers holds the string denoting the liked_users edge name in mutations.
 	EdgeLikedUsers = "liked_users"
 	// EdgeLikes holds the string denoting the likes edge name in mutations.
@@ -57,6 +59,13 @@ const (
 	WorkInverseTable = "works"
 	// WorkColumn is the table column denoting the work relation/edge.
 	WorkColumn = "work_posts"
+	// CategoryTable is the table that holds the category relation/edge.
+	CategoryTable = "posts"
+	// CategoryInverseTable is the table name for the Category entity.
+	// It exists in this package in order to avoid circular dependency with the "category" package.
+	CategoryInverseTable = "categories"
+	// CategoryColumn is the table column denoting the category relation/edge.
+	CategoryColumn = "post_category"
 	// LikedUsersTable is the table that holds the liked_users relation/edge. The primary key declared below.
 	LikedUsersTable = "likes"
 	// LikedUsersInverseTable is the table name for the User entity.
@@ -85,6 +94,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "posts"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"post_category",
 	"user_posts",
 	"work_posts",
 }

@@ -28,11 +28,12 @@ type config struct {
 
 // hooks per client, for fast access.
 type hooks struct {
-	Hashtag []ent.Hook
-	Like    []ent.Hook
-	Post    []ent.Hook
-	User    []ent.Hook
-	Work    []ent.Hook
+	Category []ent.Hook
+	Hashtag  []ent.Hook
+	Like     []ent.Hook
+	Post     []ent.Hook
+	User     []ent.Hook
+	Work     []ent.Hook
 }
 
 // Options applies the options on the config object.

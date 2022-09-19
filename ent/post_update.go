@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/category"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
@@ -98,6 +99,17 @@ func (pu *PostUpdate) SetWork(w *Work) *PostUpdate {
 	return pu.SetWorkID(w.ID)
 }
 
+// SetCategoryID sets the "category" edge to the Category entity by ID.
+func (pu *PostUpdate) SetCategoryID(id int) *PostUpdate {
+	pu.mutation.SetCategoryID(id)
+	return pu
+}
+
+// SetCategory sets the "category" edge to the Category entity.
+func (pu *PostUpdate) SetCategory(c *Category) *PostUpdate {
+	return pu.SetCategoryID(c.ID)
+}
+
 // AddLikedUserIDs adds the "liked_users" edge to the User entity by IDs.
 func (pu *PostUpdate) AddLikedUserIDs(ids ...int) *PostUpdate {
 	pu.mutation.AddLikedUserIDs(ids...)
@@ -148,6 +160,12 @@ func (pu *PostUpdate) RemoveHashtags(h ...*Hashtag) *PostUpdate {
 // ClearWork clears the "work" edge to the Work entity.
 func (pu *PostUpdate) ClearWork() *PostUpdate {
 	pu.mutation.ClearWork()
+	return pu
+}
+
+// ClearCategory clears the "category" edge to the Category entity.
+func (pu *PostUpdate) ClearCategory() *PostUpdate {
+	pu.mutation.ClearCategory()
 	return pu
 }
 
@@ -263,6 +281,9 @@ func (pu *PostUpdate) check() error {
 	}
 	if _, ok := pu.mutation.WorkID(); pu.mutation.WorkCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Post.work"`)
+	}
+	if _, ok := pu.mutation.CategoryID(); pu.mutation.CategoryCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Post.category"`)
 	}
 	return nil
 }
@@ -444,6 +465,41 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.CategoryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   post.CategoryTable,
+			Columns: []string{post.CategoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: category.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.CategoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   post.CategoryTable,
+			Columns: []string{post.CategoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: category.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if pu.mutation.LikedUsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -596,6 +652,17 @@ func (puo *PostUpdateOne) SetWork(w *Work) *PostUpdateOne {
 	return puo.SetWorkID(w.ID)
 }
 
+// SetCategoryID sets the "category" edge to the Category entity by ID.
+func (puo *PostUpdateOne) SetCategoryID(id int) *PostUpdateOne {
+	puo.mutation.SetCategoryID(id)
+	return puo
+}
+
+// SetCategory sets the "category" edge to the Category entity.
+func (puo *PostUpdateOne) SetCategory(c *Category) *PostUpdateOne {
+	return puo.SetCategoryID(c.ID)
+}
+
 // AddLikedUserIDs adds the "liked_users" edge to the User entity by IDs.
 func (puo *PostUpdateOne) AddLikedUserIDs(ids ...int) *PostUpdateOne {
 	puo.mutation.AddLikedUserIDs(ids...)
@@ -646,6 +713,12 @@ func (puo *PostUpdateOne) RemoveHashtags(h ...*Hashtag) *PostUpdateOne {
 // ClearWork clears the "work" edge to the Work entity.
 func (puo *PostUpdateOne) ClearWork() *PostUpdateOne {
 	puo.mutation.ClearWork()
+	return puo
+}
+
+// ClearCategory clears the "category" edge to the Category entity.
+func (puo *PostUpdateOne) ClearCategory() *PostUpdateOne {
+	puo.mutation.ClearCategory()
 	return puo
 }
 
@@ -774,6 +847,9 @@ func (puo *PostUpdateOne) check() error {
 	}
 	if _, ok := puo.mutation.WorkID(); puo.mutation.WorkCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Post.work"`)
+	}
+	if _, ok := puo.mutation.CategoryID(); puo.mutation.CategoryCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Post.category"`)
 	}
 	return nil
 }
@@ -964,6 +1040,41 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: work.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.CategoryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   post.CategoryTable,
+			Columns: []string{post.CategoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: category.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.CategoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   post.CategoryTable,
+			Columns: []string{post.CategoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: category.FieldID,
 				},
 			},
 		}
