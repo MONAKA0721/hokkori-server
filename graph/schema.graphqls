@@ -12,13 +12,8 @@ type Mutation {
 }
 
 extend type Query {
-  topPraises(
+  likedPosts(
     first: Int!
-  ): [PostCount]!
-}
-
-type PostCount {
-  id: ID!
-  title: String!
-  count: Int!
+    type: PostPostType!
+  ): [Post]!
 }

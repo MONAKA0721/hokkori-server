@@ -8,8 +8,8 @@ import (
 	"fmt"
 
 	"github.com/MONAKA0721/hokkori/ent"
+	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/graph/generated"
-	"github.com/MONAKA0721/hokkori/graph/model"
 )
 
 // CreateUser is the resolver for the createUser field.
@@ -42,34 +42,34 @@ func (r *mutationResolver) CreateWork(ctx context.Context, input ent.CreateWorkI
 	return r.client.Work.Create().SetInput(input).Save(ctx)
 }
 
-// TopPraises is the resolver for the topPraises field.
-func (r *queryResolver) TopPraises(ctx context.Context, first int) ([]*model.PostCount, error) {
+// LikedPosts is the resolver for the likedPosts field.
+func (r *queryResolver) LikedPosts(ctx context.Context, first int, typeArg post.Type) ([]*ent.Post, error) {
 	query := fmt.Sprintf(`
 SELECT
-	p.id, p.title, COUNT(l.post_id) AS count
+	p.id
 FROM
 	posts AS p
 LEFT JOIN
 	likes AS l on p.id = l.post_id
 WHERE
-	p.type = 'praise'
+	p.type = '%s'
 GROUP BY
 	p.id
 ORDER BY
 	COUNT(l.post_id) DESC
-LIMIT %d`, first)
+LIMIT %d`, typeArg, first)
 	rows, err := r.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 
-	postCounts := make([]*model.PostCount, 0)
+	postIDs := make([]int, 0)
 	for rows.Next() {
-		var postCount model.PostCount
-		if err := rows.Scan(&postCount.ID, &postCount.Title, &postCount.Count); err != nil {
+		var postID int
+		if err := rows.Scan(&postID); err != nil {
 			break
 		}
-		postCounts = append(postCounts, &postCount)
+		postIDs = append(postIDs, postID)
 	}
 
 	// If the database is being written to ensure to check for Close
@@ -92,7 +92,22 @@ LIMIT %d`, first)
 		return nil, err
 	}
 
-	return postCounts, nil
+	queryPosts, err := r.client.Post.Query().Where(post.IDIn(postIDs...)).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	orderedPosts := make([]*ent.Post, 0)
+	for _, postID := range postIDs {
+		for _, queryPost := range queryPosts {
+			if queryPost.ID == postID {
+				orderedPosts = append(orderedPosts, queryPost)
+				break
+			}
+		}
+	}
+
+	return orderedPosts, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
