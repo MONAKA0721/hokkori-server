@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/graph/generated"
 )
@@ -18,6 +17,12 @@ func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 // Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
 	return r.client.Noders(ctx, ids)
+}
+
+// Categories is the resolver for the categories field.
+func (r *queryResolver) Categories(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.CategoryWhereInput) (*ent.CategoryConnection, error) {
+	return r.client.Category.Query().Paginate(ctx, after, first, before, last,
+		ent.WithCategoryFilter(where.Filter))
 }
 
 // Hashtags is the resolver for the hashtags field.
