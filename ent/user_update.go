@@ -34,6 +34,66 @@ func (uu *UserUpdate) SetName(s string) *UserUpdate {
 	return uu
 }
 
+// SetUsername sets the "username" field.
+func (uu *UserUpdate) SetUsername(s string) *UserUpdate {
+	uu.mutation.SetUsername(s)
+	return uu
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableUsername(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetUsername(*s)
+	}
+	return uu
+}
+
+// ClearUsername clears the value of the "username" field.
+func (uu *UserUpdate) ClearUsername() *UserUpdate {
+	uu.mutation.ClearUsername()
+	return uu
+}
+
+// SetProfile sets the "profile" field.
+func (uu *UserUpdate) SetProfile(s string) *UserUpdate {
+	uu.mutation.SetProfile(s)
+	return uu
+}
+
+// SetNillableProfile sets the "profile" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableProfile(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetProfile(*s)
+	}
+	return uu
+}
+
+// ClearProfile clears the value of the "profile" field.
+func (uu *UserUpdate) ClearProfile() *UserUpdate {
+	uu.mutation.ClearProfile()
+	return uu
+}
+
+// SetAvatarURL sets the "avatar_url" field.
+func (uu *UserUpdate) SetAvatarURL(s string) *UserUpdate {
+	uu.mutation.SetAvatarURL(s)
+	return uu
+}
+
+// SetNillableAvatarURL sets the "avatar_url" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableAvatarURL(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetAvatarURL(*s)
+	}
+	return uu
+}
+
+// ClearAvatarURL clears the value of the "avatar_url" field.
+func (uu *UserUpdate) ClearAvatarURL() *UserUpdate {
+	uu.mutation.ClearAvatarURL()
+	return uu
+}
+
 // AddPostIDs adds the "posts" edge to the Post entity by IDs.
 func (uu *UserUpdate) AddPostIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddPostIDs(ids...)
@@ -206,6 +266,45 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: user.FieldName,
 		})
 	}
+	if value, ok := uu.mutation.Username(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldUsername,
+		})
+	}
+	if uu.mutation.UsernameCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldUsername,
+		})
+	}
+	if value, ok := uu.mutation.Profile(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldProfile,
+		})
+	}
+	if uu.mutation.ProfileCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldProfile,
+		})
+	}
+	if value, ok := uu.mutation.AvatarURL(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldAvatarURL,
+		})
+	}
+	if uu.mutation.AvatarURLCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldAvatarURL,
+		})
+	}
 	if uu.mutation.PostsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -348,6 +447,66 @@ type UserUpdateOne struct {
 // SetName sets the "name" field.
 func (uuo *UserUpdateOne) SetName(s string) *UserUpdateOne {
 	uuo.mutation.SetName(s)
+	return uuo
+}
+
+// SetUsername sets the "username" field.
+func (uuo *UserUpdateOne) SetUsername(s string) *UserUpdateOne {
+	uuo.mutation.SetUsername(s)
+	return uuo
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableUsername(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetUsername(*s)
+	}
+	return uuo
+}
+
+// ClearUsername clears the value of the "username" field.
+func (uuo *UserUpdateOne) ClearUsername() *UserUpdateOne {
+	uuo.mutation.ClearUsername()
+	return uuo
+}
+
+// SetProfile sets the "profile" field.
+func (uuo *UserUpdateOne) SetProfile(s string) *UserUpdateOne {
+	uuo.mutation.SetProfile(s)
+	return uuo
+}
+
+// SetNillableProfile sets the "profile" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableProfile(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetProfile(*s)
+	}
+	return uuo
+}
+
+// ClearProfile clears the value of the "profile" field.
+func (uuo *UserUpdateOne) ClearProfile() *UserUpdateOne {
+	uuo.mutation.ClearProfile()
+	return uuo
+}
+
+// SetAvatarURL sets the "avatar_url" field.
+func (uuo *UserUpdateOne) SetAvatarURL(s string) *UserUpdateOne {
+	uuo.mutation.SetAvatarURL(s)
+	return uuo
+}
+
+// SetNillableAvatarURL sets the "avatar_url" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAvatarURL(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetAvatarURL(*s)
+	}
+	return uuo
+}
+
+// ClearAvatarURL clears the value of the "avatar_url" field.
+func (uuo *UserUpdateOne) ClearAvatarURL() *UserUpdateOne {
+	uuo.mutation.ClearAvatarURL()
 	return uuo
 }
 
@@ -551,6 +710,45 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Type:   field.TypeString,
 			Value:  value,
 			Column: user.FieldName,
+		})
+	}
+	if value, ok := uuo.mutation.Username(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldUsername,
+		})
+	}
+	if uuo.mutation.UsernameCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldUsername,
+		})
+	}
+	if value, ok := uuo.mutation.Profile(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldProfile,
+		})
+	}
+	if uuo.mutation.ProfileCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldProfile,
+		})
+	}
+	if value, ok := uuo.mutation.AvatarURL(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldAvatarURL,
+		})
+	}
+	if uuo.mutation.AvatarURLCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldAvatarURL,
 		})
 	}
 	if uuo.mutation.PostsCleared() {

@@ -17,6 +17,11 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input ent.CreateUserI
 	return r.client.User.Create().SetInput(input).Save(ctx)
 }
 
+// UpdateUser is the resolver for the updateUser field.
+func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
+	return r.client.User.UpdateOneID(id).SetInput(input).Save(ctx)
+}
+
 // CreatePosts is the resolver for the createPosts field.
 func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput) (*ent.Post, error) {
 	_, err := r.client.Post.Create().SetInput(input).Save(ctx)

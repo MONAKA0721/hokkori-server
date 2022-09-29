@@ -187,6 +187,9 @@ func (c *PostUpdateOne) SetInput(i UpdatePostInput) *PostUpdateOne {
 // CreateUserInput represents a mutation input for creating users.
 type CreateUserInput struct {
 	Name         string
+	Username     *string
+	Profile      *string
+	AvatarURL    *string
 	PostIDs      []int
 	LikedPostIDs []int
 }
@@ -194,6 +197,15 @@ type CreateUserInput struct {
 // Mutate applies the CreateUserInput on the UserMutation builder.
 func (i *CreateUserInput) Mutate(m *UserMutation) {
 	m.SetName(i.Name)
+	if v := i.Username; v != nil {
+		m.SetUsername(*v)
+	}
+	if v := i.Profile; v != nil {
+		m.SetProfile(*v)
+	}
+	if v := i.AvatarURL; v != nil {
+		m.SetAvatarURL(*v)
+	}
 	if v := i.PostIDs; len(v) > 0 {
 		m.AddPostIDs(v...)
 	}
@@ -211,6 +223,12 @@ func (c *UserCreate) SetInput(i CreateUserInput) *UserCreate {
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
 	Name               *string
+	ClearUsername      bool
+	Username           *string
+	ClearProfile       bool
+	Profile            *string
+	ClearAvatarURL     bool
+	AvatarURL          *string
 	AddPostIDs         []int
 	RemovePostIDs      []int
 	AddLikedPostIDs    []int
@@ -221,6 +239,24 @@ type UpdateUserInput struct {
 func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	if v := i.Name; v != nil {
 		m.SetName(*v)
+	}
+	if i.ClearUsername {
+		m.ClearUsername()
+	}
+	if v := i.Username; v != nil {
+		m.SetUsername(*v)
+	}
+	if i.ClearProfile {
+		m.ClearProfile()
+	}
+	if v := i.Profile; v != nil {
+		m.SetProfile(*v)
+	}
+	if i.ClearAvatarURL {
+		m.ClearAvatarURL()
+	}
+	if v := i.AvatarURL; v != nil {
+		m.SetAvatarURL(*v)
 	}
 	if v := i.AddPostIDs; len(v) > 0 {
 		m.AddPostIDs(v...)

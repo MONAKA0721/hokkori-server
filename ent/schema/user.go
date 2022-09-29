@@ -16,7 +16,10 @@ type User struct {
 // Fields of the User.
 func (User) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("name").NotEmpty(),
+		field.String("name").NotEmpty(),
+		field.String("username").Optional(),
+		field.Text("profile").Optional(),
+		field.String("avatar_url").Optional(),
 	}
 }
 
