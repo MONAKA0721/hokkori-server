@@ -601,6 +601,34 @@ func HasLikedPostsWith(preds ...predicate.Post) predicate.User {
 	})
 }
 
+// HasBookmarkedPosts applies the HasEdge predicate on the "bookmarked_posts" edge.
+func HasBookmarkedPosts() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(BookmarkedPostsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, BookmarkedPostsTable, BookmarkedPostsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBookmarkedPostsWith applies the HasEdge predicate on the "bookmarked_posts" edge with a given conditions (other predicates).
+func HasBookmarkedPostsWith(preds ...predicate.Post) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(BookmarkedPostsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, BookmarkedPostsTable, BookmarkedPostsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasLikes applies the HasEdge predicate on the "likes" edge.
 func HasLikes() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -620,6 +648,34 @@ func HasLikesWith(preds ...predicate.Like) predicate.User {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(LikesInverseTable, LikesColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, LikesTable, LikesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasBookmarks applies the HasEdge predicate on the "bookmarks" edge.
+func HasBookmarks() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(BookmarksTable, BookmarksColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, BookmarksTable, BookmarksColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBookmarksWith applies the HasEdge predicate on the "bookmarks" edge with a given conditions (other predicates).
+func HasBookmarksWith(preds ...predicate.Bookmark) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(BookmarksInverseTable, BookmarksColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, BookmarksTable, BookmarksColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

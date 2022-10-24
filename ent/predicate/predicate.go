@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Bookmark is the predicate function for bookmark builders.
+type Bookmark func(*sql.Selector)
+
 // Category is the predicate function for category builders.
 type Category func(*sql.Selector)
 

@@ -98,6 +98,21 @@ func (uc *UserCreate) AddLikedPosts(p ...*Post) *UserCreate {
 	return uc.AddLikedPostIDs(ids...)
 }
 
+// AddBookmarkedPostIDs adds the "bookmarked_posts" edge to the Post entity by IDs.
+func (uc *UserCreate) AddBookmarkedPostIDs(ids ...int) *UserCreate {
+	uc.mutation.AddBookmarkedPostIDs(ids...)
+	return uc
+}
+
+// AddBookmarkedPosts adds the "bookmarked_posts" edges to the Post entity.
+func (uc *UserCreate) AddBookmarkedPosts(p ...*Post) *UserCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uc.AddBookmarkedPostIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uc *UserCreate) Mutation() *UserMutation {
 	return uc.mutation
@@ -278,6 +293,29 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		createE := &LikeCreate{config: uc.config, mutation: newLikeMutation(uc.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.BookmarkedPostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.BookmarkedPostsTable,
+			Columns: user.BookmarkedPostsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &BookmarkCreate{config: uc.config, mutation: newBookmarkMutation(uc.config, OpCreate)}
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields

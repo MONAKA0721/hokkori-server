@@ -60,6 +60,14 @@ func (po *Post) LikedUsers(ctx context.Context) ([]*User, error) {
 	return result, err
 }
 
+func (po *Post) BookmarkedUsers(ctx context.Context) ([]*User, error) {
+	result, err := po.Edges.BookmarkedUsersOrErr()
+	if IsNotLoaded(err) {
+		result, err = po.QueryBookmarkedUsers().All(ctx)
+	}
+	return result, err
+}
+
 func (u *User) Posts(ctx context.Context) ([]*Post, error) {
 	result, err := u.Edges.PostsOrErr()
 	if IsNotLoaded(err) {
@@ -72,6 +80,14 @@ func (u *User) LikedPosts(ctx context.Context) ([]*Post, error) {
 	result, err := u.Edges.LikedPostsOrErr()
 	if IsNotLoaded(err) {
 		result, err = u.QueryLikedPosts().All(ctx)
+	}
+	return result, err
+}
+
+func (u *User) BookmarkedPosts(ctx context.Context) ([]*Post, error) {
+	result, err := u.Edges.BookmarkedPostsOrErr()
+	if IsNotLoaded(err) {
+		result, err = u.QueryBookmarkedPosts().All(ctx)
 	}
 	return result, err
 }

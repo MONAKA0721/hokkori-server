@@ -10,6 +10,7 @@ import (
 
 	"github.com/MONAKA0721/hokkori/ent/migrate"
 
+	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/category"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
@@ -27,6 +28,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Bookmark is the client for interacting with the Bookmark builders.
+	Bookmark *BookmarkClient
 	// Category is the client for interacting with the Category builders.
 	Category *CategoryClient
 	// Hashtag is the client for interacting with the Hashtag builders.
@@ -54,6 +57,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Bookmark = NewBookmarkClient(c.config)
 	c.Category = NewCategoryClient(c.config)
 	c.Hashtag = NewHashtagClient(c.config)
 	c.Like = NewLikeClient(c.config)
@@ -93,6 +97,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:      ctx,
 		config:   cfg,
+		Bookmark: NewBookmarkClient(cfg),
 		Category: NewCategoryClient(cfg),
 		Hashtag:  NewHashtagClient(cfg),
 		Like:     NewLikeClient(cfg),
@@ -118,6 +123,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:      ctx,
 		config:   cfg,
+		Bookmark: NewBookmarkClient(cfg),
 		Category: NewCategoryClient(cfg),
 		Hashtag:  NewHashtagClient(cfg),
 		Like:     NewLikeClient(cfg),
@@ -130,7 +136,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Category.
+//		Bookmark.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -152,12 +158,86 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Bookmark.Use(hooks...)
 	c.Category.Use(hooks...)
 	c.Hashtag.Use(hooks...)
 	c.Like.Use(hooks...)
 	c.Post.Use(hooks...)
 	c.User.Use(hooks...)
 	c.Work.Use(hooks...)
+}
+
+// BookmarkClient is a client for the Bookmark schema.
+type BookmarkClient struct {
+	config
+}
+
+// NewBookmarkClient returns a client for the Bookmark from the given config.
+func NewBookmarkClient(c config) *BookmarkClient {
+	return &BookmarkClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `bookmark.Hooks(f(g(h())))`.
+func (c *BookmarkClient) Use(hooks ...Hook) {
+	c.hooks.Bookmark = append(c.hooks.Bookmark, hooks...)
+}
+
+// Create returns a builder for creating a Bookmark entity.
+func (c *BookmarkClient) Create() *BookmarkCreate {
+	mutation := newBookmarkMutation(c.config, OpCreate)
+	return &BookmarkCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Bookmark entities.
+func (c *BookmarkClient) CreateBulk(builders ...*BookmarkCreate) *BookmarkCreateBulk {
+	return &BookmarkCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Bookmark.
+func (c *BookmarkClient) Update() *BookmarkUpdate {
+	mutation := newBookmarkMutation(c.config, OpUpdate)
+	return &BookmarkUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BookmarkClient) UpdateOne(b *Bookmark) *BookmarkUpdateOne {
+	mutation := newBookmarkMutation(c.config, OpUpdateOne)
+	mutation.user = &b.UserID
+	mutation.post = &b.PostID
+	return &BookmarkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Bookmark.
+func (c *BookmarkClient) Delete() *BookmarkDelete {
+	mutation := newBookmarkMutation(c.config, OpDelete)
+	return &BookmarkDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Query returns a query builder for Bookmark.
+func (c *BookmarkClient) Query() *BookmarkQuery {
+	return &BookmarkQuery{
+		config: c.config,
+	}
+}
+
+// QueryUser queries the user edge of a Bookmark.
+func (c *BookmarkClient) QueryUser(b *Bookmark) *UserQuery {
+	return c.Query().
+		Where(bookmark.UserID(b.UserID), bookmark.PostID(b.PostID)).
+		QueryUser()
+}
+
+// QueryPost queries the post edge of a Bookmark.
+func (c *BookmarkClient) QueryPost(b *Bookmark) *PostQuery {
+	return c.Query().
+		Where(bookmark.UserID(b.UserID), bookmark.PostID(b.PostID)).
+		QueryPost()
+}
+
+// Hooks returns the client hooks.
+func (c *BookmarkClient) Hooks() []Hook {
+	return c.hooks.Bookmark
 }
 
 // CategoryClient is a client for the Category schema.
@@ -610,6 +690,22 @@ func (c *PostClient) QueryLikedUsers(po *Post) *UserQuery {
 	return query
 }
 
+// QueryBookmarkedUsers queries the bookmarked_users edge of a Post.
+func (c *PostClient) QueryBookmarkedUsers(po *Post) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, post.BookmarkedUsersTable, post.BookmarkedUsersPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryLikes queries the likes edge of a Post.
 func (c *PostClient) QueryLikes(po *Post) *LikeQuery {
 	query := &LikeQuery{config: c.config}
@@ -619,6 +715,22 @@ func (c *PostClient) QueryLikes(po *Post) *LikeQuery {
 			sqlgraph.From(post.Table, post.FieldID, id),
 			sqlgraph.To(like.Table, like.PostColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, post.LikesTable, post.LikesColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBookmarks queries the bookmarks edge of a Post.
+func (c *PostClient) QueryBookmarks(po *Post) *BookmarkQuery {
+	query := &BookmarkQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(bookmark.Table, bookmark.PostColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, post.BookmarksTable, post.BookmarksColumn),
 		)
 		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
 		return fromV, nil
@@ -748,6 +860,22 @@ func (c *UserClient) QueryLikedPosts(u *User) *PostQuery {
 	return query
 }
 
+// QueryBookmarkedPosts queries the bookmarked_posts edge of a User.
+func (c *UserClient) QueryBookmarkedPosts(u *User) *PostQuery {
+	query := &PostQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.BookmarkedPostsTable, user.BookmarkedPostsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryLikes queries the likes edge of a User.
 func (c *UserClient) QueryLikes(u *User) *LikeQuery {
 	query := &LikeQuery{config: c.config}
@@ -757,6 +885,22 @@ func (c *UserClient) QueryLikes(u *User) *LikeQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(like.Table, like.UserColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, user.LikesTable, user.LikesColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBookmarks queries the bookmarks edge of a User.
+func (c *UserClient) QueryBookmarks(u *User) *BookmarkQuery {
+	query := &BookmarkQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(bookmark.Table, bookmark.UserColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.BookmarksTable, user.BookmarksColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

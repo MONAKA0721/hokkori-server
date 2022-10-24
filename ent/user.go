@@ -34,13 +34,17 @@ type UserEdges struct {
 	Posts []*Post `json:"posts,omitempty"`
 	// LikedPosts holds the value of the liked_posts edge.
 	LikedPosts []*Post `json:"liked_posts,omitempty"`
+	// BookmarkedPosts holds the value of the bookmarked_posts edge.
+	BookmarkedPosts []*Post `json:"bookmarked_posts,omitempty"`
 	// Likes holds the value of the likes edge.
 	Likes []*Like `json:"likes,omitempty"`
+	// Bookmarks holds the value of the bookmarks edge.
+	Bookmarks []*Bookmark `json:"bookmarks,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]*int
+	totalCount [3]*int
 }
 
 // PostsOrErr returns the Posts value or an error if the edge
@@ -61,13 +65,31 @@ func (e UserEdges) LikedPostsOrErr() ([]*Post, error) {
 	return nil, &NotLoadedError{edge: "liked_posts"}
 }
 
+// BookmarkedPostsOrErr returns the BookmarkedPosts value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) BookmarkedPostsOrErr() ([]*Post, error) {
+	if e.loadedTypes[2] {
+		return e.BookmarkedPosts, nil
+	}
+	return nil, &NotLoadedError{edge: "bookmarked_posts"}
+}
+
 // LikesOrErr returns the Likes value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) LikesOrErr() ([]*Like, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Likes, nil
 	}
 	return nil, &NotLoadedError{edge: "likes"}
+}
+
+// BookmarksOrErr returns the Bookmarks value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) BookmarksOrErr() ([]*Bookmark, error) {
+	if e.loadedTypes[4] {
+		return e.Bookmarks, nil
+	}
+	return nil, &NotLoadedError{edge: "bookmarks"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -139,9 +161,19 @@ func (u *User) QueryLikedPosts() *PostQuery {
 	return (&UserClient{config: u.config}).QueryLikedPosts(u)
 }
 
+// QueryBookmarkedPosts queries the "bookmarked_posts" edge of the User entity.
+func (u *User) QueryBookmarkedPosts() *PostQuery {
+	return (&UserClient{config: u.config}).QueryBookmarkedPosts(u)
+}
+
 // QueryLikes queries the "likes" edge of the User entity.
 func (u *User) QueryLikes() *LikeQuery {
 	return (&UserClient{config: u.config}).QueryLikes(u)
+}
+
+// QueryBookmarks queries the "bookmarks" edge of the User entity.
+func (u *User) QueryBookmarks() *BookmarkQuery {
+	return (&UserClient{config: u.config}).QueryBookmarks(u)
 }
 
 // Update returns a builder for updating this User.

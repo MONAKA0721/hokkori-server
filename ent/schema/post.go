@@ -33,6 +33,9 @@ func (Post) Edges() []ent.Edge {
 		edge.From("liked_users", User.Type).
 			Ref("liked_posts").
 			Through("likes", Like.Type),
+		edge.From("bookmarked_users", User.Type).
+			Ref("bookmarked_posts").
+			Through("bookmarks", Bookmark.Type),
 	}
 }
 

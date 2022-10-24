@@ -125,6 +125,21 @@ func (pu *PostUpdate) AddLikedUsers(u ...*User) *PostUpdate {
 	return pu.AddLikedUserIDs(ids...)
 }
 
+// AddBookmarkedUserIDs adds the "bookmarked_users" edge to the User entity by IDs.
+func (pu *PostUpdate) AddBookmarkedUserIDs(ids ...int) *PostUpdate {
+	pu.mutation.AddBookmarkedUserIDs(ids...)
+	return pu
+}
+
+// AddBookmarkedUsers adds the "bookmarked_users" edges to the User entity.
+func (pu *PostUpdate) AddBookmarkedUsers(u ...*User) *PostUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return pu.AddBookmarkedUserIDs(ids...)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (pu *PostUpdate) Mutation() *PostMutation {
 	return pu.mutation
@@ -188,6 +203,27 @@ func (pu *PostUpdate) RemoveLikedUsers(u ...*User) *PostUpdate {
 		ids[i] = u[i].ID
 	}
 	return pu.RemoveLikedUserIDs(ids...)
+}
+
+// ClearBookmarkedUsers clears all "bookmarked_users" edges to the User entity.
+func (pu *PostUpdate) ClearBookmarkedUsers() *PostUpdate {
+	pu.mutation.ClearBookmarkedUsers()
+	return pu
+}
+
+// RemoveBookmarkedUserIDs removes the "bookmarked_users" edge to User entities by IDs.
+func (pu *PostUpdate) RemoveBookmarkedUserIDs(ids ...int) *PostUpdate {
+	pu.mutation.RemoveBookmarkedUserIDs(ids...)
+	return pu
+}
+
+// RemoveBookmarkedUsers removes "bookmarked_users" edges to User entities.
+func (pu *PostUpdate) RemoveBookmarkedUsers(u ...*User) *PostUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return pu.RemoveBookmarkedUserIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -566,6 +602,72 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		edge.Target.Fields = specE.Fields
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.BookmarkedUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.BookmarkedUsersTable,
+			Columns: post.BookmarkedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		createE := &BookmarkCreate{config: pu.config, mutation: newBookmarkMutation(pu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedBookmarkedUsersIDs(); len(nodes) > 0 && !pu.mutation.BookmarkedUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.BookmarkedUsersTable,
+			Columns: post.BookmarkedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &BookmarkCreate{config: pu.config, mutation: newBookmarkMutation(pu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.BookmarkedUsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.BookmarkedUsersTable,
+			Columns: post.BookmarkedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &BookmarkCreate{config: pu.config, mutation: newBookmarkMutation(pu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{post.Label}
@@ -678,6 +780,21 @@ func (puo *PostUpdateOne) AddLikedUsers(u ...*User) *PostUpdateOne {
 	return puo.AddLikedUserIDs(ids...)
 }
 
+// AddBookmarkedUserIDs adds the "bookmarked_users" edge to the User entity by IDs.
+func (puo *PostUpdateOne) AddBookmarkedUserIDs(ids ...int) *PostUpdateOne {
+	puo.mutation.AddBookmarkedUserIDs(ids...)
+	return puo
+}
+
+// AddBookmarkedUsers adds the "bookmarked_users" edges to the User entity.
+func (puo *PostUpdateOne) AddBookmarkedUsers(u ...*User) *PostUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return puo.AddBookmarkedUserIDs(ids...)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (puo *PostUpdateOne) Mutation() *PostMutation {
 	return puo.mutation
@@ -741,6 +858,27 @@ func (puo *PostUpdateOne) RemoveLikedUsers(u ...*User) *PostUpdateOne {
 		ids[i] = u[i].ID
 	}
 	return puo.RemoveLikedUserIDs(ids...)
+}
+
+// ClearBookmarkedUsers clears all "bookmarked_users" edges to the User entity.
+func (puo *PostUpdateOne) ClearBookmarkedUsers() *PostUpdateOne {
+	puo.mutation.ClearBookmarkedUsers()
+	return puo
+}
+
+// RemoveBookmarkedUserIDs removes the "bookmarked_users" edge to User entities by IDs.
+func (puo *PostUpdateOne) RemoveBookmarkedUserIDs(ids ...int) *PostUpdateOne {
+	puo.mutation.RemoveBookmarkedUserIDs(ids...)
+	return puo
+}
+
+// RemoveBookmarkedUsers removes "bookmarked_users" edges to User entities.
+func (puo *PostUpdateOne) RemoveBookmarkedUsers(u ...*User) *PostUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return puo.RemoveBookmarkedUserIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -1144,6 +1282,72 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		createE := &LikeCreate{config: puo.config, mutation: newLikeMutation(puo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.BookmarkedUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.BookmarkedUsersTable,
+			Columns: post.BookmarkedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		createE := &BookmarkCreate{config: puo.config, mutation: newBookmarkMutation(puo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedBookmarkedUsersIDs(); len(nodes) > 0 && !puo.mutation.BookmarkedUsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.BookmarkedUsersTable,
+			Columns: post.BookmarkedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &BookmarkCreate{config: puo.config, mutation: newBookmarkMutation(puo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.BookmarkedUsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   post.BookmarkedUsersTable,
+			Columns: post.BookmarkedUsersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &BookmarkCreate{config: puo.config, mutation: newBookmarkMutation(puo.config, OpCreate)}
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields

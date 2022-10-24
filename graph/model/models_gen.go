@@ -6,6 +6,17 @@ import (
 	"github.com/MONAKA0721/hokkori/ent"
 )
 
+type BookmarkPostInput struct {
+	ClientMutationID *string `json:"clientMutationId"`
+	UserID           int     `json:"userID"`
+	PostID           int     `json:"postID"`
+}
+
+type BookmarkPostPayload struct {
+	ClientMutationID *string   `json:"clientMutationId"`
+	Post             *ent.Post `json:"post"`
+}
+
 type LikePostInput struct {
 	ClientMutationID *string `json:"clientMutationId"`
 	UserID           int     `json:"userID"`
@@ -13,6 +24,17 @@ type LikePostInput struct {
 }
 
 type LikePostPayload struct {
+	ClientMutationID *string   `json:"clientMutationId"`
+	Post             *ent.Post `json:"post"`
+}
+
+type UnbookmarkPostInput struct {
+	ClientMutationID *string `json:"clientMutationId"`
+	UserID           int     `json:"userID"`
+	PostID           int     `json:"postID"`
+}
+
+type UnbookmarkPostPayload struct {
 	ClientMutationID *string   `json:"clientMutationId"`
 	Post             *ent.Post `json:"post"`
 }

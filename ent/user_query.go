@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
@@ -20,17 +21,19 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	limit          *int
-	offset         *int
-	unique         *bool
-	order          []OrderFunc
-	fields         []string
-	predicates     []predicate.User
-	withPosts      *PostQuery
-	withLikedPosts *PostQuery
-	withLikes      *LikeQuery
-	modifiers      []func(*sql.Selector)
-	loadTotal      []func(context.Context, []*User) error
+	limit               *int
+	offset              *int
+	unique              *bool
+	order               []OrderFunc
+	fields              []string
+	predicates          []predicate.User
+	withPosts           *PostQuery
+	withLikedPosts      *PostQuery
+	withBookmarkedPosts *PostQuery
+	withLikes           *LikeQuery
+	withBookmarks       *BookmarkQuery
+	modifiers           []func(*sql.Selector)
+	loadTotal           []func(context.Context, []*User) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -111,6 +114,28 @@ func (uq *UserQuery) QueryLikedPosts() *PostQuery {
 	return query
 }
 
+// QueryBookmarkedPosts chains the current query on the "bookmarked_posts" edge.
+func (uq *UserQuery) QueryBookmarkedPosts() *PostQuery {
+	query := &PostQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.BookmarkedPostsTable, user.BookmarkedPostsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryLikes chains the current query on the "likes" edge.
 func (uq *UserQuery) QueryLikes() *LikeQuery {
 	query := &LikeQuery{config: uq.config}
@@ -126,6 +151,28 @@ func (uq *UserQuery) QueryLikes() *LikeQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(like.Table, like.UserColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, user.LikesTable, user.LikesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBookmarks chains the current query on the "bookmarks" edge.
+func (uq *UserQuery) QueryBookmarks() *BookmarkQuery {
+	query := &BookmarkQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(bookmark.Table, bookmark.UserColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.BookmarksTable, user.BookmarksColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -309,14 +356,16 @@ func (uq *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:         uq.config,
-		limit:          uq.limit,
-		offset:         uq.offset,
-		order:          append([]OrderFunc{}, uq.order...),
-		predicates:     append([]predicate.User{}, uq.predicates...),
-		withPosts:      uq.withPosts.Clone(),
-		withLikedPosts: uq.withLikedPosts.Clone(),
-		withLikes:      uq.withLikes.Clone(),
+		config:              uq.config,
+		limit:               uq.limit,
+		offset:              uq.offset,
+		order:               append([]OrderFunc{}, uq.order...),
+		predicates:          append([]predicate.User{}, uq.predicates...),
+		withPosts:           uq.withPosts.Clone(),
+		withLikedPosts:      uq.withLikedPosts.Clone(),
+		withBookmarkedPosts: uq.withBookmarkedPosts.Clone(),
+		withLikes:           uq.withLikes.Clone(),
+		withBookmarks:       uq.withBookmarks.Clone(),
 		// clone intermediate query.
 		sql:    uq.sql.Clone(),
 		path:   uq.path,
@@ -346,6 +395,17 @@ func (uq *UserQuery) WithLikedPosts(opts ...func(*PostQuery)) *UserQuery {
 	return uq
 }
 
+// WithBookmarkedPosts tells the query-builder to eager-load the nodes that are connected to
+// the "bookmarked_posts" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithBookmarkedPosts(opts ...func(*PostQuery)) *UserQuery {
+	query := &PostQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withBookmarkedPosts = query
+	return uq
+}
+
 // WithLikes tells the query-builder to eager-load the nodes that are connected to
 // the "likes" edge. The optional arguments are used to configure the query builder of the edge.
 func (uq *UserQuery) WithLikes(opts ...func(*LikeQuery)) *UserQuery {
@@ -354,6 +414,17 @@ func (uq *UserQuery) WithLikes(opts ...func(*LikeQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withLikes = query
+	return uq
+}
+
+// WithBookmarks tells the query-builder to eager-load the nodes that are connected to
+// the "bookmarks" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithBookmarks(opts ...func(*BookmarkQuery)) *UserQuery {
+	query := &BookmarkQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withBookmarks = query
 	return uq
 }
 
@@ -425,10 +496,12 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [5]bool{
 			uq.withPosts != nil,
 			uq.withLikedPosts != nil,
+			uq.withBookmarkedPosts != nil,
 			uq.withLikes != nil,
+			uq.withBookmarks != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -466,10 +539,24 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := uq.withBookmarkedPosts; query != nil {
+		if err := uq.loadBookmarkedPosts(ctx, query, nodes,
+			func(n *User) { n.Edges.BookmarkedPosts = []*Post{} },
+			func(n *User, e *Post) { n.Edges.BookmarkedPosts = append(n.Edges.BookmarkedPosts, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := uq.withLikes; query != nil {
 		if err := uq.loadLikes(ctx, query, nodes,
 			func(n *User) { n.Edges.Likes = []*Like{} },
 			func(n *User, e *Like) { n.Edges.Likes = append(n.Edges.Likes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withBookmarks; query != nil {
+		if err := uq.loadBookmarks(ctx, query, nodes,
+			func(n *User) { n.Edges.Bookmarks = []*Bookmark{} },
+			func(n *User, e *Bookmark) { n.Edges.Bookmarks = append(n.Edges.Bookmarks, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -570,6 +657,64 @@ func (uq *UserQuery) loadLikedPosts(ctx context.Context, query *PostQuery, nodes
 	}
 	return nil
 }
+func (uq *UserQuery) loadBookmarkedPosts(ctx context.Context, query *PostQuery, nodes []*User, init func(*User), assign func(*User, *Post)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*User)
+	nids := make(map[int]map[*User]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(user.BookmarkedPostsTable)
+		s.Join(joinT).On(s.C(post.FieldID), joinT.C(user.BookmarkedPostsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(user.BookmarkedPostsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(user.BookmarkedPostsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]interface{}, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]interface{}{new(sql.NullInt64)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []interface{}) error {
+			outValue := int(values[0].(*sql.NullInt64).Int64)
+			inValue := int(values[1].(*sql.NullInt64).Int64)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*User]struct{}{byID[outValue]: struct{}{}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "bookmarked_posts" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
 func (uq *UserQuery) loadLikes(ctx context.Context, query *LikeQuery, nodes []*User, init func(*User), assign func(*User, *Like)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*User)
@@ -582,6 +727,33 @@ func (uq *UserQuery) loadLikes(ctx context.Context, query *LikeQuery, nodes []*U
 	}
 	query.Where(predicate.Like(func(s *sql.Selector) {
 		s.Where(sql.InValues(user.LikesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v for node %v`, fk, n)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadBookmarks(ctx context.Context, query *BookmarkQuery, nodes []*User, init func(*User), assign func(*User, *Bookmark)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.Where(predicate.Bookmark(func(s *sql.Selector) {
+		s.Where(sql.InValues(user.BookmarksColumn, fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

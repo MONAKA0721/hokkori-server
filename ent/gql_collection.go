@@ -188,6 +188,15 @@ func (po *PostQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				return err
 			}
 			po.withLikedUsers = query
+		case "bookmarkedUsers", "bookmarked_users":
+			var (
+				path  = append(path, field.Name)
+				query = &UserQuery{config: po.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			po.withBookmarkedUsers = query
 		}
 	}
 	return nil
@@ -278,6 +287,15 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			u.withLikedPosts = query
+		case "bookmarkedPosts", "bookmarked_posts":
+			var (
+				path  = append(path, field.Name)
+				query = &PostQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.withBookmarkedPosts = query
 		}
 	}
 	return nil

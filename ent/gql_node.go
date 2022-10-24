@@ -113,7 +113,7 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 		ID:     po.ID,
 		Type:   "Post",
 		Fields: make([]*Field, 6),
-		Edges:  make([]*Edge, 5),
+		Edges:  make([]*Edge, 6),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(po.CreateTime); err != nil {
@@ -214,6 +214,16 @@ func (po *Post) Node(ctx context.Context) (node *Node, err error) {
 	if err != nil {
 		return nil, err
 	}
+	node.Edges[5] = &Edge{
+		Type: "User",
+		Name: "bookmarked_users",
+	}
+	err = po.QueryBookmarkedUsers().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[5].IDs)
+	if err != nil {
+		return nil, err
+	}
 	return node, nil
 }
 
@@ -222,7 +232,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     u.ID,
 		Type:   "User",
 		Fields: make([]*Field, 4),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(u.Name); err != nil {
@@ -274,6 +284,16 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	err = u.QueryLikedPosts().
 		Select(post.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "Post",
+		Name: "bookmarked_posts",
+	}
+	err = u.QueryBookmarkedPosts().
+		Select(post.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}

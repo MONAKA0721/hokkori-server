@@ -51,13 +51,17 @@ type PostEdges struct {
 	Category *Category `json:"category,omitempty"`
 	// LikedUsers holds the value of the liked_users edge.
 	LikedUsers []*User `json:"liked_users,omitempty"`
+	// BookmarkedUsers holds the value of the bookmarked_users edge.
+	BookmarkedUsers []*User `json:"bookmarked_users,omitempty"`
 	// Likes holds the value of the likes edge.
 	Likes []*Like `json:"likes,omitempty"`
+	// Bookmarks holds the value of the bookmarks edge.
+	Bookmarks []*Bookmark `json:"bookmarks,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [8]bool
 	// totalCount holds the count of the edges above.
-	totalCount [5]*int
+	totalCount [6]*int
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -117,13 +121,31 @@ func (e PostEdges) LikedUsersOrErr() ([]*User, error) {
 	return nil, &NotLoadedError{edge: "liked_users"}
 }
 
+// BookmarkedUsersOrErr returns the BookmarkedUsers value or an error if the edge
+// was not loaded in eager-loading.
+func (e PostEdges) BookmarkedUsersOrErr() ([]*User, error) {
+	if e.loadedTypes[5] {
+		return e.BookmarkedUsers, nil
+	}
+	return nil, &NotLoadedError{edge: "bookmarked_users"}
+}
+
 // LikesOrErr returns the Likes value or an error if the edge
 // was not loaded in eager-loading.
 func (e PostEdges) LikesOrErr() ([]*Like, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.Likes, nil
 	}
 	return nil, &NotLoadedError{edge: "likes"}
+}
+
+// BookmarksOrErr returns the Bookmarks value or an error if the edge
+// was not loaded in eager-loading.
+func (e PostEdges) BookmarksOrErr() ([]*Bookmark, error) {
+	if e.loadedTypes[7] {
+		return e.Bookmarks, nil
+	}
+	return nil, &NotLoadedError{edge: "bookmarks"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -253,9 +275,19 @@ func (po *Post) QueryLikedUsers() *UserQuery {
 	return (&PostClient{config: po.config}).QueryLikedUsers(po)
 }
 
+// QueryBookmarkedUsers queries the "bookmarked_users" edge of the Post entity.
+func (po *Post) QueryBookmarkedUsers() *UserQuery {
+	return (&PostClient{config: po.config}).QueryBookmarkedUsers(po)
+}
+
 // QueryLikes queries the "likes" edge of the Post entity.
 func (po *Post) QueryLikes() *LikeQuery {
 	return (&PostClient{config: po.config}).QueryLikes(po)
+}
+
+// QueryBookmarks queries the "bookmarks" edge of the Post entity.
+func (po *Post) QueryBookmarks() *BookmarkQuery {
+	return (&PostClient{config: po.config}).QueryBookmarks(po)
 }
 
 // Update returns a builder for updating this Post.

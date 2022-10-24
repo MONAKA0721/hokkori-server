@@ -5,6 +5,7 @@ package ent
 import (
 	"time"
 
+	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/category"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
@@ -18,6 +19,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	bookmarkFields := schema.Bookmark{}.Fields()
+	_ = bookmarkFields
+	// bookmarkDescBookmarkedAt is the schema descriptor for bookmarked_at field.
+	bookmarkDescBookmarkedAt := bookmarkFields[0].Descriptor()
+	// bookmark.DefaultBookmarkedAt holds the default value on creation for the bookmarked_at field.
+	bookmark.DefaultBookmarkedAt = bookmarkDescBookmarkedAt.Default.(func() time.Time)
 	categoryFields := schema.Category{}.Fields()
 	_ = categoryFields
 	// categoryDescName is the schema descriptor for name field.

@@ -124,6 +124,21 @@ func (uu *UserUpdate) AddLikedPosts(p ...*Post) *UserUpdate {
 	return uu.AddLikedPostIDs(ids...)
 }
 
+// AddBookmarkedPostIDs adds the "bookmarked_posts" edge to the Post entity by IDs.
+func (uu *UserUpdate) AddBookmarkedPostIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddBookmarkedPostIDs(ids...)
+	return uu
+}
+
+// AddBookmarkedPosts adds the "bookmarked_posts" edges to the Post entity.
+func (uu *UserUpdate) AddBookmarkedPosts(p ...*Post) *UserUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.AddBookmarkedPostIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -169,6 +184,27 @@ func (uu *UserUpdate) RemoveLikedPosts(p ...*Post) *UserUpdate {
 		ids[i] = p[i].ID
 	}
 	return uu.RemoveLikedPostIDs(ids...)
+}
+
+// ClearBookmarkedPosts clears all "bookmarked_posts" edges to the Post entity.
+func (uu *UserUpdate) ClearBookmarkedPosts() *UserUpdate {
+	uu.mutation.ClearBookmarkedPosts()
+	return uu
+}
+
+// RemoveBookmarkedPostIDs removes the "bookmarked_posts" edge to Post entities by IDs.
+func (uu *UserUpdate) RemoveBookmarkedPostIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveBookmarkedPostIDs(ids...)
+	return uu
+}
+
+// RemoveBookmarkedPosts removes "bookmarked_posts" edges to Post entities.
+func (uu *UserUpdate) RemoveBookmarkedPosts(p ...*Post) *UserUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.RemoveBookmarkedPostIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -425,6 +461,72 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		edge.Target.Fields = specE.Fields
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.BookmarkedPostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.BookmarkedPostsTable,
+			Columns: user.BookmarkedPostsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		createE := &BookmarkCreate{config: uu.config, mutation: newBookmarkMutation(uu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedBookmarkedPostsIDs(); len(nodes) > 0 && !uu.mutation.BookmarkedPostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.BookmarkedPostsTable,
+			Columns: user.BookmarkedPostsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &BookmarkCreate{config: uu.config, mutation: newBookmarkMutation(uu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.BookmarkedPostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.BookmarkedPostsTable,
+			Columns: user.BookmarkedPostsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &BookmarkCreate{config: uu.config, mutation: newBookmarkMutation(uu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -540,6 +642,21 @@ func (uuo *UserUpdateOne) AddLikedPosts(p ...*Post) *UserUpdateOne {
 	return uuo.AddLikedPostIDs(ids...)
 }
 
+// AddBookmarkedPostIDs adds the "bookmarked_posts" edge to the Post entity by IDs.
+func (uuo *UserUpdateOne) AddBookmarkedPostIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddBookmarkedPostIDs(ids...)
+	return uuo
+}
+
+// AddBookmarkedPosts adds the "bookmarked_posts" edges to the Post entity.
+func (uuo *UserUpdateOne) AddBookmarkedPosts(p ...*Post) *UserUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.AddBookmarkedPostIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -585,6 +702,27 @@ func (uuo *UserUpdateOne) RemoveLikedPosts(p ...*Post) *UserUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return uuo.RemoveLikedPostIDs(ids...)
+}
+
+// ClearBookmarkedPosts clears all "bookmarked_posts" edges to the Post entity.
+func (uuo *UserUpdateOne) ClearBookmarkedPosts() *UserUpdateOne {
+	uuo.mutation.ClearBookmarkedPosts()
+	return uuo
+}
+
+// RemoveBookmarkedPostIDs removes the "bookmarked_posts" edge to Post entities by IDs.
+func (uuo *UserUpdateOne) RemoveBookmarkedPostIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveBookmarkedPostIDs(ids...)
+	return uuo
+}
+
+// RemoveBookmarkedPosts removes "bookmarked_posts" edges to Post entities.
+func (uuo *UserUpdateOne) RemoveBookmarkedPosts(p ...*Post) *UserUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.RemoveBookmarkedPostIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -866,6 +1004,72 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		createE := &LikeCreate{config: uuo.config, mutation: newLikeMutation(uuo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.BookmarkedPostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.BookmarkedPostsTable,
+			Columns: user.BookmarkedPostsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		createE := &BookmarkCreate{config: uuo.config, mutation: newBookmarkMutation(uuo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedBookmarkedPostsIDs(); len(nodes) > 0 && !uuo.mutation.BookmarkedPostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.BookmarkedPostsTable,
+			Columns: user.BookmarkedPostsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &BookmarkCreate{config: uuo.config, mutation: newBookmarkMutation(uuo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.BookmarkedPostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.BookmarkedPostsTable,
+			Columns: user.BookmarkedPostsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &BookmarkCreate{config: uuo.config, mutation: newBookmarkMutation(uuo.config, OpCreate)}
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields

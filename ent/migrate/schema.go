@@ -8,6 +8,32 @@ import (
 )
 
 var (
+	// BookmarksColumns holds the columns for the "bookmarks" table.
+	BookmarksColumns = []*schema.Column{
+		{Name: "bookmarked_at", Type: field.TypeTime},
+		{Name: "user_id", Type: field.TypeInt},
+		{Name: "post_id", Type: field.TypeInt},
+	}
+	// BookmarksTable holds the schema information for the "bookmarks" table.
+	BookmarksTable = &schema.Table{
+		Name:       "bookmarks",
+		Columns:    BookmarksColumns,
+		PrimaryKey: []*schema.Column{BookmarksColumns[1], BookmarksColumns[2]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "bookmarks_users_user",
+				Columns:    []*schema.Column{BookmarksColumns[1]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "bookmarks_posts_post",
+				Columns:    []*schema.Column{BookmarksColumns[2]},
+				RefColumns: []*schema.Column{PostsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// CategoriesColumns holds the columns for the "categories" table.
 	CategoriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -148,6 +174,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		BookmarksTable,
 		CategoriesTable,
 		HashtagsTable,
 		LikesTable,
@@ -159,6 +186,8 @@ var (
 )
 
 func init() {
+	BookmarksTable.ForeignKeys[0].RefTable = UsersTable
+	BookmarksTable.ForeignKeys[1].RefTable = PostsTable
 	LikesTable.ForeignKeys[0].RefTable = UsersTable
 	LikesTable.ForeignKeys[1].RefTable = PostsTable
 	PostsTable.ForeignKeys[0].RefTable = CategoriesTable

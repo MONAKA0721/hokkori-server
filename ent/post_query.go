@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/category"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
@@ -23,21 +24,23 @@ import (
 // PostQuery is the builder for querying Post entities.
 type PostQuery struct {
 	config
-	limit          *int
-	offset         *int
-	unique         *bool
-	order          []OrderFunc
-	fields         []string
-	predicates     []predicate.Post
-	withOwner      *UserQuery
-	withHashtags   *HashtagQuery
-	withWork       *WorkQuery
-	withCategory   *CategoryQuery
-	withLikedUsers *UserQuery
-	withLikes      *LikeQuery
-	withFKs        bool
-	modifiers      []func(*sql.Selector)
-	loadTotal      []func(context.Context, []*Post) error
+	limit               *int
+	offset              *int
+	unique              *bool
+	order               []OrderFunc
+	fields              []string
+	predicates          []predicate.Post
+	withOwner           *UserQuery
+	withHashtags        *HashtagQuery
+	withWork            *WorkQuery
+	withCategory        *CategoryQuery
+	withLikedUsers      *UserQuery
+	withBookmarkedUsers *UserQuery
+	withLikes           *LikeQuery
+	withBookmarks       *BookmarkQuery
+	withFKs             bool
+	modifiers           []func(*sql.Selector)
+	loadTotal           []func(context.Context, []*Post) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -184,6 +187,28 @@ func (pq *PostQuery) QueryLikedUsers() *UserQuery {
 	return query
 }
 
+// QueryBookmarkedUsers chains the current query on the "bookmarked_users" edge.
+func (pq *PostQuery) QueryBookmarkedUsers() *UserQuery {
+	query := &UserQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, post.BookmarkedUsersTable, post.BookmarkedUsersPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryLikes chains the current query on the "likes" edge.
 func (pq *PostQuery) QueryLikes() *LikeQuery {
 	query := &LikeQuery{config: pq.config}
@@ -199,6 +224,28 @@ func (pq *PostQuery) QueryLikes() *LikeQuery {
 			sqlgraph.From(post.Table, post.FieldID, selector),
 			sqlgraph.To(like.Table, like.PostColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, post.LikesTable, post.LikesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBookmarks chains the current query on the "bookmarks" edge.
+func (pq *PostQuery) QueryBookmarks() *BookmarkQuery {
+	query := &BookmarkQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, selector),
+			sqlgraph.To(bookmark.Table, bookmark.PostColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, post.BookmarksTable, post.BookmarksColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -382,17 +429,19 @@ func (pq *PostQuery) Clone() *PostQuery {
 		return nil
 	}
 	return &PostQuery{
-		config:         pq.config,
-		limit:          pq.limit,
-		offset:         pq.offset,
-		order:          append([]OrderFunc{}, pq.order...),
-		predicates:     append([]predicate.Post{}, pq.predicates...),
-		withOwner:      pq.withOwner.Clone(),
-		withHashtags:   pq.withHashtags.Clone(),
-		withWork:       pq.withWork.Clone(),
-		withCategory:   pq.withCategory.Clone(),
-		withLikedUsers: pq.withLikedUsers.Clone(),
-		withLikes:      pq.withLikes.Clone(),
+		config:              pq.config,
+		limit:               pq.limit,
+		offset:              pq.offset,
+		order:               append([]OrderFunc{}, pq.order...),
+		predicates:          append([]predicate.Post{}, pq.predicates...),
+		withOwner:           pq.withOwner.Clone(),
+		withHashtags:        pq.withHashtags.Clone(),
+		withWork:            pq.withWork.Clone(),
+		withCategory:        pq.withCategory.Clone(),
+		withLikedUsers:      pq.withLikedUsers.Clone(),
+		withBookmarkedUsers: pq.withBookmarkedUsers.Clone(),
+		withLikes:           pq.withLikes.Clone(),
+		withBookmarks:       pq.withBookmarks.Clone(),
 		// clone intermediate query.
 		sql:    pq.sql.Clone(),
 		path:   pq.path,
@@ -455,6 +504,17 @@ func (pq *PostQuery) WithLikedUsers(opts ...func(*UserQuery)) *PostQuery {
 	return pq
 }
 
+// WithBookmarkedUsers tells the query-builder to eager-load the nodes that are connected to
+// the "bookmarked_users" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithBookmarkedUsers(opts ...func(*UserQuery)) *PostQuery {
+	query := &UserQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withBookmarkedUsers = query
+	return pq
+}
+
 // WithLikes tells the query-builder to eager-load the nodes that are connected to
 // the "likes" edge. The optional arguments are used to configure the query builder of the edge.
 func (pq *PostQuery) WithLikes(opts ...func(*LikeQuery)) *PostQuery {
@@ -463,6 +523,17 @@ func (pq *PostQuery) WithLikes(opts ...func(*LikeQuery)) *PostQuery {
 		opt(query)
 	}
 	pq.withLikes = query
+	return pq
+}
+
+// WithBookmarks tells the query-builder to eager-load the nodes that are connected to
+// the "bookmarks" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithBookmarks(opts ...func(*BookmarkQuery)) *PostQuery {
+	query := &BookmarkQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withBookmarks = query
 	return pq
 }
 
@@ -535,13 +606,15 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 		nodes       = []*Post{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [8]bool{
 			pq.withOwner != nil,
 			pq.withHashtags != nil,
 			pq.withWork != nil,
 			pq.withCategory != nil,
 			pq.withLikedUsers != nil,
+			pq.withBookmarkedUsers != nil,
 			pq.withLikes != nil,
+			pq.withBookmarks != nil,
 		}
 	)
 	if pq.withOwner != nil || pq.withWork != nil || pq.withCategory != nil {
@@ -603,10 +676,24 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 			return nil, err
 		}
 	}
+	if query := pq.withBookmarkedUsers; query != nil {
+		if err := pq.loadBookmarkedUsers(ctx, query, nodes,
+			func(n *Post) { n.Edges.BookmarkedUsers = []*User{} },
+			func(n *Post, e *User) { n.Edges.BookmarkedUsers = append(n.Edges.BookmarkedUsers, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := pq.withLikes; query != nil {
 		if err := pq.loadLikes(ctx, query, nodes,
 			func(n *Post) { n.Edges.Likes = []*Like{} },
 			func(n *Post, e *Like) { n.Edges.Likes = append(n.Edges.Likes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withBookmarks; query != nil {
+		if err := pq.loadBookmarks(ctx, query, nodes,
+			func(n *Post) { n.Edges.Bookmarks = []*Bookmark{} },
+			func(n *Post, e *Bookmark) { n.Edges.Bookmarks = append(n.Edges.Bookmarks, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -821,6 +908,64 @@ func (pq *PostQuery) loadLikedUsers(ctx context.Context, query *UserQuery, nodes
 	}
 	return nil
 }
+func (pq *PostQuery) loadBookmarkedUsers(ctx context.Context, query *UserQuery, nodes []*Post, init func(*Post), assign func(*Post, *User)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*Post)
+	nids := make(map[int]map[*Post]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(post.BookmarkedUsersTable)
+		s.Join(joinT).On(s.C(user.FieldID), joinT.C(post.BookmarkedUsersPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(post.BookmarkedUsersPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(post.BookmarkedUsersPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]interface{}, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]interface{}{new(sql.NullInt64)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []interface{}) error {
+			outValue := int(values[0].(*sql.NullInt64).Int64)
+			inValue := int(values[1].(*sql.NullInt64).Int64)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*Post]struct{}{byID[outValue]: struct{}{}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "bookmarked_users" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
 func (pq *PostQuery) loadLikes(ctx context.Context, query *LikeQuery, nodes []*Post, init func(*Post), assign func(*Post, *Like)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Post)
@@ -833,6 +978,33 @@ func (pq *PostQuery) loadLikes(ctx context.Context, query *LikeQuery, nodes []*P
 	}
 	query.Where(predicate.Like(func(s *sql.Selector) {
 		s.Where(sql.InValues(post.LikesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.PostID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "post_id" returned %v for node %v`, fk, n)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *PostQuery) loadBookmarks(ctx context.Context, query *BookmarkQuery, nodes []*Post, init func(*Post), assign func(*Post, *Bookmark)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Post)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.Where(predicate.Bookmark(func(s *sql.Selector) {
+		s.Where(sql.InValues(post.BookmarksColumn, fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

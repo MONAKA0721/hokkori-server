@@ -511,6 +511,10 @@ type PostWhereInput struct {
 	// "liked_users" edge predicates.
 	HasLikedUsers     *bool             `json:"hasLikedUsers,omitempty"`
 	HasLikedUsersWith []*UserWhereInput `json:"hasLikedUsersWith,omitempty"`
+
+	// "bookmarked_users" edge predicates.
+	HasBookmarkedUsers     *bool             `json:"hasBookmarkedUsers,omitempty"`
+	HasBookmarkedUsersWith []*UserWhereInput `json:"hasBookmarkedUsersWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -843,6 +847,24 @@ func (i *PostWhereInput) P() (predicate.Post, error) {
 		}
 		predicates = append(predicates, post.HasLikedUsersWith(with...))
 	}
+	if i.HasBookmarkedUsers != nil {
+		p := post.HasBookmarkedUsers()
+		if !*i.HasBookmarkedUsers {
+			p = post.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasBookmarkedUsersWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasBookmarkedUsersWith))
+		for _, w := range i.HasBookmarkedUsersWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasBookmarkedUsersWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, post.HasBookmarkedUsersWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyPostWhereInput
@@ -943,6 +965,10 @@ type UserWhereInput struct {
 	// "liked_posts" edge predicates.
 	HasLikedPosts     *bool             `json:"hasLikedPosts,omitempty"`
 	HasLikedPostsWith []*PostWhereInput `json:"hasLikedPostsWith,omitempty"`
+
+	// "bookmarked_posts" edge predicates.
+	HasBookmarkedPosts     *bool             `json:"hasBookmarkedPosts,omitempty"`
+	HasBookmarkedPostsWith []*PostWhereInput `json:"hasBookmarkedPostsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -1250,6 +1276,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasLikedPostsWith(with...))
+	}
+	if i.HasBookmarkedPosts != nil {
+		p := user.HasBookmarkedPosts()
+		if !*i.HasBookmarkedPosts {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasBookmarkedPostsWith) > 0 {
+		with := make([]predicate.Post, 0, len(i.HasBookmarkedPostsWith))
+		for _, w := range i.HasBookmarkedPostsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasBookmarkedPostsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasBookmarkedPostsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

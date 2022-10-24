@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"github.com/MONAKA0721/hokkori/ent/bookmark"
 
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/ent/like"
@@ -81,6 +82,42 @@ func (r *mutationResolver) UnlikePost(ctx context.Context, input model.UnlikePos
 	}
 
 	return &model.UnlikePostPayload{
+		ClientMutationID: input.ClientMutationID,
+		Post:             p,
+	}, nil
+}
+
+// BookmarkPost is the resolver for the bookmarkPost field.
+func (r *mutationResolver) BookmarkPost(ctx context.Context, input model.BookmarkPostInput) (*model.BookmarkPostPayload, error) {
+	_, err := r.client.Bookmark.Create().SetUserID(input.UserID).SetPostID(input.PostID).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := r.client.Post.Get(ctx, input.PostID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.BookmarkPostPayload{
+		ClientMutationID: input.ClientMutationID,
+		Post:             p,
+	}, nil
+}
+
+// UnbookmarkPost is the resolver for the unbookmarkPost field.
+func (r *mutationResolver) UnbookmarkPost(ctx context.Context, input model.UnbookmarkPostInput) (*model.UnbookmarkPostPayload, error) {
+	_, err := r.client.Bookmark.Delete().Where(bookmark.HasUserWith(user.IDEQ(input.UserID)), bookmark.HasPostWith(post.IDEQ(input.PostID))).Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := r.client.Post.Get(ctx, input.PostID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UnbookmarkPostPayload{
 		ClientMutationID: input.ClientMutationID,
 		Post:             p,
 	}, nil

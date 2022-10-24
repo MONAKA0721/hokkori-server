@@ -80,6 +80,7 @@ input CreatePostInput {
   workID: ID!
   categoryID: ID!
   likedUserIDs: [ID!]
+  bookmarkedUserIDs: [ID!]
 }
 """
 CreateUserInput is used for create User object.
@@ -92,6 +93,7 @@ input CreateUserInput {
   avatarURL: String
   postIDs: [ID!]
   likedPostIDs: [ID!]
+  bookmarkedPostIDs: [ID!]
 }
 """
 CreateWorkInput is used for create Work object.
@@ -205,6 +207,7 @@ type Post implements Node {
   work: Work!
   category: Category!
   likedUsers: [User!]
+  bookmarkedUsers: [User!]
 }
 """A connection to a list of items."""
 type PostConnection {
@@ -325,6 +328,9 @@ input PostWhereInput {
   """liked_users edge predicates"""
   hasLikedUsers: Boolean
   hasLikedUsersWith: [UserWhereInput!]
+  """bookmarked_users edge predicates"""
+  hasBookmarkedUsers: Boolean
+  hasBookmarkedUsersWith: [UserWhereInput!]
 }
 type Query {
   """Fetches an object given its ID."""
@@ -434,6 +440,8 @@ input UpdatePostInput {
   categoryID: ID
   addLikedUserIDs: [ID!]
   removeLikedUserIDs: [ID!]
+  addBookmarkedUserIDs: [ID!]
+  removeBookmarkedUserIDs: [ID!]
 }
 """
 UpdateUserInput is used for update User object.
@@ -451,6 +459,8 @@ input UpdateUserInput {
   removePostIDs: [ID!]
   addLikedPostIDs: [ID!]
   removeLikedPostIDs: [ID!]
+  addBookmarkedPostIDs: [ID!]
+  removeBookmarkedPostIDs: [ID!]
 }
 """
 UpdateWorkInput is used for update Work object.
@@ -471,6 +481,7 @@ type User implements Node {
   avatarURL: String
   posts: [Post!]
   likedPosts: [Post!]
+  bookmarkedPosts: [Post!]
 }
 """
 UserWhereInput is used for filtering User objects.
@@ -557,6 +568,9 @@ input UserWhereInput {
   """liked_posts edge predicates"""
   hasLikedPosts: Boolean
   hasLikedPostsWith: [PostWhereInput!]
+  """bookmarked_posts edge predicates"""
+  hasBookmarkedPosts: Boolean
+  hasBookmarkedPostsWith: [PostWhereInput!]
 }
 type Work implements Node {
   id: ID!

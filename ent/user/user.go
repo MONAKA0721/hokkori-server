@@ -19,8 +19,12 @@ const (
 	EdgePosts = "posts"
 	// EdgeLikedPosts holds the string denoting the liked_posts edge name in mutations.
 	EdgeLikedPosts = "liked_posts"
+	// EdgeBookmarkedPosts holds the string denoting the bookmarked_posts edge name in mutations.
+	EdgeBookmarkedPosts = "bookmarked_posts"
 	// EdgeLikes holds the string denoting the likes edge name in mutations.
 	EdgeLikes = "likes"
+	// EdgeBookmarks holds the string denoting the bookmarks edge name in mutations.
+	EdgeBookmarks = "bookmarks"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PostsTable is the table that holds the posts relation/edge.
@@ -35,6 +39,11 @@ const (
 	// LikedPostsInverseTable is the table name for the Post entity.
 	// It exists in this package in order to avoid circular dependency with the "post" package.
 	LikedPostsInverseTable = "posts"
+	// BookmarkedPostsTable is the table that holds the bookmarked_posts relation/edge. The primary key declared below.
+	BookmarkedPostsTable = "bookmarks"
+	// BookmarkedPostsInverseTable is the table name for the Post entity.
+	// It exists in this package in order to avoid circular dependency with the "post" package.
+	BookmarkedPostsInverseTable = "posts"
 	// LikesTable is the table that holds the likes relation/edge.
 	LikesTable = "likes"
 	// LikesInverseTable is the table name for the Like entity.
@@ -42,6 +51,13 @@ const (
 	LikesInverseTable = "likes"
 	// LikesColumn is the table column denoting the likes relation/edge.
 	LikesColumn = "user_id"
+	// BookmarksTable is the table that holds the bookmarks relation/edge.
+	BookmarksTable = "bookmarks"
+	// BookmarksInverseTable is the table name for the Bookmark entity.
+	// It exists in this package in order to avoid circular dependency with the "bookmark" package.
+	BookmarksInverseTable = "bookmarks"
+	// BookmarksColumn is the table column denoting the bookmarks relation/edge.
+	BookmarksColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -57,6 +73,9 @@ var (
 	// LikedPostsPrimaryKey and LikedPostsColumn2 are the table columns denoting the
 	// primary key for the liked_posts relation (M2M).
 	LikedPostsPrimaryKey = []string{"user_id", "post_id"}
+	// BookmarkedPostsPrimaryKey and BookmarkedPostsColumn2 are the table columns denoting the
+	// primary key for the bookmarked_posts relation (M2M).
+	BookmarkedPostsPrimaryKey = []string{"user_id", "post_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

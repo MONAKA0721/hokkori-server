@@ -62,17 +62,18 @@ func (c *HashtagUpdateOne) SetInput(i UpdateHashtagInput) *HashtagUpdateOne {
 
 // CreatePostInput represents a mutation input for creating posts.
 type CreatePostInput struct {
-	CreateTime   *time.Time
-	UpdateTime   *time.Time
-	Title        string
-	Content      string
-	Type         post.Type
-	Spoiled      bool
-	OwnerID      int
-	HashtagIDs   []int
-	WorkID       int
-	CategoryID   int
-	LikedUserIDs []int
+	CreateTime        *time.Time
+	UpdateTime        *time.Time
+	Title             string
+	Content           string
+	Type              post.Type
+	Spoiled           bool
+	OwnerID           int
+	HashtagIDs        []int
+	WorkID            int
+	CategoryID        int
+	LikedUserIDs      []int
+	BookmarkedUserIDs []int
 }
 
 // Mutate applies the CreatePostInput on the PostMutation builder.
@@ -96,6 +97,9 @@ func (i *CreatePostInput) Mutate(m *PostMutation) {
 	if v := i.LikedUserIDs; len(v) > 0 {
 		m.AddLikedUserIDs(v...)
 	}
+	if v := i.BookmarkedUserIDs; len(v) > 0 {
+		m.AddBookmarkedUserIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreatePostInput on the PostCreate builder.
@@ -106,21 +110,23 @@ func (c *PostCreate) SetInput(i CreatePostInput) *PostCreate {
 
 // UpdatePostInput represents a mutation input for updating posts.
 type UpdatePostInput struct {
-	UpdateTime         *time.Time
-	Title              *string
-	Content            *string
-	Type               *post.Type
-	Spoiled            *bool
-	ClearOwner         bool
-	OwnerID            *int
-	AddHashtagIDs      []int
-	RemoveHashtagIDs   []int
-	ClearWork          bool
-	WorkID             *int
-	ClearCategory      bool
-	CategoryID         *int
-	AddLikedUserIDs    []int
-	RemoveLikedUserIDs []int
+	UpdateTime              *time.Time
+	Title                   *string
+	Content                 *string
+	Type                    *post.Type
+	Spoiled                 *bool
+	ClearOwner              bool
+	OwnerID                 *int
+	AddHashtagIDs           []int
+	RemoveHashtagIDs        []int
+	ClearWork               bool
+	WorkID                  *int
+	ClearCategory           bool
+	CategoryID              *int
+	AddLikedUserIDs         []int
+	RemoveLikedUserIDs      []int
+	AddBookmarkedUserIDs    []int
+	RemoveBookmarkedUserIDs []int
 }
 
 // Mutate applies the UpdatePostInput on the PostMutation builder.
@@ -170,6 +176,12 @@ func (i *UpdatePostInput) Mutate(m *PostMutation) {
 	if v := i.RemoveLikedUserIDs; len(v) > 0 {
 		m.RemoveLikedUserIDs(v...)
 	}
+	if v := i.AddBookmarkedUserIDs; len(v) > 0 {
+		m.AddBookmarkedUserIDs(v...)
+	}
+	if v := i.RemoveBookmarkedUserIDs; len(v) > 0 {
+		m.RemoveBookmarkedUserIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the UpdatePostInput on the PostUpdate builder.
@@ -186,12 +198,13 @@ func (c *PostUpdateOne) SetInput(i UpdatePostInput) *PostUpdateOne {
 
 // CreateUserInput represents a mutation input for creating users.
 type CreateUserInput struct {
-	Name         string
-	Username     *string
-	Profile      *string
-	AvatarURL    *string
-	PostIDs      []int
-	LikedPostIDs []int
+	Name              string
+	Username          *string
+	Profile           *string
+	AvatarURL         *string
+	PostIDs           []int
+	LikedPostIDs      []int
+	BookmarkedPostIDs []int
 }
 
 // Mutate applies the CreateUserInput on the UserMutation builder.
@@ -212,6 +225,9 @@ func (i *CreateUserInput) Mutate(m *UserMutation) {
 	if v := i.LikedPostIDs; len(v) > 0 {
 		m.AddLikedPostIDs(v...)
 	}
+	if v := i.BookmarkedPostIDs; len(v) > 0 {
+		m.AddBookmarkedPostIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateUserInput on the UserCreate builder.
@@ -222,17 +238,19 @@ func (c *UserCreate) SetInput(i CreateUserInput) *UserCreate {
 
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
-	Name               *string
-	ClearUsername      bool
-	Username           *string
-	ClearProfile       bool
-	Profile            *string
-	ClearAvatarURL     bool
-	AvatarURL          *string
-	AddPostIDs         []int
-	RemovePostIDs      []int
-	AddLikedPostIDs    []int
-	RemoveLikedPostIDs []int
+	Name                    *string
+	ClearUsername           bool
+	Username                *string
+	ClearProfile            bool
+	Profile                 *string
+	ClearAvatarURL          bool
+	AvatarURL               *string
+	AddPostIDs              []int
+	RemovePostIDs           []int
+	AddLikedPostIDs         []int
+	RemoveLikedPostIDs      []int
+	AddBookmarkedPostIDs    []int
+	RemoveBookmarkedPostIDs []int
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
@@ -269,6 +287,12 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.RemoveLikedPostIDs; len(v) > 0 {
 		m.RemoveLikedPostIDs(v...)
+	}
+	if v := i.AddBookmarkedPostIDs; len(v) > 0 {
+		m.AddBookmarkedPostIDs(v...)
+	}
+	if v := i.RemoveBookmarkedPostIDs; len(v) > 0 {
+		m.RemoveBookmarkedPostIDs(v...)
 	}
 }
 
