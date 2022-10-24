@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/ent/post"
+	"github.com/MONAKA0721/hokkori/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -80,12 +81,19 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	LikePostPayload struct {
+		ClientMutationID func(childComplexity int) int
+		Post             func(childComplexity int) int
+	}
+
 	Mutation struct {
 		CreateHashtag func(childComplexity int, input ent.CreateHashtagInput) int
 		CreatePost    func(childComplexity int, input ent.CreatePostInput) int
 		CreatePosts   func(childComplexity int, input ent.CreatePostInput, input2 ent.CreatePostInput) int
 		CreateUser    func(childComplexity int, input ent.CreateUserInput) int
 		CreateWork    func(childComplexity int, input ent.CreateWorkInput) int
+		LikePost      func(childComplexity int, input model.LikePostInput) int
+		UnlikePost    func(childComplexity int, input model.UnlikePostInput) int
 		UpdateUser    func(childComplexity int, id int, input ent.UpdateUserInput) int
 	}
 
@@ -132,6 +140,11 @@ type ComplexityRoot struct {
 		Works      func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) int
 	}
 
+	UnlikePostPayload struct {
+		ClientMutationID func(childComplexity int) int
+		Post             func(childComplexity int) int
+	}
+
 	User struct {
 		AvatarURL  func(childComplexity int) int
 		ID         func(childComplexity int) int
@@ -168,6 +181,8 @@ type MutationResolver interface {
 	CreatePost(ctx context.Context, input ent.CreatePostInput) (*ent.Post, error)
 	CreateHashtag(ctx context.Context, input ent.CreateHashtagInput) (*ent.Hashtag, error)
 	CreateWork(ctx context.Context, input ent.CreateWorkInput) (*ent.Work, error)
+	LikePost(ctx context.Context, input model.LikePostInput) (*model.LikePostPayload, error)
+	UnlikePost(ctx context.Context, input model.UnlikePostInput) (*model.UnlikePostPayload, error)
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -306,6 +321,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.HashtagEdge.Node(childComplexity), true
 
+	case "LikePostPayload.clientMutationId":
+		if e.complexity.LikePostPayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.LikePostPayload.ClientMutationID(childComplexity), true
+
+	case "LikePostPayload.post":
+		if e.complexity.LikePostPayload.Post == nil {
+			break
+		}
+
+		return e.complexity.LikePostPayload.Post(childComplexity), true
+
 	case "Mutation.createHashtag":
 		if e.complexity.Mutation.CreateHashtag == nil {
 			break
@@ -365,6 +394,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateWork(childComplexity, args["input"].(ent.CreateWorkInput)), true
+
+	case "Mutation.likePost":
+		if e.complexity.Mutation.LikePost == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_likePost_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LikePost(childComplexity, args["input"].(model.LikePostInput)), true
+
+	case "Mutation.unlikePost":
+		if e.complexity.Mutation.UnlikePost == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unlikePost_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnlikePost(childComplexity, args["input"].(model.UnlikePostInput)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -609,6 +662,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Works(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["where"].(*ent.WorkWhereInput)), true
 
+	case "UnlikePostPayload.clientMutationId":
+		if e.complexity.UnlikePostPayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.UnlikePostPayload.ClientMutationID(childComplexity), true
+
+	case "UnlikePostPayload.post":
+		if e.complexity.UnlikePostPayload.Post == nil {
+			break
+		}
+
+		return e.complexity.UnlikePostPayload.Post(childComplexity), true
+
 	case "User.avatarURL":
 		if e.complexity.User.AvatarURL == nil {
 			break
@@ -735,8 +802,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputCreateWorkInput,
 		ec.unmarshalInputHashtagWhereInput,
+		ec.unmarshalInputLikePostInput,
 		ec.unmarshalInputPostOrder,
 		ec.unmarshalInputPostWhereInput,
+		ec.unmarshalInputUnlikePostInput,
 		ec.unmarshalInputUpdateHashtagInput,
 		ec.unmarshalInputUpdatePostInput,
 		ec.unmarshalInputUpdateUserInput,
@@ -1449,6 +1518,8 @@ type Mutation {
   createPost(input: CreatePostInput!): Post!
   createHashtag(input: CreateHashtagInput!): Hashtag!
   createWork(input: CreateWorkInput!): Work!
+  likePost(input: LikePostInput!): LikePostPayload!
+  unlikePost(input: UnlikePostInput!): UnlikePostPayload!
 }
 
 extend type Query {
@@ -1456,6 +1527,28 @@ extend type Query {
     first: Int!
     type: PostPostType!
   ): [Post]!
+}
+
+input LikePostInput {
+  clientMutationId: String
+  userID: ID!
+  postID: ID!
+}
+
+type LikePostPayload {
+  clientMutationId: String
+  post: Post
+}
+
+input UnlikePostInput {
+  clientMutationId: String
+  userID: ID!
+  postID: ID!
+}
+
+type UnlikePostPayload {
+  clientMutationId: String
+  post: Post
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -1540,6 +1633,36 @@ func (ec *executionContext) field_Mutation_createWork_args(ctx context.Context, 
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateWorkInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCreateWorkInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_likePost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.LikePostInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNLikePostInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐLikePostInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_unlikePost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UnlikePostInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUnlikePostInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnlikePostInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2678,6 +2801,114 @@ func (ec *executionContext) fieldContext_HashtagEdge_cursor(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _LikePostPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *model.LikePostPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LikePostPayload_clientMutationId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LikePostPayload_clientMutationId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LikePostPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LikePostPayload_post(ctx context.Context, field graphql.CollectedField, obj *model.LikePostPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LikePostPayload_post(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Post, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Post)
+	fc.Result = res
+	return ec.marshalOPost2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐPost(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LikePostPayload_post(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LikePostPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Post_id(ctx, field)
+			case "createTime":
+				return ec.fieldContext_Post_createTime(ctx, field)
+			case "updateTime":
+				return ec.fieldContext_Post_updateTime(ctx, field)
+			case "title":
+				return ec.fieldContext_Post_title(ctx, field)
+			case "content":
+				return ec.fieldContext_Post_content(ctx, field)
+			case "type":
+				return ec.fieldContext_Post_type(ctx, field)
+			case "spoiled":
+				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "owner":
+				return ec.fieldContext_Post_owner(ctx, field)
+			case "hashtags":
+				return ec.fieldContext_Post_hashtags(ctx, field)
+			case "work":
+				return ec.fieldContext_Post_work(ctx, field)
+			case "category":
+				return ec.fieldContext_Post_category(ctx, field)
+			case "likedUsers":
+				return ec.fieldContext_Post_likedUsers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createUser(ctx, field)
 	if err != nil {
@@ -3104,6 +3335,128 @@ func (ec *executionContext) fieldContext_Mutation_createWork(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createWork_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_likePost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_likePost(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().LikePost(rctx, fc.Args["input"].(model.LikePostInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.LikePostPayload)
+	fc.Result = res
+	return ec.marshalNLikePostPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐLikePostPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_likePost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationId":
+				return ec.fieldContext_LikePostPayload_clientMutationId(ctx, field)
+			case "post":
+				return ec.fieldContext_LikePostPayload_post(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LikePostPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_likePost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unlikePost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_unlikePost(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UnlikePost(rctx, fc.Args["input"].(model.UnlikePostInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UnlikePostPayload)
+	fc.Result = res
+	return ec.marshalNUnlikePostPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnlikePostPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unlikePost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationId":
+				return ec.fieldContext_UnlikePostPayload_clientMutationId(ctx, field)
+			case "post":
+				return ec.fieldContext_UnlikePostPayload_post(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UnlikePostPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unlikePost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -4680,6 +5033,114 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnlikePostPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *model.UnlikePostPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UnlikePostPayload_clientMutationId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UnlikePostPayload_clientMutationId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnlikePostPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnlikePostPayload_post(ctx context.Context, field graphql.CollectedField, obj *model.UnlikePostPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UnlikePostPayload_post(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Post, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Post)
+	fc.Result = res
+	return ec.marshalOPost2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐPost(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UnlikePostPayload_post(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnlikePostPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Post_id(ctx, field)
+			case "createTime":
+				return ec.fieldContext_Post_createTime(ctx, field)
+			case "updateTime":
+				return ec.fieldContext_Post_updateTime(ctx, field)
+			case "title":
+				return ec.fieldContext_Post_title(ctx, field)
+			case "content":
+				return ec.fieldContext_Post_content(ctx, field)
+			case "type":
+				return ec.fieldContext_Post_type(ctx, field)
+			case "spoiled":
+				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "owner":
+				return ec.fieldContext_Post_owner(ctx, field)
+			case "hashtags":
+				return ec.fieldContext_Post_hashtags(ctx, field)
+			case "work":
+				return ec.fieldContext_Post_work(ctx, field)
+			case "category":
+				return ec.fieldContext_Post_category(ctx, field)
+			case "likedUsers":
+				return ec.fieldContext_Post_likedUsers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
 	}
 	return fc, nil
@@ -7951,6 +8412,50 @@ func (ec *executionContext) unmarshalInputHashtagWhereInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputLikePostInput(ctx context.Context, obj interface{}) (model.LikePostInput, error) {
+	var it model.LikePostInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clientMutationId", "userID", "postID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clientMutationId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientMutationId"))
+			it.ClientMutationID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			it.UserID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "postID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postID"))
+			it.PostID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPostOrder(ctx context.Context, obj interface{}) (ent.PostOrder, error) {
 	var it ent.PostOrder
 	asMap := map[string]interface{}{}
@@ -8554,6 +9059,50 @@ func (ec *executionContext) unmarshalInputPostWhereInput(ctx context.Context, ob
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLikedUsersWith"))
 			it.HasLikedUsersWith, err = ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUnlikePostInput(ctx context.Context, obj interface{}) (model.UnlikePostInput, error) {
+	var it model.UnlikePostInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clientMutationId", "userID", "postID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clientMutationId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientMutationId"))
+			it.ClientMutationID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			it.UserID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "postID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postID"))
+			it.PostID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10155,6 +10704,35 @@ func (ec *executionContext) _HashtagEdge(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var likePostPayloadImplementors = []string{"LikePostPayload"}
+
+func (ec *executionContext) _LikePostPayload(ctx context.Context, sel ast.SelectionSet, obj *model.LikePostPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, likePostPayloadImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LikePostPayload")
+		case "clientMutationId":
+
+			out.Values[i] = ec._LikePostPayload_clientMutationId(ctx, field, obj)
+
+		case "post":
+
+			out.Values[i] = ec._LikePostPayload_post(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -10223,6 +10801,24 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createWork(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "likePost":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_likePost(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "unlikePost":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unlikePost(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -10705,6 +11301,35 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var unlikePostPayloadImplementors = []string{"UnlikePostPayload"}
+
+func (ec *executionContext) _UnlikePostPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UnlikePostPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, unlikePostPayloadImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UnlikePostPayload")
+		case "clientMutationId":
+
+			out.Values[i] = ec._UnlikePostPayload_clientMutationId(ctx, field, obj)
+
+		case "post":
+
+			out.Values[i] = ec._UnlikePostPayload_post(ctx, field, obj)
 
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -11412,6 +12037,25 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) unmarshalNLikePostInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐLikePostInput(ctx context.Context, v interface{}) (model.LikePostInput, error) {
+	res, err := ec.unmarshalInputLikePostInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLikePostPayload2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐLikePostPayload(ctx context.Context, sel ast.SelectionSet, v model.LikePostPayload) graphql.Marshaler {
+	return ec._LikePostPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLikePostPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐLikePostPayload(ctx context.Context, sel ast.SelectionSet, v *model.LikePostPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LikePostPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNNode2ᚕgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐNoder(ctx context.Context, sel ast.SelectionSet, v []ent.Noder) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -11589,6 +12233,25 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUnlikePostInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnlikePostInput(ctx context.Context, v interface{}) (model.UnlikePostInput, error) {
+	res, err := ec.unmarshalInputUnlikePostInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUnlikePostPayload2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnlikePostPayload(ctx context.Context, sel ast.SelectionSet, v model.UnlikePostPayload) graphql.Marshaler {
+	return ec._UnlikePostPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUnlikePostPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnlikePostPayload(ctx context.Context, sel ast.SelectionSet, v *model.UnlikePostPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UnlikePostPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUpdateUserInput(ctx context.Context, v interface{}) (ent.UpdateUserInput, error) {

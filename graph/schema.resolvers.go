@@ -8,8 +8,11 @@ import (
 	"fmt"
 
 	"github.com/MONAKA0721/hokkori/ent"
+	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
+	"github.com/MONAKA0721/hokkori/ent/user"
 	"github.com/MONAKA0721/hokkori/graph/generated"
+	"github.com/MONAKA0721/hokkori/graph/model"
 )
 
 // CreateUser is the resolver for the createUser field.
@@ -45,6 +48,42 @@ func (r *mutationResolver) CreateHashtag(ctx context.Context, input ent.CreateHa
 // CreateWork is the resolver for the createWork field.
 func (r *mutationResolver) CreateWork(ctx context.Context, input ent.CreateWorkInput) (*ent.Work, error) {
 	return r.client.Work.Create().SetInput(input).Save(ctx)
+}
+
+// LikePost is the resolver for the LikePost field.
+func (r *mutationResolver) LikePost(ctx context.Context, input model.LikePostInput) (*model.LikePostPayload, error) {
+	_, err := r.client.Like.Create().SetUserID(input.UserID).SetPostID(input.PostID).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := r.client.Post.Get(ctx, input.PostID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.LikePostPayload{
+		ClientMutationID: input.ClientMutationID,
+		Post:             p,
+	}, nil
+}
+
+// UnlikePost is the resolver for the UnlikePost field.
+func (r *mutationResolver) UnlikePost(ctx context.Context, input model.UnlikePostInput) (*model.UnlikePostPayload, error) {
+	_, err := r.client.Like.Delete().Where(like.HasUserWith(user.IDEQ(input.UserID)), like.HasPostWith(post.IDEQ(input.PostID))).Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := r.client.Post.Get(ctx, input.PostID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UnlikePostPayload{
+		ClientMutationID: input.ClientMutationID,
+		Post:             p,
+	}, nil
 }
 
 // LikedPosts is the resolver for the likedPosts field.
