@@ -68,6 +68,10 @@ func init() {
 	postDescContent := postFields[1].Descriptor()
 	// post.ContentValidator is a validator for the "content" field. It is called by the builders before save.
 	post.ContentValidator = postDescContent.Validators[0].(func(string) error)
+	// postDescThumbnail is the schema descriptor for thumbnail field.
+	postDescThumbnail := postFields[4].Descriptor()
+	// post.ThumbnailValidator is a validator for the "thumbnail" field. It is called by the builders before save.
+	post.ThumbnailValidator = postDescThumbnail.Validators[0].(func(string) error)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescName is the schema descriptor for name field.

@@ -31,6 +31,8 @@ type Post struct {
 	Type post.Type `json:"type,omitempty"`
 	// Spoiled holds the value of the "spoiled" field.
 	Spoiled bool `json:"spoiled,omitempty"`
+	// Thumbnail holds the value of the "thumbnail" field.
+	Thumbnail string `json:"thumbnail,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PostQuery when eager-loading is set.
 	Edges         PostEdges `json:"edges"`
@@ -157,7 +159,7 @@ func (*Post) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullBool)
 		case post.FieldID:
 			values[i] = new(sql.NullInt64)
-		case post.FieldTitle, post.FieldContent, post.FieldType:
+		case post.FieldTitle, post.FieldContent, post.FieldType, post.FieldThumbnail:
 			values[i] = new(sql.NullString)
 		case post.FieldCreateTime, post.FieldUpdateTime:
 			values[i] = new(sql.NullTime)
@@ -223,6 +225,12 @@ func (po *Post) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field spoiled", values[i])
 			} else if value.Valid {
 				po.Spoiled = value.Bool
+			}
+		case post.FieldThumbnail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field thumbnail", values[i])
+			} else if value.Valid {
+				po.Thumbnail = value.String
 			}
 		case post.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -330,6 +338,9 @@ func (po *Post) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("spoiled=")
 	builder.WriteString(fmt.Sprintf("%v", po.Spoiled))
+	builder.WriteString(", ")
+	builder.WriteString("thumbnail=")
+	builder.WriteString(po.Thumbnail)
 	builder.WriteByte(')')
 	return builder.String()
 }

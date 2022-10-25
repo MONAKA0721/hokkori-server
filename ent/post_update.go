@@ -62,6 +62,26 @@ func (pu *PostUpdate) SetSpoiled(b bool) *PostUpdate {
 	return pu
 }
 
+// SetThumbnail sets the "thumbnail" field.
+func (pu *PostUpdate) SetThumbnail(s string) *PostUpdate {
+	pu.mutation.SetThumbnail(s)
+	return pu
+}
+
+// SetNillableThumbnail sets the "thumbnail" field if the given value is not nil.
+func (pu *PostUpdate) SetNillableThumbnail(s *string) *PostUpdate {
+	if s != nil {
+		pu.SetThumbnail(*s)
+	}
+	return pu
+}
+
+// ClearThumbnail clears the value of the "thumbnail" field.
+func (pu *PostUpdate) ClearThumbnail() *PostUpdate {
+	pu.mutation.ClearThumbnail()
+	return pu
+}
+
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (pu *PostUpdate) SetOwnerID(id int) *PostUpdate {
 	pu.mutation.SetOwnerID(id)
@@ -312,6 +332,11 @@ func (pu *PostUpdate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Post.type": %w`, err)}
 		}
 	}
+	if v, ok := pu.mutation.Thumbnail(); ok {
+		if err := post.ThumbnailValidator(v); err != nil {
+			return &ValidationError{Name: "thumbnail", err: fmt.Errorf(`ent: validator failed for field "Post.thumbnail": %w`, err)}
+		}
+	}
 	if _, ok := pu.mutation.OwnerID(); pu.mutation.OwnerCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Post.owner"`)
 	}
@@ -375,6 +400,19 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeBool,
 			Value:  value,
 			Column: post.FieldSpoiled,
+		})
+	}
+	if value, ok := pu.mutation.Thumbnail(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: post.FieldThumbnail,
+		})
+	}
+	if pu.mutation.ThumbnailCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: post.FieldThumbnail,
 		})
 	}
 	if pu.mutation.OwnerCleared() {
@@ -717,6 +755,26 @@ func (puo *PostUpdateOne) SetSpoiled(b bool) *PostUpdateOne {
 	return puo
 }
 
+// SetThumbnail sets the "thumbnail" field.
+func (puo *PostUpdateOne) SetThumbnail(s string) *PostUpdateOne {
+	puo.mutation.SetThumbnail(s)
+	return puo
+}
+
+// SetNillableThumbnail sets the "thumbnail" field if the given value is not nil.
+func (puo *PostUpdateOne) SetNillableThumbnail(s *string) *PostUpdateOne {
+	if s != nil {
+		puo.SetThumbnail(*s)
+	}
+	return puo
+}
+
+// ClearThumbnail clears the value of the "thumbnail" field.
+func (puo *PostUpdateOne) ClearThumbnail() *PostUpdateOne {
+	puo.mutation.ClearThumbnail()
+	return puo
+}
+
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (puo *PostUpdateOne) SetOwnerID(id int) *PostUpdateOne {
 	puo.mutation.SetOwnerID(id)
@@ -980,6 +1038,11 @@ func (puo *PostUpdateOne) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Post.type": %w`, err)}
 		}
 	}
+	if v, ok := puo.mutation.Thumbnail(); ok {
+		if err := post.ThumbnailValidator(v); err != nil {
+			return &ValidationError{Name: "thumbnail", err: fmt.Errorf(`ent: validator failed for field "Post.thumbnail": %w`, err)}
+		}
+	}
 	if _, ok := puo.mutation.OwnerID(); puo.mutation.OwnerCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Post.owner"`)
 	}
@@ -1060,6 +1123,19 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 			Type:   field.TypeBool,
 			Value:  value,
 			Column: post.FieldSpoiled,
+		})
+	}
+	if value, ok := puo.mutation.Thumbnail(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: post.FieldThumbnail,
+		})
+	}
+	if puo.mutation.ThumbnailCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: post.FieldThumbnail,
 		})
 	}
 	if puo.mutation.OwnerCleared() {

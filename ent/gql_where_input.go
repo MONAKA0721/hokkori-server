@@ -492,6 +492,23 @@ type PostWhereInput struct {
 	Spoiled    *bool `json:"spoiled,omitempty"`
 	SpoiledNEQ *bool `json:"spoiledNEQ,omitempty"`
 
+	// "thumbnail" field predicates.
+	Thumbnail             *string  `json:"thumbnail,omitempty"`
+	ThumbnailNEQ          *string  `json:"thumbnailNEQ,omitempty"`
+	ThumbnailIn           []string `json:"thumbnailIn,omitempty"`
+	ThumbnailNotIn        []string `json:"thumbnailNotIn,omitempty"`
+	ThumbnailGT           *string  `json:"thumbnailGT,omitempty"`
+	ThumbnailGTE          *string  `json:"thumbnailGTE,omitempty"`
+	ThumbnailLT           *string  `json:"thumbnailLT,omitempty"`
+	ThumbnailLTE          *string  `json:"thumbnailLTE,omitempty"`
+	ThumbnailContains     *string  `json:"thumbnailContains,omitempty"`
+	ThumbnailHasPrefix    *string  `json:"thumbnailHasPrefix,omitempty"`
+	ThumbnailHasSuffix    *string  `json:"thumbnailHasSuffix,omitempty"`
+	ThumbnailIsNil        bool     `json:"thumbnailIsNil,omitempty"`
+	ThumbnailNotNil       bool     `json:"thumbnailNotNil,omitempty"`
+	ThumbnailEqualFold    *string  `json:"thumbnailEqualFold,omitempty"`
+	ThumbnailContainsFold *string  `json:"thumbnailContainsFold,omitempty"`
+
 	// "owner" edge predicates.
 	HasOwner     *bool             `json:"hasOwner,omitempty"`
 	HasOwnerWith []*UserWhereInput `json:"hasOwnerWith,omitempty"`
@@ -755,6 +772,51 @@ func (i *PostWhereInput) P() (predicate.Post, error) {
 	}
 	if i.SpoiledNEQ != nil {
 		predicates = append(predicates, post.SpoiledNEQ(*i.SpoiledNEQ))
+	}
+	if i.Thumbnail != nil {
+		predicates = append(predicates, post.ThumbnailEQ(*i.Thumbnail))
+	}
+	if i.ThumbnailNEQ != nil {
+		predicates = append(predicates, post.ThumbnailNEQ(*i.ThumbnailNEQ))
+	}
+	if len(i.ThumbnailIn) > 0 {
+		predicates = append(predicates, post.ThumbnailIn(i.ThumbnailIn...))
+	}
+	if len(i.ThumbnailNotIn) > 0 {
+		predicates = append(predicates, post.ThumbnailNotIn(i.ThumbnailNotIn...))
+	}
+	if i.ThumbnailGT != nil {
+		predicates = append(predicates, post.ThumbnailGT(*i.ThumbnailGT))
+	}
+	if i.ThumbnailGTE != nil {
+		predicates = append(predicates, post.ThumbnailGTE(*i.ThumbnailGTE))
+	}
+	if i.ThumbnailLT != nil {
+		predicates = append(predicates, post.ThumbnailLT(*i.ThumbnailLT))
+	}
+	if i.ThumbnailLTE != nil {
+		predicates = append(predicates, post.ThumbnailLTE(*i.ThumbnailLTE))
+	}
+	if i.ThumbnailContains != nil {
+		predicates = append(predicates, post.ThumbnailContains(*i.ThumbnailContains))
+	}
+	if i.ThumbnailHasPrefix != nil {
+		predicates = append(predicates, post.ThumbnailHasPrefix(*i.ThumbnailHasPrefix))
+	}
+	if i.ThumbnailHasSuffix != nil {
+		predicates = append(predicates, post.ThumbnailHasSuffix(*i.ThumbnailHasSuffix))
+	}
+	if i.ThumbnailIsNil {
+		predicates = append(predicates, post.ThumbnailIsNil())
+	}
+	if i.ThumbnailNotNil {
+		predicates = append(predicates, post.ThumbnailNotNil())
+	}
+	if i.ThumbnailEqualFold != nil {
+		predicates = append(predicates, post.ThumbnailEqualFold(*i.ThumbnailEqualFold))
+	}
+	if i.ThumbnailContainsFold != nil {
+		predicates = append(predicates, post.ThumbnailContainsFold(*i.ThumbnailContainsFold))
 	}
 
 	if i.HasOwner != nil {

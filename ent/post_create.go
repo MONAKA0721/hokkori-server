@@ -76,6 +76,20 @@ func (pc *PostCreate) SetSpoiled(b bool) *PostCreate {
 	return pc
 }
 
+// SetThumbnail sets the "thumbnail" field.
+func (pc *PostCreate) SetThumbnail(s string) *PostCreate {
+	pc.mutation.SetThumbnail(s)
+	return pc
+}
+
+// SetNillableThumbnail sets the "thumbnail" field if the given value is not nil.
+func (pc *PostCreate) SetNillableThumbnail(s *string) *PostCreate {
+	if s != nil {
+		pc.SetThumbnail(*s)
+	}
+	return pc
+}
+
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (pc *PostCreate) SetOwnerID(id int) *PostCreate {
 	pc.mutation.SetOwnerID(id)
@@ -276,6 +290,11 @@ func (pc *PostCreate) check() error {
 	if _, ok := pc.mutation.Spoiled(); !ok {
 		return &ValidationError{Name: "spoiled", err: errors.New(`ent: missing required field "Post.spoiled"`)}
 	}
+	if v, ok := pc.mutation.Thumbnail(); ok {
+		if err := post.ThumbnailValidator(v); err != nil {
+			return &ValidationError{Name: "thumbnail", err: fmt.Errorf(`ent: validator failed for field "Post.thumbnail": %w`, err)}
+		}
+	}
 	if _, ok := pc.mutation.OwnerID(); !ok {
 		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "Post.owner"`)}
 	}
@@ -359,6 +378,14 @@ func (pc *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 			Column: post.FieldSpoiled,
 		})
 		_node.Spoiled = value
+	}
+	if value, ok := pc.mutation.Thumbnail(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: post.FieldThumbnail,
+		})
+		_node.Thumbnail = value
 	}
 	if nodes := pc.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

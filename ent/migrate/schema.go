@@ -91,6 +91,7 @@ var (
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"letter", "praise"}},
 		{Name: "spoiled", Type: field.TypeBool},
+		{Name: "thumbnail", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "post_category", Type: field.TypeInt},
 		{Name: "user_posts", Type: field.TypeInt},
 		{Name: "work_posts", Type: field.TypeInt},
@@ -103,19 +104,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "posts_categories_category",
-				Columns:    []*schema.Column{PostsColumns[7]},
+				Columns:    []*schema.Column{PostsColumns[8]},
 				RefColumns: []*schema.Column{CategoriesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "posts_users_posts",
-				Columns:    []*schema.Column{PostsColumns[8]},
+				Columns:    []*schema.Column{PostsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "posts_works_posts",
-				Columns:    []*schema.Column{PostsColumns[9]},
+				Columns:    []*schema.Column{PostsColumns[10]},
 				RefColumns: []*schema.Column{WorksColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

@@ -26,6 +26,8 @@ const (
 	FieldType = "type"
 	// FieldSpoiled holds the string denoting the spoiled field in the database.
 	FieldSpoiled = "spoiled"
+	// FieldThumbnail holds the string denoting the thumbnail field in the database.
+	FieldThumbnail = "thumbnail"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeHashtags holds the string denoting the hashtags edge name in mutations.
@@ -105,6 +107,7 @@ var Columns = []string{
 	FieldContent,
 	FieldType,
 	FieldSpoiled,
+	FieldThumbnail,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "posts"
@@ -153,6 +156,8 @@ var (
 	TitleValidator func(string) error
 	// ContentValidator is a validator for the "content" field. It is called by the builders before save.
 	ContentValidator func(string) error
+	// ThumbnailValidator is a validator for the "thumbnail" field. It is called by the builders before save.
+	ThumbnailValidator func(string) error
 )
 
 // Type defines the type for the "type" enum field.

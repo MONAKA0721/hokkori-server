@@ -121,6 +121,7 @@ type ComplexityRoot struct {
 		LikedUsers      func(childComplexity int) int
 		Owner           func(childComplexity int) int
 		Spoiled         func(childComplexity int) int
+		Thumbnail       func(childComplexity int) int
 		Title           func(childComplexity int) int
 		Type            func(childComplexity int) int
 		UpdateTime      func(childComplexity int) int
@@ -575,6 +576,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Post.Spoiled(childComplexity), true
+
+	case "Post.thumbnail":
+		if e.complexity.Post.Thumbnail == nil {
+			break
+		}
+
+		return e.complexity.Post.Thumbnail(childComplexity), true
 
 	case "Post.title":
 		if e.complexity.Post.Title == nil {
@@ -1033,6 +1041,7 @@ input CreatePostInput {
   content: String!
   type: PostPostType!
   spoiled: Boolean!
+  thumbnail: String
   ownerID: ID!
   hashtagIDs: [ID!]
   workID: ID!
@@ -1160,6 +1169,7 @@ type Post implements Node {
   content: String!
   type: PostPostType!
   spoiled: Boolean!
+  thumbnail: String
   owner: User!
   hashtags: [Hashtag!]
   work: Work!
@@ -1271,6 +1281,22 @@ input PostWhereInput {
   """spoiled field predicates"""
   spoiled: Boolean
   spoiledNEQ: Boolean
+  """thumbnail field predicates"""
+  thumbnail: String
+  thumbnailNEQ: String
+  thumbnailIn: [String!]
+  thumbnailNotIn: [String!]
+  thumbnailGT: String
+  thumbnailGTE: String
+  thumbnailLT: String
+  thumbnailLTE: String
+  thumbnailContains: String
+  thumbnailHasPrefix: String
+  thumbnailHasSuffix: String
+  thumbnailIsNil: Boolean
+  thumbnailNotNil: Boolean
+  thumbnailEqualFold: String
+  thumbnailContainsFold: String
   """owner edge predicates"""
   hasOwner: Boolean
   hasOwnerWith: [UserWhereInput!]
@@ -1388,6 +1414,8 @@ input UpdatePostInput {
   content: String
   type: PostPostType
   spoiled: Boolean
+  clearThumbnail: Boolean
+  thumbnail: String
   clearOwner: Boolean
   ownerID: ID
   addHashtagIDs: [ID!]
@@ -2258,6 +2286,8 @@ func (ec *executionContext) fieldContext_BookmarkPostPayload_post(ctx context.Co
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -2415,6 +2445,8 @@ func (ec *executionContext) fieldContext_Category_post(ctx context.Context, fiel
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -2810,6 +2842,8 @@ func (ec *executionContext) fieldContext_Hashtag_posts(ctx context.Context, fiel
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -3158,6 +3192,8 @@ func (ec *executionContext) fieldContext_LikePostPayload_post(ctx context.Contex
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -3376,6 +3412,8 @@ func (ec *executionContext) fieldContext_Mutation_createPosts(ctx context.Contex
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -3459,6 +3497,8 @@ func (ec *executionContext) fieldContext_Mutation_createPost(ctx context.Context
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -4339,6 +4379,47 @@ func (ec *executionContext) fieldContext_Post_spoiled(ctx context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Post_thumbnail(ctx context.Context, field graphql.CollectedField, obj *ent.Post) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Post_thumbnail(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Thumbnail, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Post_thumbnail(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Post_owner(ctx context.Context, field graphql.CollectedField, obj *ent.Post) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Post_owner(ctx, field)
 	if err != nil {
@@ -4869,6 +4950,8 @@ func (ec *executionContext) fieldContext_PostEdge_node(ctx context.Context, fiel
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -5344,6 +5427,8 @@ func (ec *executionContext) fieldContext_Query_likedPosts(ctx context.Context, f
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -5594,6 +5679,8 @@ func (ec *executionContext) fieldContext_UnbookmarkPostPayload_post(ctx context.
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -5704,6 +5791,8 @@ func (ec *executionContext) fieldContext_UnlikePostPayload_post(ctx context.Cont
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -5984,6 +6073,8 @@ func (ec *executionContext) fieldContext_User_posts(ctx context.Context, field g
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -6053,6 +6144,8 @@ func (ec *executionContext) fieldContext_User_likedPosts(ctx context.Context, fi
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -6122,6 +6215,8 @@ func (ec *executionContext) fieldContext_User_bookmarkedPosts(ctx context.Contex
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -6320,6 +6415,8 @@ func (ec *executionContext) fieldContext_Work_posts(ctx context.Context, field g
 				return ec.fieldContext_Post_type(ctx, field)
 			case "spoiled":
 				return ec.fieldContext_Post_spoiled(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Post_thumbnail(ctx, field)
 			case "owner":
 				return ec.fieldContext_Post_owner(ctx, field)
 			case "hashtags":
@@ -8667,7 +8764,7 @@ func (ec *executionContext) unmarshalInputCreatePostInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"createTime", "updateTime", "title", "content", "type", "spoiled", "ownerID", "hashtagIDs", "workID", "categoryID", "likedUserIDs", "bookmarkedUserIDs"}
+	fieldsInOrder := [...]string{"createTime", "updateTime", "title", "content", "type", "spoiled", "thumbnail", "ownerID", "hashtagIDs", "workID", "categoryID", "likedUserIDs", "bookmarkedUserIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8719,6 +8816,14 @@ func (ec *executionContext) unmarshalInputCreatePostInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spoiled"))
 			it.Spoiled, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnail":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnail"))
+			it.Thumbnail, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9215,7 +9320,7 @@ func (ec *executionContext) unmarshalInputPostWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createTime", "createTimeNEQ", "createTimeIn", "createTimeNotIn", "createTimeGT", "createTimeGTE", "createTimeLT", "createTimeLTE", "updateTime", "updateTimeNEQ", "updateTimeIn", "updateTimeNotIn", "updateTimeGT", "updateTimeGTE", "updateTimeLT", "updateTimeLTE", "title", "titleNEQ", "titleIn", "titleNotIn", "titleGT", "titleGTE", "titleLT", "titleLTE", "titleContains", "titleHasPrefix", "titleHasSuffix", "titleEqualFold", "titleContainsFold", "content", "contentNEQ", "contentIn", "contentNotIn", "contentGT", "contentGTE", "contentLT", "contentLTE", "contentContains", "contentHasPrefix", "contentHasSuffix", "contentEqualFold", "contentContainsFold", "type", "typeNEQ", "typeIn", "typeNotIn", "spoiled", "spoiledNEQ", "hasOwner", "hasOwnerWith", "hasHashtags", "hasHashtagsWith", "hasWork", "hasWorkWith", "hasCategory", "hasCategoryWith", "hasLikedUsers", "hasLikedUsersWith", "hasBookmarkedUsers", "hasBookmarkedUsersWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createTime", "createTimeNEQ", "createTimeIn", "createTimeNotIn", "createTimeGT", "createTimeGTE", "createTimeLT", "createTimeLTE", "updateTime", "updateTimeNEQ", "updateTimeIn", "updateTimeNotIn", "updateTimeGT", "updateTimeGTE", "updateTimeLT", "updateTimeLTE", "title", "titleNEQ", "titleIn", "titleNotIn", "titleGT", "titleGTE", "titleLT", "titleLTE", "titleContains", "titleHasPrefix", "titleHasSuffix", "titleEqualFold", "titleContainsFold", "content", "contentNEQ", "contentIn", "contentNotIn", "contentGT", "contentGTE", "contentLT", "contentLTE", "contentContains", "contentHasPrefix", "contentHasSuffix", "contentEqualFold", "contentContainsFold", "type", "typeNEQ", "typeIn", "typeNotIn", "spoiled", "spoiledNEQ", "thumbnail", "thumbnailNEQ", "thumbnailIn", "thumbnailNotIn", "thumbnailGT", "thumbnailGTE", "thumbnailLT", "thumbnailLTE", "thumbnailContains", "thumbnailHasPrefix", "thumbnailHasSuffix", "thumbnailIsNil", "thumbnailNotNil", "thumbnailEqualFold", "thumbnailContainsFold", "hasOwner", "hasOwnerWith", "hasHashtags", "hasHashtagsWith", "hasWork", "hasWorkWith", "hasCategory", "hasCategoryWith", "hasLikedUsers", "hasLikedUsersWith", "hasBookmarkedUsers", "hasBookmarkedUsersWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9694,6 +9799,126 @@ func (ec *executionContext) unmarshalInputPostWhereInput(ctx context.Context, ob
 			if err != nil {
 				return it, err
 			}
+		case "thumbnail":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnail"))
+			it.Thumbnail, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailNEQ"))
+			it.ThumbnailNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailIn"))
+			it.ThumbnailIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailNotIn"))
+			it.ThumbnailNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailGT"))
+			it.ThumbnailGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailGTE"))
+			it.ThumbnailGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailLT"))
+			it.ThumbnailLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailLTE"))
+			it.ThumbnailLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailContains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailContains"))
+			it.ThumbnailContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailHasPrefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailHasPrefix"))
+			it.ThumbnailHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailHasSuffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailHasSuffix"))
+			it.ThumbnailHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailIsNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailIsNil"))
+			it.ThumbnailIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailNotNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailNotNil"))
+			it.ThumbnailNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailEqualFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailEqualFold"))
+			it.ThumbnailEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnailContainsFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnailContainsFold"))
+			it.ThumbnailContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "hasOwner":
 			var err error
 
@@ -9935,7 +10160,7 @@ func (ec *executionContext) unmarshalInputUpdatePostInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"updateTime", "title", "content", "type", "spoiled", "clearOwner", "ownerID", "addHashtagIDs", "removeHashtagIDs", "clearWork", "workID", "clearCategory", "categoryID", "addLikedUserIDs", "removeLikedUserIDs", "addBookmarkedUserIDs", "removeBookmarkedUserIDs"}
+	fieldsInOrder := [...]string{"updateTime", "title", "content", "type", "spoiled", "clearThumbnail", "thumbnail", "clearOwner", "ownerID", "addHashtagIDs", "removeHashtagIDs", "clearWork", "workID", "clearCategory", "categoryID", "addLikedUserIDs", "removeLikedUserIDs", "addBookmarkedUserIDs", "removeBookmarkedUserIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9979,6 +10204,22 @@ func (ec *executionContext) unmarshalInputUpdatePostInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spoiled"))
 			it.Spoiled, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "clearThumbnail":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearThumbnail"))
+			it.ClearThumbnail, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "thumbnail":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thumbnail"))
+			it.Thumbnail, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11804,6 +12045,10 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "thumbnail":
+
+			out.Values[i] = ec._Post_thumbnail(ctx, field, obj)
+
 		case "owner":
 			field := field
 

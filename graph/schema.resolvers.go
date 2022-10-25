@@ -6,9 +6,9 @@ package graph
 import (
 	"context"
 	"fmt"
-	"github.com/MONAKA0721/hokkori/ent/bookmark"
 
 	"github.com/MONAKA0721/hokkori/ent"
+	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"

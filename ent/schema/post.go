@@ -20,6 +20,7 @@ func (Post) Fields() []ent.Field {
 		field.Text("content").NotEmpty(),
 		field.Enum("type").Values("letter", "praise"),
 		field.Bool("spoiled"),
+		field.Text("thumbnail").NotEmpty().Optional(),
 	}
 }
 

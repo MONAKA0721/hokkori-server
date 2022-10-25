@@ -68,6 +68,7 @@ type CreatePostInput struct {
 	Content           string
 	Type              post.Type
 	Spoiled           bool
+	Thumbnail         *string
 	OwnerID           int
 	HashtagIDs        []int
 	WorkID            int
@@ -88,6 +89,9 @@ func (i *CreatePostInput) Mutate(m *PostMutation) {
 	m.SetContent(i.Content)
 	m.SetType(i.Type)
 	m.SetSpoiled(i.Spoiled)
+	if v := i.Thumbnail; v != nil {
+		m.SetThumbnail(*v)
+	}
 	m.SetOwnerID(i.OwnerID)
 	if v := i.HashtagIDs; len(v) > 0 {
 		m.AddHashtagIDs(v...)
@@ -115,6 +119,8 @@ type UpdatePostInput struct {
 	Content                 *string
 	Type                    *post.Type
 	Spoiled                 *bool
+	ClearThumbnail          bool
+	Thumbnail               *string
 	ClearOwner              bool
 	OwnerID                 *int
 	AddHashtagIDs           []int
@@ -145,6 +151,12 @@ func (i *UpdatePostInput) Mutate(m *PostMutation) {
 	}
 	if v := i.Spoiled; v != nil {
 		m.SetSpoiled(*v)
+	}
+	if i.ClearThumbnail {
+		m.ClearThumbnail()
+	}
+	if v := i.Thumbnail; v != nil {
+		m.SetThumbnail(*v)
 	}
 	if i.ClearOwner {
 		m.ClearOwner()
