@@ -296,6 +296,24 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			u.withBookmarkedPosts = query
+		case "followers":
+			var (
+				path  = append(path, field.Name)
+				query = &UserQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.withFollowers = query
+		case "following":
+			var (
+				path  = append(path, field.Name)
+				query = &UserQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.withFollowing = query
 		}
 	}
 	return nil

@@ -1031,6 +1031,14 @@ type UserWhereInput struct {
 	// "bookmarked_posts" edge predicates.
 	HasBookmarkedPosts     *bool             `json:"hasBookmarkedPosts,omitempty"`
 	HasBookmarkedPostsWith []*PostWhereInput `json:"hasBookmarkedPostsWith,omitempty"`
+
+	// "followers" edge predicates.
+	HasFollowers     *bool             `json:"hasFollowers,omitempty"`
+	HasFollowersWith []*UserWhereInput `json:"hasFollowersWith,omitempty"`
+
+	// "following" edge predicates.
+	HasFollowing     *bool             `json:"hasFollowing,omitempty"`
+	HasFollowingWith []*UserWhereInput `json:"hasFollowingWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -1356,6 +1364,42 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasBookmarkedPostsWith(with...))
+	}
+	if i.HasFollowers != nil {
+		p := user.HasFollowers()
+		if !*i.HasFollowers {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasFollowersWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasFollowersWith))
+		for _, w := range i.HasFollowersWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasFollowersWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasFollowersWith(with...))
+	}
+	if i.HasFollowing != nil {
+		p := user.HasFollowing()
+		if !*i.HasFollowing {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasFollowingWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasFollowingWith))
+		for _, w := range i.HasFollowingWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasFollowingWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasFollowingWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

@@ -21,6 +21,10 @@ const (
 	EdgeLikedPosts = "liked_posts"
 	// EdgeBookmarkedPosts holds the string denoting the bookmarked_posts edge name in mutations.
 	EdgeBookmarkedPosts = "bookmarked_posts"
+	// EdgeFollowers holds the string denoting the followers edge name in mutations.
+	EdgeFollowers = "followers"
+	// EdgeFollowing holds the string denoting the following edge name in mutations.
+	EdgeFollowing = "following"
 	// EdgeLikes holds the string denoting the likes edge name in mutations.
 	EdgeLikes = "likes"
 	// EdgeBookmarks holds the string denoting the bookmarks edge name in mutations.
@@ -44,6 +48,10 @@ const (
 	// BookmarkedPostsInverseTable is the table name for the Post entity.
 	// It exists in this package in order to avoid circular dependency with the "post" package.
 	BookmarkedPostsInverseTable = "posts"
+	// FollowersTable is the table that holds the followers relation/edge. The primary key declared below.
+	FollowersTable = "user_following"
+	// FollowingTable is the table that holds the following relation/edge. The primary key declared below.
+	FollowingTable = "user_following"
 	// LikesTable is the table that holds the likes relation/edge.
 	LikesTable = "likes"
 	// LikesInverseTable is the table name for the Like entity.
@@ -76,6 +84,12 @@ var (
 	// BookmarkedPostsPrimaryKey and BookmarkedPostsColumn2 are the table columns denoting the
 	// primary key for the bookmarked_posts relation (M2M).
 	BookmarkedPostsPrimaryKey = []string{"user_id", "post_id"}
+	// FollowersPrimaryKey and FollowersColumn2 are the table columns denoting the
+	// primary key for the followers relation (M2M).
+	FollowersPrimaryKey = []string{"user_id", "follower_id"}
+	// FollowingPrimaryKey and FollowingColumn2 are the table columns denoting the
+	// primary key for the following relation (M2M).
+	FollowingPrimaryKey = []string{"user_id", "follower_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

@@ -162,6 +162,8 @@ type ComplexityRoot struct {
 	User struct {
 		AvatarURL       func(childComplexity int) int
 		BookmarkedPosts func(childComplexity int) int
+		Followers       func(childComplexity int) int
+		Following       func(childComplexity int) int
 		ID              func(childComplexity int) int
 		LikedPosts      func(childComplexity int) int
 		Name            func(childComplexity int) int
@@ -773,6 +775,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.BookmarkedPosts(childComplexity), true
 
+	case "User.followers":
+		if e.complexity.User.Followers == nil {
+			break
+		}
+
+		return e.complexity.User.Followers(childComplexity), true
+
+	case "User.following":
+		if e.complexity.User.Following == nil {
+			break
+		}
+
+		return e.complexity.User.Following(childComplexity), true
+
 	case "User.id":
 		if e.complexity.User.ID == nil {
 			break
@@ -1061,6 +1077,8 @@ input CreateUserInput {
   postIDs: [ID!]
   likedPostIDs: [ID!]
   bookmarkedPostIDs: [ID!]
+  followerIDs: [ID!]
+  followingIDs: [ID!]
 }
 """
 CreateWorkInput is used for create Work object.
@@ -1447,6 +1465,10 @@ input UpdateUserInput {
   removeLikedPostIDs: [ID!]
   addBookmarkedPostIDs: [ID!]
   removeBookmarkedPostIDs: [ID!]
+  addFollowerIDs: [ID!]
+  removeFollowerIDs: [ID!]
+  addFollowingIDs: [ID!]
+  removeFollowingIDs: [ID!]
 }
 """
 UpdateWorkInput is used for update Work object.
@@ -1468,6 +1490,8 @@ type User implements Node {
   posts: [Post!]
   likedPosts: [Post!]
   bookmarkedPosts: [Post!]
+  followers: [User!]
+  following: [User!]
 }
 """
 UserWhereInput is used for filtering User objects.
@@ -1557,6 +1581,12 @@ input UserWhereInput {
   """bookmarked_posts edge predicates"""
   hasBookmarkedPosts: Boolean
   hasBookmarkedPostsWith: [PostWhereInput!]
+  """followers edge predicates"""
+  hasFollowers: Boolean
+  hasFollowersWith: [UserWhereInput!]
+  """following edge predicates"""
+  hasFollowing: Boolean
+  hasFollowingWith: [UserWhereInput!]
 }
 type Work implements Node {
   id: ID!
@@ -3268,6 +3298,10 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_likedPosts(ctx, field)
 			case "bookmarkedPosts":
 				return ec.fieldContext_User_bookmarkedPosts(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "following":
+				return ec.fieldContext_User_following(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3341,6 +3375,10 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_likedPosts(ctx, field)
 			case "bookmarkedPosts":
 				return ec.fieldContext_User_bookmarkedPosts(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "following":
+				return ec.fieldContext_User_following(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4475,6 +4513,10 @@ func (ec *executionContext) fieldContext_Post_owner(ctx context.Context, field g
 				return ec.fieldContext_User_likedPosts(ctx, field)
 			case "bookmarkedPosts":
 				return ec.fieldContext_User_bookmarkedPosts(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "following":
+				return ec.fieldContext_User_following(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4689,6 +4731,10 @@ func (ec *executionContext) fieldContext_Post_likedUsers(ctx context.Context, fi
 				return ec.fieldContext_User_likedPosts(ctx, field)
 			case "bookmarkedPosts":
 				return ec.fieldContext_User_bookmarkedPosts(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "following":
+				return ec.fieldContext_User_following(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4748,6 +4794,10 @@ func (ec *executionContext) fieldContext_Post_bookmarkedUsers(ctx context.Contex
 				return ec.fieldContext_User_likedPosts(ctx, field)
 			case "bookmarkedPosts":
 				return ec.fieldContext_User_bookmarkedPosts(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "following":
+				return ec.fieldContext_User_following(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -6231,6 +6281,132 @@ func (ec *executionContext) fieldContext_User_bookmarkedPosts(ctx context.Contex
 				return ec.fieldContext_Post_bookmarkedUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_followers(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_followers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Followers(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_followers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "profile":
+				return ec.fieldContext_User_profile(ctx, field)
+			case "avatarURL":
+				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "posts":
+				return ec.fieldContext_User_posts(ctx, field)
+			case "likedPosts":
+				return ec.fieldContext_User_likedPosts(ctx, field)
+			case "bookmarkedPosts":
+				return ec.fieldContext_User_bookmarkedPosts(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "following":
+				return ec.fieldContext_User_following(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_following(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_following(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Following(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_following(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "profile":
+				return ec.fieldContext_User_profile(ctx, field)
+			case "avatarURL":
+				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "posts":
+				return ec.fieldContext_User_posts(ctx, field)
+			case "likedPosts":
+				return ec.fieldContext_User_likedPosts(ctx, field)
+			case "bookmarkedPosts":
+				return ec.fieldContext_User_bookmarkedPosts(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "following":
+				return ec.fieldContext_User_following(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -8888,7 +9064,7 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "username", "profile", "avatarURL", "postIDs", "likedPostIDs", "bookmarkedPostIDs"}
+	fieldsInOrder := [...]string{"name", "username", "profile", "avatarURL", "postIDs", "likedPostIDs", "bookmarkedPostIDs", "followerIDs", "followingIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8948,6 +9124,22 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bookmarkedPostIDs"))
 			it.BookmarkedPostIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "followerIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("followerIDs"))
+			it.FollowerIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "followingIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("followingIDs"))
+			it.FollowingIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10332,7 +10524,7 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "clearUsername", "username", "clearProfile", "profile", "clearAvatarURL", "avatarURL", "addPostIDs", "removePostIDs", "addLikedPostIDs", "removeLikedPostIDs", "addBookmarkedPostIDs", "removeBookmarkedPostIDs"}
+	fieldsInOrder := [...]string{"name", "clearUsername", "username", "clearProfile", "profile", "clearAvatarURL", "avatarURL", "addPostIDs", "removePostIDs", "addLikedPostIDs", "removeLikedPostIDs", "addBookmarkedPostIDs", "removeBookmarkedPostIDs", "addFollowerIDs", "removeFollowerIDs", "addFollowingIDs", "removeFollowingIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10443,6 +10635,38 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 			if err != nil {
 				return it, err
 			}
+		case "addFollowerIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("addFollowerIDs"))
+			it.AddFollowerIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "removeFollowerIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("removeFollowerIDs"))
+			it.RemoveFollowerIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "addFollowingIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("addFollowingIDs"))
+			it.AddFollowingIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "removeFollowingIDs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("removeFollowingIDs"))
+			it.RemoveFollowingIDs, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -10516,7 +10740,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "username", "usernameNEQ", "usernameIn", "usernameNotIn", "usernameGT", "usernameGTE", "usernameLT", "usernameLTE", "usernameContains", "usernameHasPrefix", "usernameHasSuffix", "usernameIsNil", "usernameNotNil", "usernameEqualFold", "usernameContainsFold", "profile", "profileNEQ", "profileIn", "profileNotIn", "profileGT", "profileGTE", "profileLT", "profileLTE", "profileContains", "profileHasPrefix", "profileHasSuffix", "profileIsNil", "profileNotNil", "profileEqualFold", "profileContainsFold", "avatarURL", "avatarURLNEQ", "avatarURLIn", "avatarURLNotIn", "avatarURLGT", "avatarURLGTE", "avatarURLLT", "avatarURLLTE", "avatarURLContains", "avatarURLHasPrefix", "avatarURLHasSuffix", "avatarURLIsNil", "avatarURLNotNil", "avatarURLEqualFold", "avatarURLContainsFold", "hasPosts", "hasPostsWith", "hasLikedPosts", "hasLikedPostsWith", "hasBookmarkedPosts", "hasBookmarkedPostsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "username", "usernameNEQ", "usernameIn", "usernameNotIn", "usernameGT", "usernameGTE", "usernameLT", "usernameLTE", "usernameContains", "usernameHasPrefix", "usernameHasSuffix", "usernameIsNil", "usernameNotNil", "usernameEqualFold", "usernameContainsFold", "profile", "profileNEQ", "profileIn", "profileNotIn", "profileGT", "profileGTE", "profileLT", "profileLTE", "profileContains", "profileHasPrefix", "profileHasSuffix", "profileIsNil", "profileNotNil", "profileEqualFold", "profileContainsFold", "avatarURL", "avatarURLNEQ", "avatarURLIn", "avatarURLNotIn", "avatarURLGT", "avatarURLGTE", "avatarURLLT", "avatarURLLTE", "avatarURLContains", "avatarURLHasPrefix", "avatarURLHasSuffix", "avatarURLIsNil", "avatarURLNotNil", "avatarURLEqualFold", "avatarURLContainsFold", "hasPosts", "hasPostsWith", "hasLikedPosts", "hasLikedPostsWith", "hasBookmarkedPosts", "hasBookmarkedPostsWith", "hasFollowers", "hasFollowersWith", "hasFollowing", "hasFollowingWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -11120,6 +11344,38 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasBookmarkedPostsWith"))
 			it.HasBookmarkedPostsWith, err = ec.unmarshalOPostWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐPostWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasFollowers":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasFollowers"))
+			it.HasFollowers, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasFollowersWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasFollowersWith"))
+			it.HasFollowersWith, err = ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasFollowing":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasFollowing"))
+			it.HasFollowing, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasFollowingWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasFollowingWith"))
+			it.HasFollowingWith, err = ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -12580,6 +12836,40 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_bookmarkedPosts(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "followers":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_followers(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "following":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_following(ctx, field, obj)
 				return res
 			}
 

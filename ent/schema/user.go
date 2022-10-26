@@ -31,6 +31,8 @@ func (User) Edges() []ent.Edge {
 			Through("likes", Like.Type),
 		edge.To("bookmarked_posts", Post.Type).
 			Through("bookmarks", Bookmark.Type),
+		edge.To("following", User.Type).
+			From("followers"),
 	}
 }
 

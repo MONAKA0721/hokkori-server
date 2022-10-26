@@ -36,15 +36,19 @@ type UserEdges struct {
 	LikedPosts []*Post `json:"liked_posts,omitempty"`
 	// BookmarkedPosts holds the value of the bookmarked_posts edge.
 	BookmarkedPosts []*Post `json:"bookmarked_posts,omitempty"`
+	// Followers holds the value of the followers edge.
+	Followers []*User `json:"followers,omitempty"`
+	// Following holds the value of the following edge.
+	Following []*User `json:"following,omitempty"`
 	// Likes holds the value of the likes edge.
 	Likes []*Like `json:"likes,omitempty"`
 	// Bookmarks holds the value of the bookmarks edge.
 	Bookmarks []*Bookmark `json:"bookmarks,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]*int
+	totalCount [5]*int
 }
 
 // PostsOrErr returns the Posts value or an error if the edge
@@ -74,10 +78,28 @@ func (e UserEdges) BookmarkedPostsOrErr() ([]*Post, error) {
 	return nil, &NotLoadedError{edge: "bookmarked_posts"}
 }
 
+// FollowersOrErr returns the Followers value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) FollowersOrErr() ([]*User, error) {
+	if e.loadedTypes[3] {
+		return e.Followers, nil
+	}
+	return nil, &NotLoadedError{edge: "followers"}
+}
+
+// FollowingOrErr returns the Following value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) FollowingOrErr() ([]*User, error) {
+	if e.loadedTypes[4] {
+		return e.Following, nil
+	}
+	return nil, &NotLoadedError{edge: "following"}
+}
+
 // LikesOrErr returns the Likes value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) LikesOrErr() ([]*Like, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[5] {
 		return e.Likes, nil
 	}
 	return nil, &NotLoadedError{edge: "likes"}
@@ -86,7 +108,7 @@ func (e UserEdges) LikesOrErr() ([]*Like, error) {
 // BookmarksOrErr returns the Bookmarks value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BookmarksOrErr() ([]*Bookmark, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[6] {
 		return e.Bookmarks, nil
 	}
 	return nil, &NotLoadedError{edge: "bookmarks"}
@@ -164,6 +186,16 @@ func (u *User) QueryLikedPosts() *PostQuery {
 // QueryBookmarkedPosts queries the "bookmarked_posts" edge of the User entity.
 func (u *User) QueryBookmarkedPosts() *PostQuery {
 	return (&UserClient{config: u.config}).QueryBookmarkedPosts(u)
+}
+
+// QueryFollowers queries the "followers" edge of the User entity.
+func (u *User) QueryFollowers() *UserQuery {
+	return (&UserClient{config: u.config}).QueryFollowers(u)
+}
+
+// QueryFollowing queries the "following" edge of the User entity.
+func (u *User) QueryFollowing() *UserQuery {
+	return (&UserClient{config: u.config}).QueryFollowing(u)
 }
 
 // QueryLikes queries the "likes" edge of the User entity.

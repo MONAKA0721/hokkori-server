@@ -217,6 +217,8 @@ type CreateUserInput struct {
 	PostIDs           []int
 	LikedPostIDs      []int
 	BookmarkedPostIDs []int
+	FollowerIDs       []int
+	FollowingIDs      []int
 }
 
 // Mutate applies the CreateUserInput on the UserMutation builder.
@@ -239,6 +241,12 @@ func (i *CreateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.BookmarkedPostIDs; len(v) > 0 {
 		m.AddBookmarkedPostIDs(v...)
+	}
+	if v := i.FollowerIDs; len(v) > 0 {
+		m.AddFollowerIDs(v...)
+	}
+	if v := i.FollowingIDs; len(v) > 0 {
+		m.AddFollowingIDs(v...)
 	}
 }
 
@@ -263,6 +271,10 @@ type UpdateUserInput struct {
 	RemoveLikedPostIDs      []int
 	AddBookmarkedPostIDs    []int
 	RemoveBookmarkedPostIDs []int
+	AddFollowerIDs          []int
+	RemoveFollowerIDs       []int
+	AddFollowingIDs         []int
+	RemoveFollowingIDs      []int
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
@@ -305,6 +317,18 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.RemoveBookmarkedPostIDs; len(v) > 0 {
 		m.RemoveBookmarkedPostIDs(v...)
+	}
+	if v := i.AddFollowerIDs; len(v) > 0 {
+		m.AddFollowerIDs(v...)
+	}
+	if v := i.RemoveFollowerIDs; len(v) > 0 {
+		m.RemoveFollowerIDs(v...)
+	}
+	if v := i.AddFollowingIDs; len(v) > 0 {
+		m.AddFollowingIDs(v...)
+	}
+	if v := i.RemoveFollowingIDs; len(v) > 0 {
+		m.RemoveFollowingIDs(v...)
 	}
 }
 
