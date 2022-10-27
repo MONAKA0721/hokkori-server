@@ -17,6 +17,17 @@ type BookmarkPostPayload struct {
 	Post             *ent.Post `json:"post"`
 }
 
+type FollowUserInput struct {
+	ClientMutationID *string `json:"clientMutationId"`
+	UserID           int     `json:"userID"`
+	FollowerID       int     `json:"followerID"`
+}
+
+type FollowUserPayload struct {
+	ClientMutationID *string   `json:"clientMutationId"`
+	User             *ent.User `json:"user"`
+}
+
 type LikePostInput struct {
 	ClientMutationID *string `json:"clientMutationId"`
 	UserID           int     `json:"userID"`
@@ -37,6 +48,17 @@ type UnbookmarkPostInput struct {
 type UnbookmarkPostPayload struct {
 	ClientMutationID *string   `json:"clientMutationId"`
 	Post             *ent.Post `json:"post"`
+}
+
+type UnfollowUserInput struct {
+	ClientMutationID *string `json:"clientMutationId"`
+	UserID           int     `json:"userID"`
+	FollowerID       int     `json:"followerID"`
+}
+
+type UnfollowUserPayload struct {
+	ClientMutationID *string   `json:"clientMutationId"`
+	User             *ent.User `json:"user"`
 }
 
 type UnlikePostInput struct {

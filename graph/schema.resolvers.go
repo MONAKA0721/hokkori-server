@@ -123,6 +123,42 @@ func (r *mutationResolver) UnbookmarkPost(ctx context.Context, input model.Unboo
 	}, nil
 }
 
+// FollowUser is the resolver for the followUser field.
+func (r *mutationResolver) FollowUser(ctx context.Context, input model.FollowUserInput) (*model.FollowUserPayload, error) {
+	_, err := r.client.User.UpdateOneID(input.UserID).AddFollowerIDs(input.FollowerID).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := r.client.User.Get(ctx, input.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.FollowUserPayload{
+		ClientMutationID: input.ClientMutationID,
+		User:             u,
+	}, nil
+}
+
+// UnfollowUser is the resolver for the unfollowUser field.
+func (r *mutationResolver) UnfollowUser(ctx context.Context, input model.UnfollowUserInput) (*model.UnfollowUserPayload, error) {
+	_, err := r.client.User.UpdateOneID(input.UserID).RemoveFollowerIDs(input.FollowerID).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := r.client.User.Get(ctx, input.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UnfollowUserPayload{
+		ClientMutationID: input.ClientMutationID,
+		User:             u,
+	}, nil
+}
+
 // LikedPosts is the resolver for the likedPosts field.
 func (r *queryResolver) LikedPosts(ctx context.Context, first int, typeArg post.Type) ([]*ent.Post, error) {
 	query := fmt.Sprintf(`

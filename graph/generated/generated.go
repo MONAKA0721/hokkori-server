@@ -69,6 +69,11 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	FollowUserPayload struct {
+		ClientMutationID func(childComplexity int) int
+		User             func(childComplexity int) int
+	}
+
 	Hashtag struct {
 		ID    func(childComplexity int) int
 		Posts func(childComplexity int) int
@@ -98,8 +103,10 @@ type ComplexityRoot struct {
 		CreatePosts    func(childComplexity int, input ent.CreatePostInput, input2 ent.CreatePostInput) int
 		CreateUser     func(childComplexity int, input ent.CreateUserInput) int
 		CreateWork     func(childComplexity int, input ent.CreateWorkInput) int
+		FollowUser     func(childComplexity int, input model.FollowUserInput) int
 		LikePost       func(childComplexity int, input model.LikePostInput) int
 		UnbookmarkPost func(childComplexity int, input model.UnbookmarkPostInput) int
+		UnfollowUser   func(childComplexity int, input model.UnfollowUserInput) int
 		UnlikePost     func(childComplexity int, input model.UnlikePostInput) int
 		UpdateUser     func(childComplexity int, id int, input ent.UpdateUserInput) int
 	}
@@ -154,6 +161,11 @@ type ComplexityRoot struct {
 		Post             func(childComplexity int) int
 	}
 
+	UnfollowUserPayload struct {
+		ClientMutationID func(childComplexity int) int
+		User             func(childComplexity int) int
+	}
+
 	UnlikePostPayload struct {
 		ClientMutationID func(childComplexity int) int
 		Post             func(childComplexity int) int
@@ -202,6 +214,8 @@ type MutationResolver interface {
 	UnlikePost(ctx context.Context, input model.UnlikePostInput) (*model.UnlikePostPayload, error)
 	BookmarkPost(ctx context.Context, input model.BookmarkPostInput) (*model.BookmarkPostPayload, error)
 	UnbookmarkPost(ctx context.Context, input model.UnbookmarkPostInput) (*model.UnbookmarkPostPayload, error)
+	FollowUser(ctx context.Context, input model.FollowUserInput) (*model.FollowUserPayload, error)
+	UnfollowUser(ctx context.Context, input model.UnfollowUserInput) (*model.UnfollowUserPayload, error)
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -297,6 +311,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CategoryEdge.Node(childComplexity), true
+
+	case "FollowUserPayload.clientMutationId":
+		if e.complexity.FollowUserPayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.FollowUserPayload.ClientMutationID(childComplexity), true
+
+	case "FollowUserPayload.user":
+		if e.complexity.FollowUserPayload.User == nil {
+			break
+		}
+
+		return e.complexity.FollowUserPayload.User(childComplexity), true
 
 	case "Hashtag.id":
 		if e.complexity.Hashtag.ID == nil {
@@ -440,6 +468,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateWork(childComplexity, args["input"].(ent.CreateWorkInput)), true
 
+	case "Mutation.followUser":
+		if e.complexity.Mutation.FollowUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_followUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.FollowUser(childComplexity, args["input"].(model.FollowUserInput)), true
+
 	case "Mutation.likePost":
 		if e.complexity.Mutation.LikePost == nil {
 			break
@@ -463,6 +503,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UnbookmarkPost(childComplexity, args["input"].(model.UnbookmarkPostInput)), true
+
+	case "Mutation.unfollowUser":
+		if e.complexity.Mutation.UnfollowUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unfollowUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnfollowUser(childComplexity, args["input"].(model.UnfollowUserInput)), true
 
 	case "Mutation.unlikePost":
 		if e.complexity.Mutation.UnlikePost == nil {
@@ -747,6 +799,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UnbookmarkPostPayload.Post(childComplexity), true
 
+	case "UnfollowUserPayload.clientMutationId":
+		if e.complexity.UnfollowUserPayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.UnfollowUserPayload.ClientMutationID(childComplexity), true
+
+	case "UnfollowUserPayload.user":
+		if e.complexity.UnfollowUserPayload.User == nil {
+			break
+		}
+
+		return e.complexity.UnfollowUserPayload.User(childComplexity), true
+
 	case "UnlikePostPayload.clientMutationId":
 		if e.complexity.UnlikePostPayload.ClientMutationID == nil {
 			break
@@ -908,11 +974,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreatePostInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputCreateWorkInput,
+		ec.unmarshalInputFollowUserInput,
 		ec.unmarshalInputHashtagWhereInput,
 		ec.unmarshalInputLikePostInput,
 		ec.unmarshalInputPostOrder,
 		ec.unmarshalInputPostWhereInput,
 		ec.unmarshalInputUnbookmarkPostInput,
+		ec.unmarshalInputUnfollowUserInput,
 		ec.unmarshalInputUnlikePostInput,
 		ec.unmarshalInputUpdateHashtagInput,
 		ec.unmarshalInputUpdatePostInput,
@@ -1678,6 +1746,8 @@ type Mutation {
   unlikePost(input: UnlikePostInput!): UnlikePostPayload!
   bookmarkPost(input: BookmarkPostInput!): BookmarkPostPayload!
   unbookmarkPost(input: UnbookmarkPostInput!): UnbookmarkPostPayload!
+  followUser(input: FollowUserInput!): FollowUserPayload!
+  unfollowUser(input: UnfollowUserInput!): UnfollowUserPayload!
 }
 
 extend type Query {
@@ -1729,6 +1799,28 @@ input UnbookmarkPostInput {
 type UnbookmarkPostPayload {
   clientMutationId: String
   post: Post
+}
+
+input FollowUserInput {
+  clientMutationId: String
+  userID: ID!
+  followerID: ID!
+}
+
+type FollowUserPayload {
+  clientMutationId: String
+  user: User
+}
+
+input UnfollowUserInput {
+  clientMutationId: String
+  userID: ID!
+  followerID: ID!
+}
+
+type UnfollowUserPayload {
+  clientMutationId: String
+  user: User
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -1836,6 +1928,21 @@ func (ec *executionContext) field_Mutation_createWork_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_followUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.FollowUserInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNFollowUserInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐFollowUserInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_likePost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1858,6 +1965,21 @@ func (ec *executionContext) field_Mutation_unbookmarkPost_args(ctx context.Conte
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNUnbookmarkPostInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnbookmarkPostInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_unfollowUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UnfollowUserInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUnfollowUserInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnfollowUserInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2729,6 +2851,110 @@ func (ec *executionContext) fieldContext_CategoryEdge_cursor(ctx context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FollowUserPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *model.FollowUserPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FollowUserPayload_clientMutationId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FollowUserPayload_clientMutationId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FollowUserPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FollowUserPayload_user(ctx context.Context, field graphql.CollectedField, obj *model.FollowUserPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FollowUserPayload_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FollowUserPayload_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FollowUserPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "profile":
+				return ec.fieldContext_User_profile(ctx, field)
+			case "avatarURL":
+				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "posts":
+				return ec.fieldContext_User_posts(ctx, field)
+			case "likedPosts":
+				return ec.fieldContext_User_likedPosts(ctx, field)
+			case "bookmarkedPosts":
+				return ec.fieldContext_User_bookmarkedPosts(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "following":
+				return ec.fieldContext_User_following(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -3933,6 +4159,128 @@ func (ec *executionContext) fieldContext_Mutation_unbookmarkPost(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_unbookmarkPost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_followUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_followUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().FollowUser(rctx, fc.Args["input"].(model.FollowUserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.FollowUserPayload)
+	fc.Result = res
+	return ec.marshalNFollowUserPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐFollowUserPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_followUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationId":
+				return ec.fieldContext_FollowUserPayload_clientMutationId(ctx, field)
+			case "user":
+				return ec.fieldContext_FollowUserPayload_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FollowUserPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_followUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unfollowUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_unfollowUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UnfollowUser(rctx, fc.Args["input"].(model.UnfollowUserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UnfollowUserPayload)
+	fc.Result = res
+	return ec.marshalNUnfollowUserPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnfollowUserPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unfollowUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationId":
+				return ec.fieldContext_UnfollowUserPayload_clientMutationId(ctx, field)
+			case "user":
+				return ec.fieldContext_UnfollowUserPayload_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UnfollowUserPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unfollowUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -5745,6 +6093,110 @@ func (ec *executionContext) fieldContext_UnbookmarkPostPayload_post(ctx context.
 				return ec.fieldContext_Post_bookmarkedUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnfollowUserPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *model.UnfollowUserPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UnfollowUserPayload_clientMutationId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UnfollowUserPayload_clientMutationId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnfollowUserPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnfollowUserPayload_user(ctx context.Context, field graphql.CollectedField, obj *model.UnfollowUserPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UnfollowUserPayload_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UnfollowUserPayload_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnfollowUserPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "profile":
+				return ec.fieldContext_User_profile(ctx, field)
+			case "avatarURL":
+				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "posts":
+				return ec.fieldContext_User_posts(ctx, field)
+			case "likedPosts":
+				return ec.fieldContext_User_likedPosts(ctx, field)
+			case "bookmarkedPosts":
+				return ec.fieldContext_User_bookmarkedPosts(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "following":
+				return ec.fieldContext_User_following(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -9193,6 +9645,50 @@ func (ec *executionContext) unmarshalInputCreateWorkInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputFollowUserInput(ctx context.Context, obj interface{}) (model.FollowUserInput, error) {
+	var it model.FollowUserInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clientMutationId", "userID", "followerID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clientMutationId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientMutationId"))
+			it.ClientMutationID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			it.UserID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "followerID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("followerID"))
+			it.FollowerID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputHashtagWhereInput(ctx context.Context, obj interface{}) (ent.HashtagWhereInput, error) {
 	var it ent.HashtagWhereInput
 	asMap := map[string]interface{}{}
@@ -10248,6 +10744,50 @@ func (ec *executionContext) unmarshalInputUnbookmarkPostInput(ctx context.Contex
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postID"))
 			it.PostID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUnfollowUserInput(ctx context.Context, obj interface{}) (model.UnfollowUserInput, error) {
+	var it model.UnfollowUserInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clientMutationId", "userID", "followerID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clientMutationId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientMutationId"))
+			it.ClientMutationID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			it.UserID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "followerID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("followerID"))
+			it.FollowerID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11927,6 +12467,35 @@ func (ec *executionContext) _CategoryEdge(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var followUserPayloadImplementors = []string{"FollowUserPayload"}
+
+func (ec *executionContext) _FollowUserPayload(ctx context.Context, sel ast.SelectionSet, obj *model.FollowUserPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, followUserPayloadImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FollowUserPayload")
+		case "clientMutationId":
+
+			out.Values[i] = ec._FollowUserPayload_clientMutationId(ctx, field, obj)
+
+		case "user":
+
+			out.Values[i] = ec._FollowUserPayload_user(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var hashtagImplementors = []string{"Hashtag", "Node"}
 
 func (ec *executionContext) _Hashtag(ctx context.Context, sel ast.SelectionSet, obj *ent.Hashtag) graphql.Marshaler {
@@ -12183,6 +12752,24 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_unbookmarkPost(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "followUser":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_followUser(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "unfollowUser":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unfollowUser(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -12715,6 +13302,35 @@ func (ec *executionContext) _UnbookmarkPostPayload(ctx context.Context, sel ast.
 		case "post":
 
 			out.Values[i] = ec._UnbookmarkPostPayload_post(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var unfollowUserPayloadImplementors = []string{"UnfollowUserPayload"}
+
+func (ec *executionContext) _UnfollowUserPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UnfollowUserPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, unfollowUserPayloadImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UnfollowUserPayload")
+		case "clientMutationId":
+
+			out.Values[i] = ec._UnfollowUserPayload_clientMutationId(ctx, field, obj)
+
+		case "user":
+
+			out.Values[i] = ec._UnfollowUserPayload_user(ctx, field, obj)
 
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -13426,6 +14042,25 @@ func (ec *executionContext) marshalNCursor2githubᚗcomᚋMONAKA0721ᚋhokkori�
 	return v
 }
 
+func (ec *executionContext) unmarshalNFollowUserInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐFollowUserInput(ctx context.Context, v interface{}) (model.FollowUserInput, error) {
+	res, err := ec.unmarshalInputFollowUserInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFollowUserPayload2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐFollowUserPayload(ctx context.Context, sel ast.SelectionSet, v model.FollowUserPayload) graphql.Marshaler {
+	return ec._FollowUserPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFollowUserPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐFollowUserPayload(ctx context.Context, sel ast.SelectionSet, v *model.FollowUserPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FollowUserPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNHashtag2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐHashtag(ctx context.Context, sel ast.SelectionSet, v ent.Hashtag) graphql.Marshaler {
 	return ec._Hashtag(ctx, sel, &v)
 }
@@ -13736,6 +14371,25 @@ func (ec *executionContext) marshalNUnbookmarkPostPayload2ᚖgithubᚗcomᚋMONA
 		return graphql.Null
 	}
 	return ec._UnbookmarkPostPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUnfollowUserInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnfollowUserInput(ctx context.Context, v interface{}) (model.UnfollowUserInput, error) {
+	res, err := ec.unmarshalInputUnfollowUserInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUnfollowUserPayload2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnfollowUserPayload(ctx context.Context, sel ast.SelectionSet, v model.UnfollowUserPayload) graphql.Marshaler {
+	return ec._UnfollowUserPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUnfollowUserPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnfollowUserPayload(ctx context.Context, sel ast.SelectionSet, v *model.UnfollowUserPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UnfollowUserPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUnlikePostInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐUnlikePostInput(ctx context.Context, v interface{}) (model.UnlikePostInput, error) {
@@ -14783,6 +15437,13 @@ func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokko
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v *ent.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐUserWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.UserWhereInput, error) {
