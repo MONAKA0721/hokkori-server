@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"github.com/MONAKA0721/hokkori/ent/work"
 
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
@@ -225,6 +226,72 @@ LIMIT %d`, typeArg, first)
 	}
 
 	return orderedPosts, nil
+}
+
+// TopicWorks is the resolver for the topicWorks field.
+func (r *queryResolver) TopicWorks(ctx context.Context, first int) ([]*ent.Work, error) {
+	query := fmt.Sprintf(`
+SELECT
+	w.id
+FROM
+	works AS w
+LEFT JOIN
+	posts AS p on w.id = p.work_posts
+GROUP BY
+	w.id
+ORDER BY
+	COUNT(p.id) DESC
+LIMIT %d`, first)
+	rows, err := r.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	workIDs := make([]int, 0)
+	for rows.Next() {
+		var workID int
+		if err := rows.Scan(&workID); err != nil {
+			break
+		}
+		workIDs = append(workIDs, workID)
+	}
+
+	// If the database is being written to ensure to check for Close
+	// errors that may be returned from the driver. The query may
+	// encounter an auto-commit error and be forced to rollback changes.
+	// Check for errors during rows "Close".
+	// This may be more important if multiple statements are executed
+	// in a single batch and rows were written as well as read.
+	if closeErr := rows.Close(); closeErr != nil {
+		return nil, closeErr
+	}
+
+	// Check for row scan error.
+	if err != nil {
+		return nil, err
+	}
+
+	// Rows.Err will report the last error encountered by Rows.Scan.
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	queryWorks, err := r.client.Work.Query().Where(work.IDIn(workIDs...)).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	orderedWorks := make([]*ent.Work, 0)
+	for _, workID := range workIDs {
+		for _, queryWork := range queryWorks {
+			if queryWork.ID == workID {
+				orderedWorks = append(orderedWorks, queryWork)
+				break
+			}
+		}
+	}
+
+	return orderedWorks, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

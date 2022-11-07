@@ -23,6 +23,9 @@ extend type Query {
     first: Int!
     type: PostPostType!
   ): [Post]!
+  topicWorks(
+    first: Int!
+  ): [Work]!
 }
 
 input LikePostInput {
