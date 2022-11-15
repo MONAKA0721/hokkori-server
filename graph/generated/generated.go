@@ -147,14 +147,15 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Categories func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.CategoryWhereInput) int
-		Hashtags   func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) int
-		LikedPosts func(childComplexity int, first int, typeArg post.Type) int
-		Node       func(childComplexity int, id int) int
-		Nodes      func(childComplexity int, ids []int) int
-		Posts      func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.PostOrder, where *ent.PostWhereInput) int
-		TopicWorks func(childComplexity int, first int) int
-		Works      func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) int
+		Categories     func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.CategoryWhereInput) int
+		Hashtags       func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) int
+		LikedPosts     func(childComplexity int, first int, typeArg post.Type) int
+		Node           func(childComplexity int, id int) int
+		Nodes          func(childComplexity int, ids []int) int
+		Posts          func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.PostOrder, where *ent.PostWhereInput) int
+		TopicWorks     func(childComplexity int, first int) int
+		WorkCategories func(childComplexity int, workID int) int
+		Works          func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) int
 	}
 
 	UnbookmarkPostPayload struct {
@@ -192,6 +193,12 @@ type ComplexityRoot struct {
 		Title     func(childComplexity int) int
 	}
 
+	WorkCategory struct {
+		CategoryID   func(childComplexity int) int
+		CategoryName func(childComplexity int) int
+		PostCount    func(childComplexity int) int
+	}
+
 	WorkConnection struct {
 		Edges      func(childComplexity int) int
 		PageInfo   func(childComplexity int) int
@@ -227,6 +234,7 @@ type QueryResolver interface {
 	Works(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) (*ent.WorkConnection, error)
 	LikedPosts(ctx context.Context, first int, typeArg post.Type) ([]*ent.Post, error)
 	TopicWorks(ctx context.Context, first int) ([]*ent.Work, error)
+	WorkCategories(ctx context.Context, workID int) ([]*model.WorkCategory, error)
 }
 
 type executableSchema struct {
@@ -787,6 +795,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.TopicWorks(childComplexity, args["first"].(int)), true
 
+	case "Query.workCategories":
+		if e.complexity.Query.WorkCategories == nil {
+			break
+		}
+
+		args, err := ec.field_Query_workCategories_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.WorkCategories(childComplexity, args["workID"].(int)), true
+
 	case "Query.works":
 		if e.complexity.Query.Works == nil {
 			break
@@ -938,6 +958,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Work.Title(childComplexity), true
+
+	case "WorkCategory.categoryID":
+		if e.complexity.WorkCategory.CategoryID == nil {
+			break
+		}
+
+		return e.complexity.WorkCategory.CategoryID(childComplexity), true
+
+	case "WorkCategory.categoryName":
+		if e.complexity.WorkCategory.CategoryName == nil {
+			break
+		}
+
+		return e.complexity.WorkCategory.CategoryName(childComplexity), true
+
+	case "WorkCategory.postCount":
+		if e.complexity.WorkCategory.PostCount == nil {
+			break
+		}
+
+		return e.complexity.WorkCategory.PostCount(childComplexity), true
 
 	case "WorkConnection.edges":
 		if e.complexity.WorkConnection.Edges == nil {
@@ -1772,6 +1813,9 @@ extend type Query {
   topicWorks(
     first: Int!
   ): [Work]!
+  workCategories(
+    workID: ID!
+  ): [WorkCategory]!
 }
 
 input LikePostInput {
@@ -1838,6 +1882,12 @@ input UnfollowUserInput {
 type UnfollowUserPayload {
   clientMutationId: String
   user: User
+}
+
+type WorkCategory {
+  categoryID: ID!
+  categoryName: String!
+  postCount: Int!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -2287,6 +2337,21 @@ func (ec *executionContext) field_Query_topicWorks_args(ctx context.Context, raw
 		}
 	}
 	args["first"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_workCategories_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["workID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("workID"))
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["workID"] = arg0
 	return args, nil
 }
 
@@ -5954,6 +6019,69 @@ func (ec *executionContext) fieldContext_Query_topicWorks(ctx context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_workCategories(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_workCategories(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().WorkCategories(rctx, fc.Args["workID"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.WorkCategory)
+	fc.Result = res
+	return ec.marshalNWorkCategory2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐWorkCategory(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_workCategories(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "categoryID":
+				return ec.fieldContext_WorkCategory_categoryID(ctx, field)
+			case "categoryName":
+				return ec.fieldContext_WorkCategory_categoryName(ctx, field)
+			case "postCount":
+				return ec.fieldContext_WorkCategory_postCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WorkCategory", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_workCategories_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query___type(ctx, field)
 	if err != nil {
@@ -7156,6 +7284,138 @@ func (ec *executionContext) fieldContext_Work_posts(ctx context.Context, field g
 				return ec.fieldContext_Post_bookmarkedUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkCategory_categoryID(ctx context.Context, field graphql.CollectedField, obj *model.WorkCategory) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_WorkCategory_categoryID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CategoryID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_WorkCategory_categoryID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkCategory",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkCategory_categoryName(ctx context.Context, field graphql.CollectedField, obj *model.WorkCategory) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_WorkCategory_categoryName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CategoryName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_WorkCategory_categoryName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkCategory",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkCategory_postCount(ctx context.Context, field graphql.CollectedField, obj *model.WorkCategory) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_WorkCategory_postCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PostCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_WorkCategory_postCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkCategory",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -13382,6 +13642,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "workCategories":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_workCategories(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "__type":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -13669,6 +13952,48 @@ func (ec *executionContext) _Work(ctx context.Context, sel ast.SelectionSet, obj
 				return innerFunc(ctx)
 
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var workCategoryImplementors = []string{"WorkCategory"}
+
+func (ec *executionContext) _WorkCategory(ctx context.Context, sel ast.SelectionSet, obj *model.WorkCategory) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, workCategoryImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WorkCategory")
+		case "categoryID":
+
+			out.Values[i] = ec._WorkCategory_categoryID(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "categoryName":
+
+			out.Values[i] = ec._WorkCategory_categoryName(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "postCount":
+
+			out.Values[i] = ec._WorkCategory_postCount(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14605,6 +14930,44 @@ func (ec *executionContext) marshalNWork2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkori�
 		return graphql.Null
 	}
 	return ec._Work(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNWorkCategory2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐWorkCategory(ctx context.Context, sel ast.SelectionSet, v []*model.WorkCategory) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOWorkCategory2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐWorkCategory(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
 }
 
 func (ec *executionContext) marshalNWorkConnection2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐWorkConnection(ctx context.Context, sel ast.SelectionSet, v ent.WorkConnection) graphql.Marshaler {
@@ -15637,6 +16000,13 @@ func (ec *executionContext) marshalOWork2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkori�
 		return graphql.Null
 	}
 	return ec._Work(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOWorkCategory2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐWorkCategory(ctx context.Context, sel ast.SelectionSet, v *model.WorkCategory) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._WorkCategory(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOWorkEdge2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐWorkEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.WorkEdge) graphql.Marshaler {

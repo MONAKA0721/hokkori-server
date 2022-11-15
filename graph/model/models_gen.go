@@ -71,3 +71,9 @@ type UnlikePostPayload struct {
 	ClientMutationID *string   `json:"clientMutationId"`
 	Post             *ent.Post `json:"post"`
 }
+
+type WorkCategory struct {
+	CategoryID   int    `json:"categoryID"`
+	CategoryName string `json:"categoryName"`
+	PostCount    int    `json:"postCount"`
+}

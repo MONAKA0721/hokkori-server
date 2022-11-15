@@ -26,6 +26,9 @@ extend type Query {
   topicWorks(
     first: Int!
   ): [Work]!
+  workCategories(
+    workID: ID!
+  ): [WorkCategory]!
 }
 
 input LikePostInput {
@@ -92,4 +95,10 @@ input UnfollowUserInput {
 type UnfollowUserPayload {
   clientMutationId: String
   user: User
+}
+
+type WorkCategory {
+  categoryID: ID!
+  categoryName: String!
+  postCount: Int!
 }
