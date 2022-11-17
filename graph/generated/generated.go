@@ -99,8 +99,8 @@ type ComplexityRoot struct {
 	Mutation struct {
 		BookmarkPost   func(childComplexity int, input model.BookmarkPostInput) int
 		CreateHashtag  func(childComplexity int, input ent.CreateHashtagInput) int
-		CreatePost     func(childComplexity int, input ent.CreatePostInput) int
-		CreatePosts    func(childComplexity int, input ent.CreatePostInput, input2 ent.CreatePostInput) int
+		CreatePost     func(childComplexity int, input ent.CreatePostInput, hashtagTitles []*string) int
+		CreatePosts    func(childComplexity int, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string) int
 		CreateUser     func(childComplexity int, input ent.CreateUserInput) int
 		CreateWork     func(childComplexity int, input ent.CreateWorkInput) int
 		FollowUser     func(childComplexity int, input model.FollowUserInput) int
@@ -214,8 +214,8 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input ent.CreateUserInput) (*ent.User, error)
 	UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error)
-	CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput) (*ent.Post, error)
-	CreatePost(ctx context.Context, input ent.CreatePostInput) (*ent.Post, error)
+	CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error)
+	CreatePost(ctx context.Context, input ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error)
 	CreateHashtag(ctx context.Context, input ent.CreateHashtagInput) (*ent.Hashtag, error)
 	CreateWork(ctx context.Context, input ent.CreateWorkInput) (*ent.Work, error)
 	LikePost(ctx context.Context, input model.LikePostInput) (*model.LikePostPayload, error)
@@ -440,7 +440,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreatePost(childComplexity, args["input"].(ent.CreatePostInput)), true
+		return e.complexity.Mutation.CreatePost(childComplexity, args["input"].(ent.CreatePostInput), args["hashtagTitles"].([]*string)), true
 
 	case "Mutation.createPosts":
 		if e.complexity.Mutation.CreatePosts == nil {
@@ -452,7 +452,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreatePosts(childComplexity, args["input"].(ent.CreatePostInput), args["input2"].(ent.CreatePostInput)), true
+		return e.complexity.Mutation.CreatePosts(childComplexity, args["input"].(ent.CreatePostInput), args["input2"].(ent.CreatePostInput), args["hashtagTitles"].([]*string)), true
 
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
@@ -1793,8 +1793,8 @@ scalar Time
 type Mutation {
   createUser(input: CreateUserInput!): User!
   updateUser(id: ID!, input: UpdateUserInput!): User!
-  createPosts(input: CreatePostInput!, input2: CreatePostInput!): Post!
-  createPost(input: CreatePostInput!): Post!
+  createPosts(input: CreatePostInput!, input2: CreatePostInput!, hashtagTitles: [String]!): Post!
+  createPost(input: CreatePostInput!, hashtagTitles: [String]!): Post!
   createHashtag(input: CreateHashtagInput!): Hashtag!
   createWork(input: CreateWorkInput!): Work!
   likePost(input: LikePostInput!): LikePostPayload!
@@ -1938,6 +1938,15 @@ func (ec *executionContext) field_Mutation_createPost_args(ctx context.Context, 
 		}
 	}
 	args["input"] = arg0
+	var arg1 []*string
+	if tmp, ok := rawArgs["hashtagTitles"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashtagTitles"))
+		arg1, err = ec.unmarshalNString2ᚕᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["hashtagTitles"] = arg1
 	return args, nil
 }
 
@@ -1962,6 +1971,15 @@ func (ec *executionContext) field_Mutation_createPosts_args(ctx context.Context,
 		}
 	}
 	args["input2"] = arg1
+	var arg2 []*string
+	if tmp, ok := rawArgs["hashtagTitles"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashtagTitles"))
+		arg2, err = ec.unmarshalNString2ᚕᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["hashtagTitles"] = arg2
 	return args, nil
 }
 
@@ -3734,7 +3752,7 @@ func (ec *executionContext) _Mutation_createPosts(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePosts(rctx, fc.Args["input"].(ent.CreatePostInput), fc.Args["input2"].(ent.CreatePostInput))
+		return ec.resolvers.Mutation().CreatePosts(rctx, fc.Args["input"].(ent.CreatePostInput), fc.Args["input2"].(ent.CreatePostInput), fc.Args["hashtagTitles"].([]*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3819,7 +3837,7 @@ func (ec *executionContext) _Mutation_createPost(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePost(rctx, fc.Args["input"].(ent.CreatePostInput))
+		return ec.resolvers.Mutation().CreatePost(rctx, fc.Args["input"].(ent.CreatePostInput), fc.Args["hashtagTitles"].([]*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -14782,6 +14800,32 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOString2ᚖstring(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕᚖstring(ctx context.Context, sel ast.SelectionSet, v []*string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalOString2ᚖstring(ctx, sel, v[i])
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {

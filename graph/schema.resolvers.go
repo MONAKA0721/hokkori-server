@@ -28,17 +28,51 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.Upd
 }
 
 // CreatePosts is the resolver for the createPosts field.
-func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput) (*ent.Post, error) {
-	_, err := r.client.Post.Create().SetInput(input).Save(ctx)
+func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error) {
+	createHashtags := make([]*ent.HashtagCreate, 0)
+	for _, hashtagTitle := range hashtagTitles {
+		createHashtags = append(createHashtags, r.client.Hashtag.Create().SetTitle(*hashtagTitle))
+	}
+
+	hashtags, err := r.client.Hashtag.CreateBulk(createHashtags...).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	newHashtagIDs := make([]int, len(hashtags))
+	for i, hashtag := range hashtags {
+		newHashtagIDs[i] = hashtag.ID
+	}
+
+	input.HashtagIDs = append(input.HashtagIDs, newHashtagIDs...)
+	_, err = r.client.Post.Create().SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	input2.HashtagIDs = append(input2.HashtagIDs, newHashtagIDs...)
 	return r.client.Post.Create().SetInput(input2).Save(ctx)
 }
 
 // CreatePost is the resolver for the createPost field.
-func (r *mutationResolver) CreatePost(ctx context.Context, input ent.CreatePostInput) (*ent.Post, error) {
+func (r *mutationResolver) CreatePost(ctx context.Context, input ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error) {
+	createHashtags := make([]*ent.HashtagCreate, 0)
+	for _, hashtagTitle := range hashtagTitles {
+		createHashtags = append(createHashtags, r.client.Hashtag.Create().SetTitle(*hashtagTitle))
+	}
+
+	hashtags, err := r.client.Hashtag.CreateBulk(createHashtags...).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	newHashtagIDs := make([]int, len(hashtags))
+	for i, hashtag := range hashtags {
+		newHashtagIDs[i] = hashtag.ID
+	}
+
+	input.HashtagIDs = append(input.HashtagIDs, newHashtagIDs...)
+
 	return r.client.Post.Create().SetInput(input).Save(ctx)
 }
 
