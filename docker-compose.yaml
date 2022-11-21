@@ -17,6 +17,9 @@ services:
       dockerfile: Dockerfile.dev
     entrypoint: "./wait-for-it.sh db:5432 -- air"
     env_file: ./docker.env
+    environment:
+      AWS_ACCESS_KEY_ID:
+      AWS_SECRET_ACCESS_KEY:
     volumes:
       - bin:/hokkori/bin
       - .:/hokkori

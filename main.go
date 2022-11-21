@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/MONAKA0721/hokkori/env"
+	"github.com/MONAKA0721/hokkori/s3"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +30,13 @@ func main() {
 		port = defaultPort
 	}
 
+	cfg := env.Config{
+		S3: s3.Config{
+			EndpointURL: os.Getenv("S3_ENDPOINT_URL"),
+			BucketName:  os.Getenv("S3_BUCKET_NAME"),
+		},
+	}
+
 	// Create ent.Client and run the schema migration.
 	client, err := ent.Open(dialect.Postgres, fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
 		os.Getenv("HOKKORI_DB_HOST"),
@@ -46,7 +55,15 @@ func main() {
 		log.Fatal("opening ent client", err)
 	}
 
-	srv := handler.NewDefaultServer(graph.NewSchema(client))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	s3Uploader, err := s3.NewUploader(ctx, cfg.S3)
+	if err != nil {
+		log.Fatal("initializing s3 client")
+	}
+
+	srv := handler.NewDefaultServer(graph.NewSchema(&cfg, client, s3Uploader))
 	// クエリを吐く設定
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		oc := graphql.GetOperationContext(ctx)

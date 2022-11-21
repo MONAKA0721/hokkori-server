@@ -108,7 +108,7 @@ type ComplexityRoot struct {
 		UnbookmarkPost func(childComplexity int, input model.UnbookmarkPostInput) int
 		UnfollowUser   func(childComplexity int, input model.UnfollowUserInput) int
 		UnlikePost     func(childComplexity int, input model.UnlikePostInput) int
-		UpdateUser     func(childComplexity int, id int, input ent.UpdateUserInput) int
+		UpdateUser     func(childComplexity int, id int, input ent.UpdateUserInput, image *graphql.Upload) int
 	}
 
 	PageInfo struct {
@@ -213,7 +213,7 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input ent.CreateUserInput) (*ent.User, error)
-	UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error)
+	UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput, image *graphql.Upload) (*ent.User, error)
 	CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error)
 	CreatePost(ctx context.Context, input ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error)
 	CreateHashtag(ctx context.Context, input ent.CreateHashtagInput) (*ent.Hashtag, error)
@@ -548,7 +548,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(int), args["input"].(ent.UpdateUserInput)), true
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(int), args["input"].(ent.UpdateUserInput), args["image"].(*graphql.Upload)), true
 
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
@@ -1790,9 +1790,11 @@ Maps a Time GraphQL scalar to a Go time.Time struct.
 """
 scalar Time
 
+scalar Upload
+
 type Mutation {
   createUser(input: CreateUserInput!): User!
-  updateUser(id: ID!, input: UpdateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!, image: Upload): User!
   createPosts(input: CreatePostInput!, input2: CreatePostInput!, hashtagTitles: [String]!): Post!
   createPost(input: CreatePostInput!, hashtagTitles: [String]!): Post!
   createHashtag(input: CreateHashtagInput!): Hashtag!
@@ -2109,6 +2111,15 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 		}
 	}
 	args["input"] = arg1
+	var arg2 *graphql.Upload
+	if tmp, ok := rawArgs["image"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+		arg2, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["image"] = arg2
 	return args, nil
 }
 
@@ -3675,7 +3686,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(int), fc.Args["input"].(ent.UpdateUserInput))
+		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(int), fc.Args["input"].(ent.UpdateUserInput), fc.Args["image"].(*graphql.Upload))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -15954,6 +15965,22 @@ func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel
 		return graphql.Null
 	}
 	res := graphql.MarshalTime(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v interface{}) (*graphql.Upload, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalUpload(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v *graphql.Upload) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalUpload(*v)
 	return res
 }
 

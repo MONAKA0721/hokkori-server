@@ -6,7 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
-
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/like"
@@ -15,6 +15,10 @@ import (
 	"github.com/MONAKA0721/hokkori/ent/work"
 	"github.com/MONAKA0721/hokkori/graph/generated"
 	"github.com/MONAKA0721/hokkori/graph/model"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/google/uuid"
 )
 
 // CreateUser is the resolver for the createUser field.
@@ -23,7 +27,26 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input ent.CreateUserI
 }
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
+func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput, image *graphql.Upload) (*ent.User, error) {
+	if image != nil {
+		uuid, err := uuid.NewRandom()
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := r.uploader.Upload(ctx, &s3.PutObjectInput{
+			Bucket:      aws.String(r.config.S3.BucketName),
+			Key:         aws.String(uuid.String()),
+			Body:        image.File,
+			ContentType: aws.String(image.ContentType),
+			ACL:         types.ObjectCannedACLPublicRead,
+		})
+		if err != nil {
+			return nil, err
+		}
+		input.AvatarURL = &output.Location
+	}
+
 	return r.client.User.UpdateOneID(id).SetInput(input).Save(ctx)
 }
 
