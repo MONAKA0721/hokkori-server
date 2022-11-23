@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
@@ -51,7 +52,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.Upd
 }
 
 // CreatePosts is the resolver for the createPosts field.
-func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error) {
+func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload) (*ent.Post, error) {
 	createHashtags := make([]*ent.HashtagCreate, 0)
 	for _, hashtagTitle := range hashtagTitles {
 		createHashtags = append(createHashtags, r.client.Hashtag.Create().SetTitle(*hashtagTitle))
@@ -74,6 +75,26 @@ func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePost
 	}
 
 	input2.HashtagIDs = append(input2.HashtagIDs, newHashtagIDs...)
+
+	if image != nil {
+		uuid, err := uuid.NewRandom()
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := r.uploader.Upload(ctx, &s3.PutObjectInput{
+			Bucket:      aws.String(r.config.S3.BucketName),
+			Key:         aws.String(uuid.String()),
+			Body:        image.File,
+			ContentType: aws.String(image.ContentType),
+			ACL:         types.ObjectCannedACLPublicRead,
+		})
+		if err != nil {
+			return nil, err
+		}
+		input2.Thumbnail = &output.Location
+	}
+
 	return r.client.Post.Create().SetInput(input2).Save(ctx)
 }
 

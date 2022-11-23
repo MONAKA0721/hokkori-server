@@ -100,7 +100,7 @@ type ComplexityRoot struct {
 		BookmarkPost   func(childComplexity int, input model.BookmarkPostInput) int
 		CreateHashtag  func(childComplexity int, input ent.CreateHashtagInput) int
 		CreatePost     func(childComplexity int, input ent.CreatePostInput, hashtagTitles []*string) int
-		CreatePosts    func(childComplexity int, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string) int
+		CreatePosts    func(childComplexity int, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload) int
 		CreateUser     func(childComplexity int, input ent.CreateUserInput) int
 		CreateWork     func(childComplexity int, input ent.CreateWorkInput) int
 		FollowUser     func(childComplexity int, input model.FollowUserInput) int
@@ -214,7 +214,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input ent.CreateUserInput) (*ent.User, error)
 	UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput, image *graphql.Upload) (*ent.User, error)
-	CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error)
+	CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload) (*ent.Post, error)
 	CreatePost(ctx context.Context, input ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error)
 	CreateHashtag(ctx context.Context, input ent.CreateHashtagInput) (*ent.Hashtag, error)
 	CreateWork(ctx context.Context, input ent.CreateWorkInput) (*ent.Work, error)
@@ -452,7 +452,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreatePosts(childComplexity, args["input"].(ent.CreatePostInput), args["input2"].(ent.CreatePostInput), args["hashtagTitles"].([]*string)), true
+		return e.complexity.Mutation.CreatePosts(childComplexity, args["input"].(ent.CreatePostInput), args["input2"].(ent.CreatePostInput), args["hashtagTitles"].([]*string), args["image"].(*graphql.Upload)), true
 
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
@@ -1795,7 +1795,7 @@ scalar Upload
 type Mutation {
   createUser(input: CreateUserInput!): User!
   updateUser(id: ID!, input: UpdateUserInput!, image: Upload): User!
-  createPosts(input: CreatePostInput!, input2: CreatePostInput!, hashtagTitles: [String]!): Post!
+  createPosts(input: CreatePostInput!, input2: CreatePostInput!, hashtagTitles: [String]!, image: Upload): Post!
   createPost(input: CreatePostInput!, hashtagTitles: [String]!): Post!
   createHashtag(input: CreateHashtagInput!): Hashtag!
   createWork(input: CreateWorkInput!): Work!
@@ -1982,6 +1982,15 @@ func (ec *executionContext) field_Mutation_createPosts_args(ctx context.Context,
 		}
 	}
 	args["hashtagTitles"] = arg2
+	var arg3 *graphql.Upload
+	if tmp, ok := rawArgs["image"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+		arg3, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["image"] = arg3
 	return args, nil
 }
 
@@ -3763,7 +3772,7 @@ func (ec *executionContext) _Mutation_createPosts(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePosts(rctx, fc.Args["input"].(ent.CreatePostInput), fc.Args["input2"].(ent.CreatePostInput), fc.Args["hashtagTitles"].([]*string))
+		return ec.resolvers.Mutation().CreatePosts(rctx, fc.Args["input"].(ent.CreatePostInput), fc.Args["input2"].(ent.CreatePostInput), fc.Args["hashtagTitles"].([]*string), fc.Args["image"].(*graphql.Upload))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
