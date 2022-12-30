@@ -20,6 +20,7 @@ type Mutation {
   unfollowUser(input: UnfollowUserInput!): UnfollowUserPayload!
   createDraft(input: CreateDraftInput!, hashtagTitles: [String]!): Draft!
   updateDraft(id: ID!, input: UpdateDraftInput!, hashtagTitles: [String]!): Draft!
+  deleteDraft(input: DeleteDraftInput!): DeleteDraftPayload!
 }
 
 extend type Query {
@@ -105,4 +106,16 @@ type WorkCategory {
   categoryID: ID!
   categoryName: String!
   postCount: Int!
+}
+
+input DeleteDraftInput {
+  clientMutationId: String
+  draftId: ID!
+  userID: ID!
+}
+
+type DeleteDraftPayload {
+  clientMutationId: String
+  draftId: ID
+  userID: ID
 }

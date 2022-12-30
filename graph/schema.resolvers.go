@@ -90,19 +90,9 @@ func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePost
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error) {
-	createHashtags := make([]*ent.HashtagCreate, 0)
-	for _, hashtagTitle := range hashtagTitles {
-		createHashtags = append(createHashtags, r.client.Hashtag.Create().SetTitle(*hashtagTitle))
-	}
-
-	hashtags, err := r.client.Hashtag.CreateBulk(createHashtags...).Save(ctx)
+	newHashtagIDs, err := GetNewHashtagIDs(ctx, r.client, hashtagTitles)
 	if err != nil {
 		return nil, err
-	}
-
-	newHashtagIDs := make([]int, len(hashtags))
-	for i, hashtag := range hashtags {
-		newHashtagIDs[i] = hashtag.ID
 	}
 
 	input.HashtagIDs = append(input.HashtagIDs, newHashtagIDs...)
@@ -230,12 +220,52 @@ func (r *mutationResolver) UnfollowUser(ctx context.Context, input model.Unfollo
 
 // CreateDraft is the resolver for the createDraft field.
 func (r *mutationResolver) CreateDraft(ctx context.Context, input ent.CreateDraftInput, hashtagTitles []*string) (*ent.Draft, error) {
+	newHashtagIDs, err := GetNewHashtagIDs(ctx, r.client, hashtagTitles)
+	if err != nil {
+		return nil, err
+	}
+
+	input.HashtagIDs = append(input.HashtagIDs, newHashtagIDs...)
+
 	return r.client.Draft.Create().SetInput(input).Save(ctx)
 }
 
 // UpdateDraft is the resolver for the updateDraft field.
 func (r *mutationResolver) UpdateDraft(ctx context.Context, id int, input ent.UpdateDraftInput, hashtagTitles []*string) (*ent.Draft, error) {
+	newHashtagIDs, err := GetNewHashtagIDs(ctx, r.client, hashtagTitles)
+	if err != nil {
+		return nil, err
+	}
+
+	input.AddHashtagIDs = append(input.AddHashtagIDs, newHashtagIDs...)
+
 	return r.client.Draft.UpdateOneID(id).ClearHashtags().SetInput(input).Save(ctx)
+}
+
+// DeleteDraft is the resolver for the deleteDraft field.
+func (r *mutationResolver) DeleteDraft(ctx context.Context, input model.DeleteDraftInput) (*model.DeleteDraftPayload, error) {
+	d, err := r.client.Draft.Get(ctx, input.DraftID)
+	if err != nil {
+		return nil, err
+	}
+
+	owner, err := d.QueryOwner().Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if owner.ID != input.UserID {
+		return nil, fmt.Errorf("onwer does not match draftID: %v, userID: %v", input.DraftID, input.UserID)
+	}
+
+	if err := r.client.Draft.DeleteOne(d).Exec(ctx); err != nil {
+		return nil, err
+	}
+
+	return &model.DeleteDraftPayload{
+		ClientMutationID: input.ClientMutationID,
+		DraftID:          &input.DraftID,
+		UserID:           &input.UserID,
+	}, nil
 }
 
 // LikedPosts is the resolver for the likedPosts field.

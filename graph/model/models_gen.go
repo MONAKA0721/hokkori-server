@@ -17,6 +17,18 @@ type BookmarkPostPayload struct {
 	Post             *ent.Post `json:"post"`
 }
 
+type DeleteDraftInput struct {
+	ClientMutationID *string `json:"clientMutationId"`
+	DraftID          int     `json:"draftId"`
+	UserID           int     `json:"userID"`
+}
+
+type DeleteDraftPayload struct {
+	ClientMutationID *string `json:"clientMutationId"`
+	DraftID          *int    `json:"draftId"`
+	UserID           *int    `json:"userID"`
+}
+
 type FollowUserInput struct {
 	ClientMutationID *string `json:"clientMutationId"`
 	UserID           int     `json:"userID"`

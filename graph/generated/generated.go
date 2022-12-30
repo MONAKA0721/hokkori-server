@@ -70,6 +70,12 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	DeleteDraftPayload struct {
+		ClientMutationID func(childComplexity int) int
+		DraftID          func(childComplexity int) int
+		UserID           func(childComplexity int) int
+	}
+
 	Draft struct {
 		Category      func(childComplexity int) int
 		CreateTime    func(childComplexity int) int
@@ -133,6 +139,7 @@ type ComplexityRoot struct {
 		CreatePosts    func(childComplexity int, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload) int
 		CreateUser     func(childComplexity int, input ent.CreateUserInput) int
 		CreateWork     func(childComplexity int, input ent.CreateWorkInput) int
+		DeleteDraft    func(childComplexity int, input model.DeleteDraftInput) int
 		FollowUser     func(childComplexity int, input model.FollowUserInput) int
 		LikePost       func(childComplexity int, input model.LikePostInput) int
 		UnbookmarkPost func(childComplexity int, input model.UnbookmarkPostInput) int
@@ -260,6 +267,7 @@ type MutationResolver interface {
 	UnfollowUser(ctx context.Context, input model.UnfollowUserInput) (*model.UnfollowUserPayload, error)
 	CreateDraft(ctx context.Context, input ent.CreateDraftInput, hashtagTitles []*string) (*ent.Draft, error)
 	UpdateDraft(ctx context.Context, id int, input ent.UpdateDraftInput, hashtagTitles []*string) (*ent.Draft, error)
+	DeleteDraft(ctx context.Context, input model.DeleteDraftInput) (*model.DeleteDraftPayload, error)
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -365,6 +373,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CategoryEdge.Node(childComplexity), true
+
+	case "DeleteDraftPayload.clientMutationId":
+		if e.complexity.DeleteDraftPayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.DeleteDraftPayload.ClientMutationID(childComplexity), true
+
+	case "DeleteDraftPayload.draftId":
+		if e.complexity.DeleteDraftPayload.DraftID == nil {
+			break
+		}
+
+		return e.complexity.DeleteDraftPayload.DraftID(childComplexity), true
+
+	case "DeleteDraftPayload.userID":
+		if e.complexity.DeleteDraftPayload.UserID == nil {
+			break
+		}
+
+		return e.complexity.DeleteDraftPayload.UserID(childComplexity), true
 
 	case "Draft.category":
 		if e.complexity.Draft.Category == nil {
@@ -666,6 +695,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateWork(childComplexity, args["input"].(ent.CreateWorkInput)), true
+
+	case "Mutation.deleteDraft":
+		if e.complexity.Mutation.DeleteDraft == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteDraft_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteDraft(childComplexity, args["input"].(model.DeleteDraftInput)), true
 
 	case "Mutation.followUser":
 		if e.complexity.Mutation.FollowUser == nil {
@@ -1257,6 +1298,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreatePostInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputCreateWorkInput,
+		ec.unmarshalInputDeleteDraftInput,
 		ec.unmarshalInputDraftOrder,
 		ec.unmarshalInputDraftWhereInput,
 		ec.unmarshalInputFollowUserInput,
@@ -2274,6 +2316,7 @@ type Mutation {
   unfollowUser(input: UnfollowUserInput!): UnfollowUserPayload!
   createDraft(input: CreateDraftInput!, hashtagTitles: [String]!): Draft!
   updateDraft(id: ID!, input: UpdateDraftInput!, hashtagTitles: [String]!): Draft!
+  deleteDraft(input: DeleteDraftInput!): DeleteDraftPayload!
 }
 
 extend type Query {
@@ -2359,6 +2402,18 @@ type WorkCategory {
   categoryID: ID!
   categoryName: String!
   postCount: Int!
+}
+
+input DeleteDraftInput {
+  clientMutationId: String
+  draftId: ID!
+  userID: ID!
+}
+
+type DeleteDraftPayload {
+  clientMutationId: String
+  draftId: ID
+  userID: ID
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -2509,6 +2564,21 @@ func (ec *executionContext) field_Mutation_createWork_args(ctx context.Context, 
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateWorkInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCreateWorkInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteDraft_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.DeleteDraftInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNDeleteDraftInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐDeleteDraftInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3643,6 +3713,129 @@ func (ec *executionContext) fieldContext_CategoryEdge_cursor(ctx context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteDraftPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteDraftPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteDraftPayload_clientMutationId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteDraftPayload_clientMutationId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteDraftPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteDraftPayload_draftId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteDraftPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteDraftPayload_draftId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DraftID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOID2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteDraftPayload_draftId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteDraftPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteDraftPayload_userID(ctx context.Context, field graphql.CollectedField, obj *model.DeleteDraftPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteDraftPayload_userID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOID2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteDraftPayload_userID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteDraftPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6197,6 +6390,69 @@ func (ec *executionContext) fieldContext_Mutation_updateDraft(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateDraft_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteDraft(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteDraft(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteDraft(rctx, fc.Args["input"].(model.DeleteDraftInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DeleteDraftPayload)
+	fc.Result = res
+	return ec.marshalNDeleteDraftPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐDeleteDraftPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteDraft(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationId":
+				return ec.fieldContext_DeleteDraftPayload_clientMutationId(ctx, field)
+			case "draftId":
+				return ec.fieldContext_DeleteDraftPayload_draftId(ctx, field)
+			case "userID":
+				return ec.fieldContext_DeleteDraftPayload_userID(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeleteDraftPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteDraft_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -12200,6 +12456,50 @@ func (ec *executionContext) unmarshalInputCreateWorkInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeleteDraftInput(ctx context.Context, obj interface{}) (model.DeleteDraftInput, error) {
+	var it model.DeleteDraftInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clientMutationId", "draftId", "userID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clientMutationId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientMutationId"))
+			it.ClientMutationID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "draftId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("draftId"))
+			it.DraftID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			it.UserID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDraftOrder(ctx context.Context, obj interface{}) (ent.DraftOrder, error) {
 	var it ent.DraftOrder
 	asMap := map[string]interface{}{}
@@ -16068,6 +16368,39 @@ func (ec *executionContext) _CategoryEdge(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var deleteDraftPayloadImplementors = []string{"DeleteDraftPayload"}
+
+func (ec *executionContext) _DeleteDraftPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteDraftPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteDraftPayloadImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteDraftPayload")
+		case "clientMutationId":
+
+			out.Values[i] = ec._DeleteDraftPayload_clientMutationId(ctx, field, obj)
+
+		case "draftId":
+
+			out.Values[i] = ec._DeleteDraftPayload_draftId(ctx, field, obj)
+
+		case "userID":
+
+			out.Values[i] = ec._DeleteDraftPayload_userID(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var draftImplementors = []string{"Draft", "Node"}
 
 func (ec *executionContext) _Draft(ctx context.Context, sel ast.SelectionSet, obj *ent.Draft) graphql.Marshaler {
@@ -16632,6 +16965,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateDraft(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteDraft":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteDraft(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -18052,6 +18394,25 @@ func (ec *executionContext) unmarshalNCursor2githubᚗcomᚋMONAKA0721ᚋhokkori
 
 func (ec *executionContext) marshalNCursor2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v ent.Cursor) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNDeleteDraftInput2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐDeleteDraftInput(ctx context.Context, v interface{}) (model.DeleteDraftInput, error) {
+	res, err := ec.unmarshalInputDeleteDraftInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteDraftPayload2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐDeleteDraftPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteDraftPayload) graphql.Marshaler {
+	return ec._DeleteDraftPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteDraftPayload2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋgraphᚋmodelᚐDeleteDraftPayload(ctx context.Context, sel ast.SelectionSet, v *model.DeleteDraftPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteDraftPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNDraft2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐDraft(ctx context.Context, sel ast.SelectionSet, v ent.Draft) graphql.Marshaler {
