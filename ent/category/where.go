@@ -213,6 +213,34 @@ func HasPostWith(preds ...predicate.Post) predicate.Category {
 	})
 }
 
+// HasDraft applies the HasEdge predicate on the "draft" edge.
+func HasDraft() predicate.Category {
+	return predicate.Category(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(DraftTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, DraftTable, DraftColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDraftWith applies the HasEdge predicate on the "draft" edge with a given conditions (other predicates).
+func HasDraftWith(preds ...predicate.Draft) predicate.Category {
+	return predicate.Category(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(DraftInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, DraftTable, DraftColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Category) predicate.Category {
 	return predicate.Category(func(s *sql.Selector) {

@@ -12,6 +12,9 @@ type Bookmark func(*sql.Selector)
 // Category is the predicate function for category builders.
 type Category func(*sql.Selector)
 
+// Draft is the predicate function for draft builders.
+type Draft func(*sql.Selector)
+
 // Hashtag is the predicate function for hashtag builders.
 type Hashtag func(*sql.Selector)
 

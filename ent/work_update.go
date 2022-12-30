@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/work"
@@ -69,6 +70,21 @@ func (wu *WorkUpdate) AddPosts(p ...*Post) *WorkUpdate {
 	return wu.AddPostIDs(ids...)
 }
 
+// AddDraftIDs adds the "drafts" edge to the Draft entity by IDs.
+func (wu *WorkUpdate) AddDraftIDs(ids ...int) *WorkUpdate {
+	wu.mutation.AddDraftIDs(ids...)
+	return wu
+}
+
+// AddDrafts adds the "drafts" edges to the Draft entity.
+func (wu *WorkUpdate) AddDrafts(d ...*Draft) *WorkUpdate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return wu.AddDraftIDs(ids...)
+}
+
 // Mutation returns the WorkMutation object of the builder.
 func (wu *WorkUpdate) Mutation() *WorkMutation {
 	return wu.mutation
@@ -93,6 +109,27 @@ func (wu *WorkUpdate) RemovePosts(p ...*Post) *WorkUpdate {
 		ids[i] = p[i].ID
 	}
 	return wu.RemovePostIDs(ids...)
+}
+
+// ClearDrafts clears all "drafts" edges to the Draft entity.
+func (wu *WorkUpdate) ClearDrafts() *WorkUpdate {
+	wu.mutation.ClearDrafts()
+	return wu
+}
+
+// RemoveDraftIDs removes the "drafts" edge to Draft entities by IDs.
+func (wu *WorkUpdate) RemoveDraftIDs(ids ...int) *WorkUpdate {
+	wu.mutation.RemoveDraftIDs(ids...)
+	return wu
+}
+
+// RemoveDrafts removes "drafts" edges to Draft entities.
+func (wu *WorkUpdate) RemoveDrafts(d ...*Draft) *WorkUpdate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return wu.RemoveDraftIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -262,6 +299,60 @@ func (wu *WorkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if wu.mutation.DraftsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.DraftsTable,
+			Columns: []string{work.DraftsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wu.mutation.RemovedDraftsIDs(); len(nodes) > 0 && !wu.mutation.DraftsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.DraftsTable,
+			Columns: []string{work.DraftsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wu.mutation.DraftsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.DraftsTable,
+			Columns: []string{work.DraftsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, wu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{work.Label}
@@ -322,6 +413,21 @@ func (wuo *WorkUpdateOne) AddPosts(p ...*Post) *WorkUpdateOne {
 	return wuo.AddPostIDs(ids...)
 }
 
+// AddDraftIDs adds the "drafts" edge to the Draft entity by IDs.
+func (wuo *WorkUpdateOne) AddDraftIDs(ids ...int) *WorkUpdateOne {
+	wuo.mutation.AddDraftIDs(ids...)
+	return wuo
+}
+
+// AddDrafts adds the "drafts" edges to the Draft entity.
+func (wuo *WorkUpdateOne) AddDrafts(d ...*Draft) *WorkUpdateOne {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return wuo.AddDraftIDs(ids...)
+}
+
 // Mutation returns the WorkMutation object of the builder.
 func (wuo *WorkUpdateOne) Mutation() *WorkMutation {
 	return wuo.mutation
@@ -346,6 +452,27 @@ func (wuo *WorkUpdateOne) RemovePosts(p ...*Post) *WorkUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return wuo.RemovePostIDs(ids...)
+}
+
+// ClearDrafts clears all "drafts" edges to the Draft entity.
+func (wuo *WorkUpdateOne) ClearDrafts() *WorkUpdateOne {
+	wuo.mutation.ClearDrafts()
+	return wuo
+}
+
+// RemoveDraftIDs removes the "drafts" edge to Draft entities by IDs.
+func (wuo *WorkUpdateOne) RemoveDraftIDs(ids ...int) *WorkUpdateOne {
+	wuo.mutation.RemoveDraftIDs(ids...)
+	return wuo
+}
+
+// RemoveDrafts removes "drafts" edges to Draft entities.
+func (wuo *WorkUpdateOne) RemoveDrafts(d ...*Draft) *WorkUpdateOne {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return wuo.RemoveDraftIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -537,6 +664,60 @@ func (wuo *WorkUpdateOne) sqlSave(ctx context.Context) (_node *Work, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if wuo.mutation.DraftsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.DraftsTable,
+			Columns: []string{work.DraftsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wuo.mutation.RemovedDraftsIDs(); len(nodes) > 0 && !wuo.mutation.DraftsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.DraftsTable,
+			Columns: []string{work.DraftsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := wuo.mutation.DraftsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.DraftsTable,
+			Columns: []string{work.DraftsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
 				},
 			},
 		}

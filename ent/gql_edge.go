@@ -12,10 +12,58 @@ func (c *Category) Post(ctx context.Context) ([]*Post, error) {
 	return result, err
 }
 
+func (c *Category) Draft(ctx context.Context) ([]*Draft, error) {
+	result, err := c.Edges.DraftOrErr()
+	if IsNotLoaded(err) {
+		result, err = c.QueryDraft().All(ctx)
+	}
+	return result, err
+}
+
+func (d *Draft) Owner(ctx context.Context) (*User, error) {
+	result, err := d.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = d.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (d *Draft) Hashtags(ctx context.Context) ([]*Hashtag, error) {
+	result, err := d.Edges.HashtagsOrErr()
+	if IsNotLoaded(err) {
+		result, err = d.QueryHashtags().All(ctx)
+	}
+	return result, err
+}
+
+func (d *Draft) Work(ctx context.Context) (*Work, error) {
+	result, err := d.Edges.WorkOrErr()
+	if IsNotLoaded(err) {
+		result, err = d.QueryWork().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (d *Draft) Category(ctx context.Context) (*Category, error) {
+	result, err := d.Edges.CategoryOrErr()
+	if IsNotLoaded(err) {
+		result, err = d.QueryCategory().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (h *Hashtag) Posts(ctx context.Context) ([]*Post, error) {
 	result, err := h.Edges.PostsOrErr()
 	if IsNotLoaded(err) {
 		result, err = h.QueryPosts().All(ctx)
+	}
+	return result, err
+}
+
+func (h *Hashtag) Drafts(ctx context.Context) ([]*Draft, error) {
+	result, err := h.Edges.DraftsOrErr()
+	if IsNotLoaded(err) {
+		result, err = h.QueryDrafts().All(ctx)
 	}
 	return result, err
 }
@@ -108,10 +156,26 @@ func (u *User) Following(ctx context.Context) ([]*User, error) {
 	return result, err
 }
 
+func (u *User) Drafts(ctx context.Context) ([]*Draft, error) {
+	result, err := u.Edges.DraftsOrErr()
+	if IsNotLoaded(err) {
+		result, err = u.QueryDrafts().All(ctx)
+	}
+	return result, err
+}
+
 func (w *Work) Posts(ctx context.Context) ([]*Post, error) {
 	result, err := w.Edges.PostsOrErr()
 	if IsNotLoaded(err) {
 		result, err = w.QueryPosts().All(ctx)
+	}
+	return result, err
+}
+
+func (w *Work) Drafts(ctx context.Context) ([]*Draft, error) {
+	result, err := w.Edges.DraftsOrErr()
+	if IsNotLoaded(err) {
+		result, err = w.QueryDrafts().All(ctx)
 	}
 	return result, err
 }

@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
@@ -55,7 +56,7 @@ func (c *Category) Node(ctx context.Context) (node *Node, err error) {
 		ID:     c.ID,
 		Type:   "Category",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 1),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(c.Name); err != nil {
@@ -76,6 +77,131 @@ func (c *Category) Node(ctx context.Context) (node *Node, err error) {
 	if err != nil {
 		return nil, err
 	}
+	node.Edges[1] = &Edge{
+		Type: "Draft",
+		Name: "draft",
+	}
+	err = c.QueryDraft().
+		Select(draft.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func (d *Draft) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     d.ID,
+		Type:   "Draft",
+		Fields: make([]*Field, 8),
+		Edges:  make([]*Edge, 4),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(d.CreateTime); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "create_time",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(d.UpdateTime); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "update_time",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(d.PraiseTitle); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "string",
+		Name:  "praise_title",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(d.LetterTitle); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "string",
+		Name:  "letter_title",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(d.PraiseContent); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "string",
+		Name:  "praise_content",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(d.LetterContent); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
+		Type:  "string",
+		Name:  "letter_content",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(d.PraiseSpoiled); err != nil {
+		return nil, err
+	}
+	node.Fields[6] = &Field{
+		Type:  "bool",
+		Name:  "praise_spoiled",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(d.LetterSpoiled); err != nil {
+		return nil, err
+	}
+	node.Fields[7] = &Field{
+		Type:  "bool",
+		Name:  "letter_spoiled",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "User",
+		Name: "owner",
+	}
+	err = d.QueryOwner().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Hashtag",
+		Name: "hashtags",
+	}
+	err = d.QueryHashtags().
+		Select(hashtag.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "Work",
+		Name: "work",
+	}
+	err = d.QueryWork().
+		Select(work.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		Type: "Category",
+		Name: "category",
+	}
+	err = d.QueryCategory().
+		Select(category.FieldID).
+		Scan(ctx, &node.Edges[3].IDs)
+	if err != nil {
+		return nil, err
+	}
 	return node, nil
 }
 
@@ -84,7 +210,7 @@ func (h *Hashtag) Node(ctx context.Context) (node *Node, err error) {
 		ID:     h.ID,
 		Type:   "Hashtag",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 1),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(h.Title); err != nil {
@@ -102,6 +228,16 @@ func (h *Hashtag) Node(ctx context.Context) (node *Node, err error) {
 	err = h.QueryPosts().
 		Select(post.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Draft",
+		Name: "drafts",
+	}
+	err = h.QueryDrafts().
+		Select(draft.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +376,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     u.ID,
 		Type:   "User",
 		Fields: make([]*Field, 4),
-		Edges:  make([]*Edge, 5),
+		Edges:  make([]*Edge, 6),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(u.Name); err != nil {
@@ -325,6 +461,16 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	if err != nil {
 		return nil, err
 	}
+	node.Edges[5] = &Edge{
+		Type: "Draft",
+		Name: "drafts",
+	}
+	err = u.QueryDrafts().
+		Select(draft.FieldID).
+		Scan(ctx, &node.Edges[5].IDs)
+	if err != nil {
+		return nil, err
+	}
 	return node, nil
 }
 
@@ -333,7 +479,7 @@ func (w *Work) Node(ctx context.Context) (node *Node, err error) {
 		ID:     w.ID,
 		Type:   "Work",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 1),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(w.Title); err != nil {
@@ -359,6 +505,16 @@ func (w *Work) Node(ctx context.Context) (node *Node, err error) {
 	err = w.QueryPosts().
 		Select(post.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Draft",
+		Name: "drafts",
+	}
+	err = w.QueryDrafts().
+		Select(draft.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -435,6 +591,18 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 		query := c.Category.Query().
 			Where(category.ID(id))
 		query, err := query.CollectFields(ctx, "Category")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case draft.Table:
+		query := c.Draft.Query().
+			Where(draft.ID(id))
+		query, err := query.CollectFields(ctx, "Draft")
 		if err != nil {
 			return nil, err
 		}
@@ -568,6 +736,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.Category.Query().
 			Where(category.IDIn(ids...))
 		query, err := query.CollectFields(ctx, "Category")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case draft.Table:
+		query := c.Draft.Query().
+			Where(draft.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "Draft")
 		if err != nil {
 			return nil, err
 		}

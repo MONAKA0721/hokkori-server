@@ -34,6 +34,15 @@ func (c *CategoryQuery) collectField(ctx context.Context, op *graphql.OperationC
 				return err
 			}
 			c.withPost = query
+		case "draft":
+			var (
+				path  = append(path, field.Name)
+				query = &DraftQuery{config: c.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			c.withDraft = query
 		}
 	}
 	return nil
@@ -69,6 +78,114 @@ func newCategoryPaginateArgs(rv map[string]interface{}) *categoryPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (d *DraftQuery) CollectFields(ctx context.Context, satisfies ...string) (*DraftQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return d, nil
+	}
+	if err := d.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+func (d *DraftQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "owner":
+			var (
+				path  = append(path, field.Name)
+				query = &UserQuery{config: d.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			d.withOwner = query
+		case "hashtags":
+			var (
+				path  = append(path, field.Name)
+				query = &HashtagQuery{config: d.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			d.withHashtags = query
+		case "work":
+			var (
+				path  = append(path, field.Name)
+				query = &WorkQuery{config: d.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			d.withWork = query
+		case "category":
+			var (
+				path  = append(path, field.Name)
+				query = &CategoryQuery{config: d.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			d.withCategory = query
+		}
+	}
+	return nil
+}
+
+type draftPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []DraftPaginateOption
+}
+
+func newDraftPaginateArgs(rv map[string]interface{}) *draftPaginateArgs {
+	args := &draftPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]interface{}:
+			var (
+				err1, err2 error
+				order      = &DraftOrder{Field: &DraftOrderField{}}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithDraftOrder(order))
+			}
+		case *DraftOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithDraftOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*DraftWhereInput); ok {
+		args.opts = append(args.opts, WithDraftFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (h *HashtagQuery) CollectFields(ctx context.Context, satisfies ...string) (*HashtagQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -93,6 +210,15 @@ func (h *HashtagQuery) collectField(ctx context.Context, op *graphql.OperationCo
 				return err
 			}
 			h.withPosts = query
+		case "drafts":
+			var (
+				path  = append(path, field.Name)
+				query = &DraftQuery{config: h.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			h.withDrafts = query
 		}
 	}
 	return nil
@@ -314,6 +440,15 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			u.withFollowing = query
+		case "drafts":
+			var (
+				path  = append(path, field.Name)
+				query = &DraftQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.withDrafts = query
 		}
 	}
 	return nil
@@ -373,6 +508,15 @@ func (w *WorkQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			w.withPosts = query
+		case "drafts":
+			var (
+				path  = append(path, field.Name)
+				query = &DraftQuery{config: w.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			w.withDrafts = query
 		}
 	}
 	return nil

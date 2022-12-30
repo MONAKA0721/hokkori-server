@@ -28,11 +28,13 @@ type Work struct {
 type WorkEdges struct {
 	// Posts holds the value of the posts edge.
 	Posts []*Post `json:"posts,omitempty"`
+	// Drafts holds the value of the drafts edge.
+	Drafts []*Draft `json:"drafts,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]*int
+	totalCount [2]*int
 }
 
 // PostsOrErr returns the Posts value or an error if the edge
@@ -42,6 +44,15 @@ func (e WorkEdges) PostsOrErr() ([]*Post, error) {
 		return e.Posts, nil
 	}
 	return nil, &NotLoadedError{edge: "posts"}
+}
+
+// DraftsOrErr returns the Drafts value or an error if the edge
+// was not loaded in eager-loading.
+func (e WorkEdges) DraftsOrErr() ([]*Draft, error) {
+	if e.loadedTypes[1] {
+		return e.Drafts, nil
+	}
+	return nil, &NotLoadedError{edge: "drafts"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -94,6 +105,11 @@ func (w *Work) assignValues(columns []string, values []interface{}) error {
 // QueryPosts queries the "posts" edge of the Work entity.
 func (w *Work) QueryPosts() *PostQuery {
 	return (&WorkClient{config: w.config}).QueryPosts(w)
+}
+
+// QueryDrafts queries the "drafts" edge of the Work entity.
+func (w *Work) QueryDrafts() *DraftQuery {
+	return (&WorkClient{config: w.config}).QueryDrafts(w)
 }
 
 // Update returns a builder for updating this Work.

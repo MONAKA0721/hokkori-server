@@ -18,6 +18,8 @@ type Mutation {
   unbookmarkPost(input: UnbookmarkPostInput!): UnbookmarkPostPayload!
   followUser(input: FollowUserInput!): FollowUserPayload!
   unfollowUser(input: UnfollowUserInput!): UnfollowUserPayload!
+  createDraft(input: CreateDraftInput!, hashtagTitles: [String]!): Draft!
+  updateDraft(id: ID!, input: UpdateDraftInput!, hashtagTitles: [String]!): Draft!
 }
 
 extend type Query {

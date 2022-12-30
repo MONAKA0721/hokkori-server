@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 	"github.com/MONAKA0721/hokkori/ent/work"
@@ -26,6 +27,7 @@ type WorkQuery struct {
 	fields     []string
 	predicates []predicate.Work
 	withPosts  *PostQuery
+	withDrafts *DraftQuery
 	modifiers  []func(*sql.Selector)
 	loadTotal  []func(context.Context, []*Work) error
 	// intermediate query (i.e. traversal path).
@@ -79,6 +81,28 @@ func (wq *WorkQuery) QueryPosts() *PostQuery {
 			sqlgraph.From(work.Table, work.FieldID, selector),
 			sqlgraph.To(post.Table, post.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, work.PostsTable, work.PostsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(wq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDrafts chains the current query on the "drafts" edge.
+func (wq *WorkQuery) QueryDrafts() *DraftQuery {
+	query := &DraftQuery{config: wq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := wq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := wq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(work.Table, work.FieldID, selector),
+			sqlgraph.To(draft.Table, draft.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, work.DraftsTable, work.DraftsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(wq.driver.Dialect(), step)
 		return fromU, nil
@@ -268,6 +292,7 @@ func (wq *WorkQuery) Clone() *WorkQuery {
 		order:      append([]OrderFunc{}, wq.order...),
 		predicates: append([]predicate.Work{}, wq.predicates...),
 		withPosts:  wq.withPosts.Clone(),
+		withDrafts: wq.withDrafts.Clone(),
 		// clone intermediate query.
 		sql:    wq.sql.Clone(),
 		path:   wq.path,
@@ -283,6 +308,17 @@ func (wq *WorkQuery) WithPosts(opts ...func(*PostQuery)) *WorkQuery {
 		opt(query)
 	}
 	wq.withPosts = query
+	return wq
+}
+
+// WithDrafts tells the query-builder to eager-load the nodes that are connected to
+// the "drafts" edge. The optional arguments are used to configure the query builder of the edge.
+func (wq *WorkQuery) WithDrafts(opts ...func(*DraftQuery)) *WorkQuery {
+	query := &DraftQuery{config: wq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	wq.withDrafts = query
 	return wq
 }
 
@@ -354,8 +390,9 @@ func (wq *WorkQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Work, e
 	var (
 		nodes       = []*Work{}
 		_spec       = wq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			wq.withPosts != nil,
+			wq.withDrafts != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -383,6 +420,13 @@ func (wq *WorkQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Work, e
 		if err := wq.loadPosts(ctx, query, nodes,
 			func(n *Work) { n.Edges.Posts = []*Post{} },
 			func(n *Work, e *Post) { n.Edges.Posts = append(n.Edges.Posts, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := wq.withDrafts; query != nil {
+		if err := wq.loadDrafts(ctx, query, nodes,
+			func(n *Work) { n.Edges.Drafts = []*Draft{} },
+			func(n *Work, e *Draft) { n.Edges.Drafts = append(n.Edges.Drafts, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -420,6 +464,37 @@ func (wq *WorkQuery) loadPosts(ctx context.Context, query *PostQuery, nodes []*W
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "work_posts" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (wq *WorkQuery) loadDrafts(ctx context.Context, query *DraftQuery, nodes []*Work, init func(*Work), assign func(*Work, *Draft)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Work)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Draft(func(s *sql.Selector) {
+		s.Where(sql.InValues(work.DraftsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.work_drafts
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "work_drafts" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "work_drafts" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

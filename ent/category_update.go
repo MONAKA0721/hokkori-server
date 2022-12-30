@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 )
@@ -49,6 +50,21 @@ func (cu *CategoryUpdate) AddPost(p ...*Post) *CategoryUpdate {
 	return cu.AddPostIDs(ids...)
 }
 
+// AddDraftIDs adds the "draft" edge to the Draft entity by IDs.
+func (cu *CategoryUpdate) AddDraftIDs(ids ...int) *CategoryUpdate {
+	cu.mutation.AddDraftIDs(ids...)
+	return cu
+}
+
+// AddDraft adds the "draft" edges to the Draft entity.
+func (cu *CategoryUpdate) AddDraft(d ...*Draft) *CategoryUpdate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return cu.AddDraftIDs(ids...)
+}
+
 // Mutation returns the CategoryMutation object of the builder.
 func (cu *CategoryUpdate) Mutation() *CategoryMutation {
 	return cu.mutation
@@ -73,6 +89,27 @@ func (cu *CategoryUpdate) RemovePost(p ...*Post) *CategoryUpdate {
 		ids[i] = p[i].ID
 	}
 	return cu.RemovePostIDs(ids...)
+}
+
+// ClearDraft clears all "draft" edges to the Draft entity.
+func (cu *CategoryUpdate) ClearDraft() *CategoryUpdate {
+	cu.mutation.ClearDraft()
+	return cu
+}
+
+// RemoveDraftIDs removes the "draft" edge to Draft entities by IDs.
+func (cu *CategoryUpdate) RemoveDraftIDs(ids ...int) *CategoryUpdate {
+	cu.mutation.RemoveDraftIDs(ids...)
+	return cu
+}
+
+// RemoveDraft removes "draft" edges to Draft entities.
+func (cu *CategoryUpdate) RemoveDraft(d ...*Draft) *CategoryUpdate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return cu.RemoveDraftIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -224,6 +261,60 @@ func (cu *CategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if cu.mutation.DraftCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   category.DraftTable,
+			Columns: []string{category.DraftColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.RemovedDraftIDs(); len(nodes) > 0 && !cu.mutation.DraftCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   category.DraftTable,
+			Columns: []string{category.DraftColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.DraftIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   category.DraftTable,
+			Columns: []string{category.DraftColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{category.Label}
@@ -264,6 +355,21 @@ func (cuo *CategoryUpdateOne) AddPost(p ...*Post) *CategoryUpdateOne {
 	return cuo.AddPostIDs(ids...)
 }
 
+// AddDraftIDs adds the "draft" edge to the Draft entity by IDs.
+func (cuo *CategoryUpdateOne) AddDraftIDs(ids ...int) *CategoryUpdateOne {
+	cuo.mutation.AddDraftIDs(ids...)
+	return cuo
+}
+
+// AddDraft adds the "draft" edges to the Draft entity.
+func (cuo *CategoryUpdateOne) AddDraft(d ...*Draft) *CategoryUpdateOne {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return cuo.AddDraftIDs(ids...)
+}
+
 // Mutation returns the CategoryMutation object of the builder.
 func (cuo *CategoryUpdateOne) Mutation() *CategoryMutation {
 	return cuo.mutation
@@ -288,6 +394,27 @@ func (cuo *CategoryUpdateOne) RemovePost(p ...*Post) *CategoryUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return cuo.RemovePostIDs(ids...)
+}
+
+// ClearDraft clears all "draft" edges to the Draft entity.
+func (cuo *CategoryUpdateOne) ClearDraft() *CategoryUpdateOne {
+	cuo.mutation.ClearDraft()
+	return cuo
+}
+
+// RemoveDraftIDs removes the "draft" edge to Draft entities by IDs.
+func (cuo *CategoryUpdateOne) RemoveDraftIDs(ids ...int) *CategoryUpdateOne {
+	cuo.mutation.RemoveDraftIDs(ids...)
+	return cuo
+}
+
+// RemoveDraft removes "draft" edges to Draft entities.
+func (cuo *CategoryUpdateOne) RemoveDraft(d ...*Draft) *CategoryUpdateOne {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return cuo.RemoveDraftIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -461,6 +588,60 @@ func (cuo *CategoryUpdateOne) sqlSave(ctx context.Context) (_node *Category, err
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cuo.mutation.DraftCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   category.DraftTable,
+			Columns: []string{category.DraftColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.RemovedDraftIDs(); len(nodes) > 0 && !cuo.mutation.DraftCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   category.DraftTable,
+			Columns: []string{category.DraftColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.DraftIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   category.DraftTable,
+			Columns: []string{category.DraftColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
 				},
 			},
 		}

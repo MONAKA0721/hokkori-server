@@ -30,14 +30,14 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input ent.CreateUserI
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput, image *graphql.Upload) (*ent.User, error) {
 	if image != nil {
-		uuid, err := uuid.NewRandom()
+		randomUUID, err := uuid.NewRandom()
 		if err != nil {
 			return nil, err
 		}
 
 		output, err := r.uploader.Upload(ctx, &s3.PutObjectInput{
 			Bucket:      aws.String(r.config.S3.BucketName),
-			Key:         aws.String(uuid.String()),
+			Key:         aws.String(randomUUID.String()),
 			Body:        image.File,
 			ContentType: aws.String(image.ContentType),
 			ACL:         types.ObjectCannedACLPublicRead,
@@ -53,19 +53,9 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.Upd
 
 // CreatePosts is the resolver for the createPosts field.
 func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload) (*ent.Post, error) {
-	createHashtags := make([]*ent.HashtagCreate, 0)
-	for _, hashtagTitle := range hashtagTitles {
-		createHashtags = append(createHashtags, r.client.Hashtag.Create().SetTitle(*hashtagTitle))
-	}
-
-	hashtags, err := r.client.Hashtag.CreateBulk(createHashtags...).Save(ctx)
+	newHashtagIDs, err := GetNewHashtagIDs(ctx, r.client, hashtagTitles)
 	if err != nil {
 		return nil, err
-	}
-
-	newHashtagIDs := make([]int, len(hashtags))
-	for i, hashtag := range hashtags {
-		newHashtagIDs[i] = hashtag.ID
 	}
 
 	input.HashtagIDs = append(input.HashtagIDs, newHashtagIDs...)
@@ -77,14 +67,14 @@ func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePost
 	input2.HashtagIDs = append(input2.HashtagIDs, newHashtagIDs...)
 
 	if image != nil {
-		uuid, err := uuid.NewRandom()
+		randomUUID, err := uuid.NewRandom()
 		if err != nil {
 			return nil, err
 		}
 
 		output, err := r.uploader.Upload(ctx, &s3.PutObjectInput{
 			Bucket:      aws.String(r.config.S3.BucketName),
-			Key:         aws.String(uuid.String()),
+			Key:         aws.String(randomUUID.String()),
 			Body:        image.File,
 			ContentType: aws.String(image.ContentType),
 			ACL:         types.ObjectCannedACLPublicRead,
@@ -236,6 +226,16 @@ func (r *mutationResolver) UnfollowUser(ctx context.Context, input model.Unfollo
 		ClientMutationID: input.ClientMutationID,
 		User:             u,
 	}, nil
+}
+
+// CreateDraft is the resolver for the createDraft field.
+func (r *mutationResolver) CreateDraft(ctx context.Context, input ent.CreateDraftInput, hashtagTitles []*string) (*ent.Draft, error) {
+	return r.client.Draft.Create().SetInput(input).Save(ctx)
+}
+
+// UpdateDraft is the resolver for the updateDraft field.
+func (r *mutationResolver) UpdateDraft(ctx context.Context, id int, input ent.UpdateDraftInput, hashtagTitles []*string) (*ent.Draft, error) {
+	return r.client.Draft.UpdateOneID(id).ClearHashtags().SetInput(input).Save(ctx)
 }
 
 // LikedPosts is the resolver for the likedPosts field.

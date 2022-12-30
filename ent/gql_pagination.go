@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
@@ -477,6 +478,298 @@ func (c *Category) ToEdge(order *CategoryOrder) *CategoryEdge {
 	return &CategoryEdge{
 		Node:   c,
 		Cursor: order.Field.toCursor(c),
+	}
+}
+
+// DraftEdge is the edge representation of Draft.
+type DraftEdge struct {
+	Node   *Draft `json:"node"`
+	Cursor Cursor `json:"cursor"`
+}
+
+// DraftConnection is the connection containing edges to Draft.
+type DraftConnection struct {
+	Edges      []*DraftEdge `json:"edges"`
+	PageInfo   PageInfo     `json:"pageInfo"`
+	TotalCount int          `json:"totalCount"`
+}
+
+func (c *DraftConnection) build(nodes []*Draft, pager *draftPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *Draft
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Draft {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Draft {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*DraftEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &DraftEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// DraftPaginateOption enables pagination customization.
+type DraftPaginateOption func(*draftPager) error
+
+// WithDraftOrder configures pagination ordering.
+func WithDraftOrder(order *DraftOrder) DraftPaginateOption {
+	if order == nil {
+		order = DefaultDraftOrder
+	}
+	o := *order
+	return func(pager *draftPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultDraftOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithDraftFilter configures pagination filter.
+func WithDraftFilter(filter func(*DraftQuery) (*DraftQuery, error)) DraftPaginateOption {
+	return func(pager *draftPager) error {
+		if filter == nil {
+			return errors.New("DraftQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type draftPager struct {
+	order  *DraftOrder
+	filter func(*DraftQuery) (*DraftQuery, error)
+}
+
+func newDraftPager(opts []DraftPaginateOption) (*draftPager, error) {
+	pager := &draftPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultDraftOrder
+	}
+	return pager, nil
+}
+
+func (p *draftPager) applyFilter(query *DraftQuery) (*DraftQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *draftPager) toCursor(d *Draft) Cursor {
+	return p.order.Field.toCursor(d)
+}
+
+func (p *draftPager) applyCursors(query *DraftQuery, after, before *Cursor) *DraftQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultDraftOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *draftPager) applyOrder(query *DraftQuery, reverse bool) *DraftQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultDraftOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultDraftOrder.Field.field))
+	}
+	return query
+}
+
+func (p *draftPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultDraftOrder.Field {
+			b.Comma().Ident(DefaultDraftOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Draft.
+func (d *DraftQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...DraftPaginateOption,
+) (*DraftConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newDraftPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if d, err = pager.applyFilter(d); err != nil {
+		return nil, err
+	}
+	conn := &DraftConnection{Edges: []*DraftEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+			if conn.TotalCount, err = d.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := d.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	d = pager.applyCursors(d, after, before)
+	d = pager.applyOrder(d, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		d.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := d.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := d.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// DraftOrderFieldCreateTime orders Draft by create_time.
+	DraftOrderFieldCreateTime = &DraftOrderField{
+		field: draft.FieldCreateTime,
+		toCursor: func(d *Draft) Cursor {
+			return Cursor{
+				ID:    d.ID,
+				Value: d.CreateTime,
+			}
+		},
+	}
+	// DraftOrderFieldUpdateTime orders Draft by update_time.
+	DraftOrderFieldUpdateTime = &DraftOrderField{
+		field: draft.FieldUpdateTime,
+		toCursor: func(d *Draft) Cursor {
+			return Cursor{
+				ID:    d.ID,
+				Value: d.UpdateTime,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f DraftOrderField) String() string {
+	var str string
+	switch f.field {
+	case draft.FieldCreateTime:
+		str = "CREATE_TIME"
+	case draft.FieldUpdateTime:
+		str = "UPDATE_TIME"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f DraftOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *DraftOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("DraftOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATE_TIME":
+		*f = *DraftOrderFieldCreateTime
+	case "UPDATE_TIME":
+		*f = *DraftOrderFieldUpdateTime
+	default:
+		return fmt.Errorf("%s is not a valid DraftOrderField", str)
+	}
+	return nil
+}
+
+// DraftOrderField defines the ordering field of Draft.
+type DraftOrderField struct {
+	field    string
+	toCursor func(*Draft) Cursor
+}
+
+// DraftOrder defines the ordering of Draft.
+type DraftOrder struct {
+	Direction OrderDirection   `json:"direction"`
+	Field     *DraftOrderField `json:"field"`
+}
+
+// DefaultDraftOrder is the default ordering of Draft.
+var DefaultDraftOrder = &DraftOrder{
+	Direction: OrderDirectionAsc,
+	Field: &DraftOrderField{
+		field: draft.FieldID,
+		toCursor: func(d *Draft) Cursor {
+			return Cursor{ID: d.ID}
+		},
+	},
+}
+
+// ToEdge converts Draft into DraftEdge.
+func (d *Draft) ToEdge(order *DraftOrder) *DraftEdge {
+	if order == nil {
+		order = DefaultDraftOrder
+	}
+	return &DraftEdge{
+		Node:   d,
+		Cursor: order.Field.toCursor(d),
 	}
 }
 

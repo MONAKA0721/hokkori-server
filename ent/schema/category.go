@@ -24,6 +24,7 @@ func (Category) Fields() []ent.Field {
 func (Category) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("post", Post.Type).Ref("category"),
+		edge.From("draft", Draft.Type).Ref("category"),
 	}
 }
 

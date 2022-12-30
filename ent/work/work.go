@@ -13,6 +13,8 @@ const (
 	FieldThumbnail = "thumbnail"
 	// EdgePosts holds the string denoting the posts edge name in mutations.
 	EdgePosts = "posts"
+	// EdgeDrafts holds the string denoting the drafts edge name in mutations.
+	EdgeDrafts = "drafts"
 	// Table holds the table name of the work in the database.
 	Table = "works"
 	// PostsTable is the table that holds the posts relation/edge.
@@ -22,6 +24,13 @@ const (
 	PostsInverseTable = "posts"
 	// PostsColumn is the table column denoting the posts relation/edge.
 	PostsColumn = "work_posts"
+	// DraftsTable is the table that holds the drafts relation/edge.
+	DraftsTable = "drafts"
+	// DraftsInverseTable is the table name for the Draft entity.
+	// It exists in this package in order to avoid circular dependency with the "draft" package.
+	DraftsInverseTable = "drafts"
+	// DraftsColumn is the table column denoting the drafts relation/edge.
+	DraftsColumn = "work_drafts"
 )
 
 // Columns holds all SQL columns for work fields.

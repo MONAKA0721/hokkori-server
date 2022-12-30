@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
@@ -26,6 +27,7 @@ type HashtagQuery struct {
 	fields     []string
 	predicates []predicate.Hashtag
 	withPosts  *PostQuery
+	withDrafts *DraftQuery
 	modifiers  []func(*sql.Selector)
 	loadTotal  []func(context.Context, []*Hashtag) error
 	// intermediate query (i.e. traversal path).
@@ -79,6 +81,28 @@ func (hq *HashtagQuery) QueryPosts() *PostQuery {
 			sqlgraph.From(hashtag.Table, hashtag.FieldID, selector),
 			sqlgraph.To(post.Table, post.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, hashtag.PostsTable, hashtag.PostsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(hq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDrafts chains the current query on the "drafts" edge.
+func (hq *HashtagQuery) QueryDrafts() *DraftQuery {
+	query := &DraftQuery{config: hq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := hq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := hq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hashtag.Table, hashtag.FieldID, selector),
+			sqlgraph.To(draft.Table, draft.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, hashtag.DraftsTable, hashtag.DraftsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(hq.driver.Dialect(), step)
 		return fromU, nil
@@ -268,6 +292,7 @@ func (hq *HashtagQuery) Clone() *HashtagQuery {
 		order:      append([]OrderFunc{}, hq.order...),
 		predicates: append([]predicate.Hashtag{}, hq.predicates...),
 		withPosts:  hq.withPosts.Clone(),
+		withDrafts: hq.withDrafts.Clone(),
 		// clone intermediate query.
 		sql:    hq.sql.Clone(),
 		path:   hq.path,
@@ -283,6 +308,17 @@ func (hq *HashtagQuery) WithPosts(opts ...func(*PostQuery)) *HashtagQuery {
 		opt(query)
 	}
 	hq.withPosts = query
+	return hq
+}
+
+// WithDrafts tells the query-builder to eager-load the nodes that are connected to
+// the "drafts" edge. The optional arguments are used to configure the query builder of the edge.
+func (hq *HashtagQuery) WithDrafts(opts ...func(*DraftQuery)) *HashtagQuery {
+	query := &DraftQuery{config: hq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	hq.withDrafts = query
 	return hq
 }
 
@@ -354,8 +390,9 @@ func (hq *HashtagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Hash
 	var (
 		nodes       = []*Hashtag{}
 		_spec       = hq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			hq.withPosts != nil,
+			hq.withDrafts != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -383,6 +420,13 @@ func (hq *HashtagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Hash
 		if err := hq.loadPosts(ctx, query, nodes,
 			func(n *Hashtag) { n.Edges.Posts = []*Post{} },
 			func(n *Hashtag, e *Post) { n.Edges.Posts = append(n.Edges.Posts, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := hq.withDrafts; query != nil {
+		if err := hq.loadDrafts(ctx, query, nodes,
+			func(n *Hashtag) { n.Edges.Drafts = []*Draft{} },
+			func(n *Hashtag, e *Draft) { n.Edges.Drafts = append(n.Edges.Drafts, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -445,6 +489,64 @@ func (hq *HashtagQuery) loadPosts(ctx context.Context, query *PostQuery, nodes [
 		nodes, ok := nids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected "posts" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (hq *HashtagQuery) loadDrafts(ctx context.Context, query *DraftQuery, nodes []*Hashtag, init func(*Hashtag), assign func(*Hashtag, *Draft)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*Hashtag)
+	nids := make(map[int]map[*Hashtag]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(hashtag.DraftsTable)
+		s.Join(joinT).On(s.C(draft.FieldID), joinT.C(hashtag.DraftsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(hashtag.DraftsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(hashtag.DraftsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]interface{}, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]interface{}{new(sql.NullInt64)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []interface{}) error {
+			outValue := int(values[0].(*sql.NullInt64).Int64)
+			inValue := int(values[1].(*sql.NullInt64).Int64)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*Hashtag]struct{}{byID[outValue]: struct{}{}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "drafts" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)

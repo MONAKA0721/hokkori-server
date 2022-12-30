@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
@@ -49,6 +50,21 @@ func (hu *HashtagUpdate) AddPosts(p ...*Post) *HashtagUpdate {
 	return hu.AddPostIDs(ids...)
 }
 
+// AddDraftIDs adds the "drafts" edge to the Draft entity by IDs.
+func (hu *HashtagUpdate) AddDraftIDs(ids ...int) *HashtagUpdate {
+	hu.mutation.AddDraftIDs(ids...)
+	return hu
+}
+
+// AddDrafts adds the "drafts" edges to the Draft entity.
+func (hu *HashtagUpdate) AddDrafts(d ...*Draft) *HashtagUpdate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return hu.AddDraftIDs(ids...)
+}
+
 // Mutation returns the HashtagMutation object of the builder.
 func (hu *HashtagUpdate) Mutation() *HashtagMutation {
 	return hu.mutation
@@ -73,6 +89,27 @@ func (hu *HashtagUpdate) RemovePosts(p ...*Post) *HashtagUpdate {
 		ids[i] = p[i].ID
 	}
 	return hu.RemovePostIDs(ids...)
+}
+
+// ClearDrafts clears all "drafts" edges to the Draft entity.
+func (hu *HashtagUpdate) ClearDrafts() *HashtagUpdate {
+	hu.mutation.ClearDrafts()
+	return hu
+}
+
+// RemoveDraftIDs removes the "drafts" edge to Draft entities by IDs.
+func (hu *HashtagUpdate) RemoveDraftIDs(ids ...int) *HashtagUpdate {
+	hu.mutation.RemoveDraftIDs(ids...)
+	return hu
+}
+
+// RemoveDrafts removes "drafts" edges to Draft entities.
+func (hu *HashtagUpdate) RemoveDrafts(d ...*Draft) *HashtagUpdate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return hu.RemoveDraftIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -224,6 +261,60 @@ func (hu *HashtagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if hu.mutation.DraftsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashtag.DraftsTable,
+			Columns: hashtag.DraftsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hu.mutation.RemovedDraftsIDs(); len(nodes) > 0 && !hu.mutation.DraftsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashtag.DraftsTable,
+			Columns: hashtag.DraftsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hu.mutation.DraftsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashtag.DraftsTable,
+			Columns: hashtag.DraftsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, hu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{hashtag.Label}
@@ -264,6 +355,21 @@ func (huo *HashtagUpdateOne) AddPosts(p ...*Post) *HashtagUpdateOne {
 	return huo.AddPostIDs(ids...)
 }
 
+// AddDraftIDs adds the "drafts" edge to the Draft entity by IDs.
+func (huo *HashtagUpdateOne) AddDraftIDs(ids ...int) *HashtagUpdateOne {
+	huo.mutation.AddDraftIDs(ids...)
+	return huo
+}
+
+// AddDrafts adds the "drafts" edges to the Draft entity.
+func (huo *HashtagUpdateOne) AddDrafts(d ...*Draft) *HashtagUpdateOne {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return huo.AddDraftIDs(ids...)
+}
+
 // Mutation returns the HashtagMutation object of the builder.
 func (huo *HashtagUpdateOne) Mutation() *HashtagMutation {
 	return huo.mutation
@@ -288,6 +394,27 @@ func (huo *HashtagUpdateOne) RemovePosts(p ...*Post) *HashtagUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return huo.RemovePostIDs(ids...)
+}
+
+// ClearDrafts clears all "drafts" edges to the Draft entity.
+func (huo *HashtagUpdateOne) ClearDrafts() *HashtagUpdateOne {
+	huo.mutation.ClearDrafts()
+	return huo
+}
+
+// RemoveDraftIDs removes the "drafts" edge to Draft entities by IDs.
+func (huo *HashtagUpdateOne) RemoveDraftIDs(ids ...int) *HashtagUpdateOne {
+	huo.mutation.RemoveDraftIDs(ids...)
+	return huo
+}
+
+// RemoveDrafts removes "drafts" edges to Draft entities.
+func (huo *HashtagUpdateOne) RemoveDrafts(d ...*Draft) *HashtagUpdateOne {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return huo.RemoveDraftIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -461,6 +588,60 @@ func (huo *HashtagUpdateOne) sqlSave(ctx context.Context) (_node *Hashtag, err e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if huo.mutation.DraftsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashtag.DraftsTable,
+			Columns: hashtag.DraftsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := huo.mutation.RemovedDraftsIDs(); len(nodes) > 0 && !huo.mutation.DraftsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashtag.DraftsTable,
+			Columns: hashtag.DraftsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := huo.mutation.DraftsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashtag.DraftsTable,
+			Columns: hashtag.DraftsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
 				},
 			},
 		}

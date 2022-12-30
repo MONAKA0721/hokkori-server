@@ -33,6 +33,7 @@ func (User) Edges() []ent.Edge {
 			Through("bookmarks", Bookmark.Type),
 		edge.To("following", User.Type).
 			From("followers"),
+		edge.To("drafts", Draft.Type),
 	}
 }
 

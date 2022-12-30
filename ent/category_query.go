@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
 )
@@ -26,6 +27,7 @@ type CategoryQuery struct {
 	fields     []string
 	predicates []predicate.Category
 	withPost   *PostQuery
+	withDraft  *DraftQuery
 	modifiers  []func(*sql.Selector)
 	loadTotal  []func(context.Context, []*Category) error
 	// intermediate query (i.e. traversal path).
@@ -79,6 +81,28 @@ func (cq *CategoryQuery) QueryPost() *PostQuery {
 			sqlgraph.From(category.Table, category.FieldID, selector),
 			sqlgraph.To(post.Table, post.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, category.PostTable, category.PostColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDraft chains the current query on the "draft" edge.
+func (cq *CategoryQuery) QueryDraft() *DraftQuery {
+	query := &DraftQuery{config: cq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(category.Table, category.FieldID, selector),
+			sqlgraph.To(draft.Table, draft.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, category.DraftTable, category.DraftColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
 		return fromU, nil
@@ -268,6 +292,7 @@ func (cq *CategoryQuery) Clone() *CategoryQuery {
 		order:      append([]OrderFunc{}, cq.order...),
 		predicates: append([]predicate.Category{}, cq.predicates...),
 		withPost:   cq.withPost.Clone(),
+		withDraft:  cq.withDraft.Clone(),
 		// clone intermediate query.
 		sql:    cq.sql.Clone(),
 		path:   cq.path,
@@ -283,6 +308,17 @@ func (cq *CategoryQuery) WithPost(opts ...func(*PostQuery)) *CategoryQuery {
 		opt(query)
 	}
 	cq.withPost = query
+	return cq
+}
+
+// WithDraft tells the query-builder to eager-load the nodes that are connected to
+// the "draft" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *CategoryQuery) WithDraft(opts ...func(*DraftQuery)) *CategoryQuery {
+	query := &DraftQuery{config: cq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withDraft = query
 	return cq
 }
 
@@ -354,8 +390,9 @@ func (cq *CategoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Cat
 	var (
 		nodes       = []*Category{}
 		_spec       = cq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			cq.withPost != nil,
+			cq.withDraft != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -383,6 +420,13 @@ func (cq *CategoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Cat
 		if err := cq.loadPost(ctx, query, nodes,
 			func(n *Category) { n.Edges.Post = []*Post{} },
 			func(n *Category, e *Post) { n.Edges.Post = append(n.Edges.Post, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cq.withDraft; query != nil {
+		if err := cq.loadDraft(ctx, query, nodes,
+			func(n *Category) { n.Edges.Draft = []*Draft{} },
+			func(n *Category, e *Draft) { n.Edges.Draft = append(n.Edges.Draft, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -420,6 +464,37 @@ func (cq *CategoryQuery) loadPost(ctx context.Context, query *PostQuery, nodes [
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "post_category" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (cq *CategoryQuery) loadDraft(ctx context.Context, query *DraftQuery, nodes []*Category, init func(*Category), assign func(*Category, *Draft)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Category)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Draft(func(s *sql.Selector) {
+		s.Where(sql.InValues(category.DraftColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.draft_category
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "draft_category" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "draft_category" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

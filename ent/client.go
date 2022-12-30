@@ -12,6 +12,7 @@ import (
 
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
@@ -32,6 +33,8 @@ type Client struct {
 	Bookmark *BookmarkClient
 	// Category is the client for interacting with the Category builders.
 	Category *CategoryClient
+	// Draft is the client for interacting with the Draft builders.
+	Draft *DraftClient
 	// Hashtag is the client for interacting with the Hashtag builders.
 	Hashtag *HashtagClient
 	// Like is the client for interacting with the Like builders.
@@ -59,6 +62,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Bookmark = NewBookmarkClient(c.config)
 	c.Category = NewCategoryClient(c.config)
+	c.Draft = NewDraftClient(c.config)
 	c.Hashtag = NewHashtagClient(c.config)
 	c.Like = NewLikeClient(c.config)
 	c.Post = NewPostClient(c.config)
@@ -99,6 +103,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		config:   cfg,
 		Bookmark: NewBookmarkClient(cfg),
 		Category: NewCategoryClient(cfg),
+		Draft:    NewDraftClient(cfg),
 		Hashtag:  NewHashtagClient(cfg),
 		Like:     NewLikeClient(cfg),
 		Post:     NewPostClient(cfg),
@@ -125,6 +130,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		config:   cfg,
 		Bookmark: NewBookmarkClient(cfg),
 		Category: NewCategoryClient(cfg),
+		Draft:    NewDraftClient(cfg),
 		Hashtag:  NewHashtagClient(cfg),
 		Like:     NewLikeClient(cfg),
 		Post:     NewPostClient(cfg),
@@ -160,6 +166,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	c.Bookmark.Use(hooks...)
 	c.Category.Use(hooks...)
+	c.Draft.Use(hooks...)
 	c.Hashtag.Use(hooks...)
 	c.Like.Use(hooks...)
 	c.Post.Use(hooks...)
@@ -341,9 +348,179 @@ func (c *CategoryClient) QueryPost(ca *Category) *PostQuery {
 	return query
 }
 
+// QueryDraft queries the draft edge of a Category.
+func (c *CategoryClient) QueryDraft(ca *Category) *DraftQuery {
+	query := &DraftQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := ca.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(category.Table, category.FieldID, id),
+			sqlgraph.To(draft.Table, draft.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, category.DraftTable, category.DraftColumn),
+		)
+		fromV = sqlgraph.Neighbors(ca.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CategoryClient) Hooks() []Hook {
 	return c.hooks.Category
+}
+
+// DraftClient is a client for the Draft schema.
+type DraftClient struct {
+	config
+}
+
+// NewDraftClient returns a client for the Draft from the given config.
+func NewDraftClient(c config) *DraftClient {
+	return &DraftClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `draft.Hooks(f(g(h())))`.
+func (c *DraftClient) Use(hooks ...Hook) {
+	c.hooks.Draft = append(c.hooks.Draft, hooks...)
+}
+
+// Create returns a builder for creating a Draft entity.
+func (c *DraftClient) Create() *DraftCreate {
+	mutation := newDraftMutation(c.config, OpCreate)
+	return &DraftCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Draft entities.
+func (c *DraftClient) CreateBulk(builders ...*DraftCreate) *DraftCreateBulk {
+	return &DraftCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Draft.
+func (c *DraftClient) Update() *DraftUpdate {
+	mutation := newDraftMutation(c.config, OpUpdate)
+	return &DraftUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DraftClient) UpdateOne(d *Draft) *DraftUpdateOne {
+	mutation := newDraftMutation(c.config, OpUpdateOne, withDraft(d))
+	return &DraftUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DraftClient) UpdateOneID(id int) *DraftUpdateOne {
+	mutation := newDraftMutation(c.config, OpUpdateOne, withDraftID(id))
+	return &DraftUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Draft.
+func (c *DraftClient) Delete() *DraftDelete {
+	mutation := newDraftMutation(c.config, OpDelete)
+	return &DraftDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DraftClient) DeleteOne(d *Draft) *DraftDeleteOne {
+	return c.DeleteOneID(d.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *DraftClient) DeleteOneID(id int) *DraftDeleteOne {
+	builder := c.Delete().Where(draft.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DraftDeleteOne{builder}
+}
+
+// Query returns a query builder for Draft.
+func (c *DraftClient) Query() *DraftQuery {
+	return &DraftQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Draft entity by its id.
+func (c *DraftClient) Get(ctx context.Context, id int) (*Draft, error) {
+	return c.Query().Where(draft.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DraftClient) GetX(ctx context.Context, id int) *Draft {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a Draft.
+func (c *DraftClient) QueryOwner(d *Draft) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := d.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(draft.Table, draft.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, draft.OwnerTable, draft.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryHashtags queries the hashtags edge of a Draft.
+func (c *DraftClient) QueryHashtags(d *Draft) *HashtagQuery {
+	query := &HashtagQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := d.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(draft.Table, draft.FieldID, id),
+			sqlgraph.To(hashtag.Table, hashtag.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, draft.HashtagsTable, draft.HashtagsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryWork queries the work edge of a Draft.
+func (c *DraftClient) QueryWork(d *Draft) *WorkQuery {
+	query := &WorkQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := d.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(draft.Table, draft.FieldID, id),
+			sqlgraph.To(work.Table, work.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, draft.WorkTable, draft.WorkColumn),
+		)
+		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCategory queries the category edge of a Draft.
+func (c *DraftClient) QueryCategory(d *Draft) *CategoryQuery {
+	query := &CategoryQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := d.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(draft.Table, draft.FieldID, id),
+			sqlgraph.To(category.Table, category.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, draft.CategoryTable, draft.CategoryColumn),
+		)
+		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DraftClient) Hooks() []Hook {
+	return c.hooks.Draft
 }
 
 // HashtagClient is a client for the Hashtag schema.
@@ -440,6 +617,22 @@ func (c *HashtagClient) QueryPosts(h *Hashtag) *PostQuery {
 			sqlgraph.From(hashtag.Table, hashtag.FieldID, id),
 			sqlgraph.To(post.Table, post.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, hashtag.PostsTable, hashtag.PostsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(h.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDrafts queries the drafts edge of a Hashtag.
+func (c *HashtagClient) QueryDrafts(h *Hashtag) *DraftQuery {
+	query := &DraftQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := h.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hashtag.Table, hashtag.FieldID, id),
+			sqlgraph.To(draft.Table, draft.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, hashtag.DraftsTable, hashtag.DraftsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(h.driver.Dialect(), step)
 		return fromV, nil
@@ -908,6 +1101,22 @@ func (c *UserClient) QueryFollowing(u *User) *UserQuery {
 	return query
 }
 
+// QueryDrafts queries the drafts edge of a User.
+func (c *UserClient) QueryDrafts(u *User) *DraftQuery {
+	query := &DraftQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(draft.Table, draft.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.DraftsTable, user.DraftsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryLikes queries the likes edge of a User.
 func (c *UserClient) QueryLikes(u *User) *LikeQuery {
 	query := &LikeQuery{config: c.config}
@@ -1039,6 +1248,22 @@ func (c *WorkClient) QueryPosts(w *Work) *PostQuery {
 			sqlgraph.From(work.Table, work.FieldID, id),
 			sqlgraph.To(post.Table, post.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, work.PostsTable, work.PostsColumn),
+		)
+		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDrafts queries the drafts edge of a Work.
+func (c *WorkClient) QueryDrafts(w *Work) *DraftQuery {
+	query := &DraftQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := w.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(work.Table, work.FieldID, id),
+			sqlgraph.To(draft.Table, draft.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, work.DraftsTable, work.DraftsColumn),
 		)
 		fromV = sqlgraph.Neighbors(w.driver.Dialect(), step)
 		return fromV, nil

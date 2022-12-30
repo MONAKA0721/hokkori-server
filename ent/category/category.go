@@ -11,6 +11,8 @@ const (
 	FieldName = "name"
 	// EdgePost holds the string denoting the post edge name in mutations.
 	EdgePost = "post"
+	// EdgeDraft holds the string denoting the draft edge name in mutations.
+	EdgeDraft = "draft"
 	// Table holds the table name of the category in the database.
 	Table = "categories"
 	// PostTable is the table that holds the post relation/edge.
@@ -20,6 +22,13 @@ const (
 	PostInverseTable = "posts"
 	// PostColumn is the table column denoting the post relation/edge.
 	PostColumn = "post_category"
+	// DraftTable is the table that holds the draft relation/edge.
+	DraftTable = "drafts"
+	// DraftInverseTable is the table name for the Draft entity.
+	// It exists in this package in order to avoid circular dependency with the "draft" package.
+	DraftInverseTable = "drafts"
+	// DraftColumn is the table column denoting the draft relation/edge.
+	DraftColumn = "draft_category"
 )
 
 // Columns holds all SQL columns for category fields.

@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
 )
@@ -141,6 +142,21 @@ func (uc *UserCreate) AddFollowing(u ...*User) *UserCreate {
 		ids[i] = u[i].ID
 	}
 	return uc.AddFollowingIDs(ids...)
+}
+
+// AddDraftIDs adds the "drafts" edge to the Draft entity by IDs.
+func (uc *UserCreate) AddDraftIDs(ids ...int) *UserCreate {
+	uc.mutation.AddDraftIDs(ids...)
+	return uc
+}
+
+// AddDrafts adds the "drafts" edges to the Draft entity.
+func (uc *UserCreate) AddDrafts(d ...*Draft) *UserCreate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return uc.AddDraftIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -381,6 +397,25 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.DraftsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.DraftsTable,
+			Columns: []string{user.DraftsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
 				},
 			},
 		}

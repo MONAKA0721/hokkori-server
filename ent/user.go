@@ -40,15 +40,17 @@ type UserEdges struct {
 	Followers []*User `json:"followers,omitempty"`
 	// Following holds the value of the following edge.
 	Following []*User `json:"following,omitempty"`
+	// Drafts holds the value of the drafts edge.
+	Drafts []*Draft `json:"drafts,omitempty"`
 	// Likes holds the value of the likes edge.
 	Likes []*Like `json:"likes,omitempty"`
 	// Bookmarks holds the value of the bookmarks edge.
 	Bookmarks []*Bookmark `json:"bookmarks,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [8]bool
 	// totalCount holds the count of the edges above.
-	totalCount [5]*int
+	totalCount [6]*int
 }
 
 // PostsOrErr returns the Posts value or an error if the edge
@@ -96,10 +98,19 @@ func (e UserEdges) FollowingOrErr() ([]*User, error) {
 	return nil, &NotLoadedError{edge: "following"}
 }
 
+// DraftsOrErr returns the Drafts value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) DraftsOrErr() ([]*Draft, error) {
+	if e.loadedTypes[5] {
+		return e.Drafts, nil
+	}
+	return nil, &NotLoadedError{edge: "drafts"}
+}
+
 // LikesOrErr returns the Likes value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) LikesOrErr() ([]*Like, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.Likes, nil
 	}
 	return nil, &NotLoadedError{edge: "likes"}
@@ -108,7 +119,7 @@ func (e UserEdges) LikesOrErr() ([]*Like, error) {
 // BookmarksOrErr returns the Bookmarks value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BookmarksOrErr() ([]*Bookmark, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.Bookmarks, nil
 	}
 	return nil, &NotLoadedError{edge: "bookmarks"}
@@ -196,6 +207,11 @@ func (u *User) QueryFollowers() *UserQuery {
 // QueryFollowing queries the "following" edge of the User entity.
 func (u *User) QueryFollowing() *UserQuery {
 	return (&UserClient{config: u.config}).QueryFollowing(u)
+}
+
+// QueryDrafts queries the "drafts" edge of the User entity.
+func (u *User) QueryDrafts() *DraftQuery {
+	return (&UserClient{config: u.config}).QueryDrafts(u)
 }
 
 // QueryLikes queries the "likes" edge of the User entity.

@@ -26,11 +26,13 @@ type Category struct {
 type CategoryEdges struct {
 	// Post holds the value of the post edge.
 	Post []*Post `json:"post,omitempty"`
+	// Draft holds the value of the draft edge.
+	Draft []*Draft `json:"draft,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]*int
+	totalCount [2]*int
 }
 
 // PostOrErr returns the Post value or an error if the edge
@@ -40,6 +42,15 @@ func (e CategoryEdges) PostOrErr() ([]*Post, error) {
 		return e.Post, nil
 	}
 	return nil, &NotLoadedError{edge: "post"}
+}
+
+// DraftOrErr returns the Draft value or an error if the edge
+// was not loaded in eager-loading.
+func (e CategoryEdges) DraftOrErr() ([]*Draft, error) {
+	if e.loadedTypes[1] {
+		return e.Draft, nil
+	}
+	return nil, &NotLoadedError{edge: "draft"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -86,6 +97,11 @@ func (c *Category) assignValues(columns []string, values []interface{}) error {
 // QueryPost queries the "post" edge of the Category entity.
 func (c *Category) QueryPost() *PostQuery {
 	return (&CategoryClient{config: c.config}).QueryPost(c)
+}
+
+// QueryDraft queries the "draft" edge of the Category entity.
+func (c *Category) QueryDraft() *DraftQuery {
+	return (&CategoryClient{config: c.config}).QueryDraft(c)
 }
 
 // Update returns a builder for updating this Category.

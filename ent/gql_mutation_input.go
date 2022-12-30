@@ -8,10 +8,139 @@ import (
 	"github.com/MONAKA0721/hokkori/ent/post"
 )
 
+// CreateDraftInput represents a mutation input for creating drafts.
+type CreateDraftInput struct {
+	CreateTime    *time.Time
+	UpdateTime    *time.Time
+	PraiseTitle   string
+	LetterTitle   string
+	PraiseContent string
+	LetterContent string
+	PraiseSpoiled bool
+	LetterSpoiled bool
+	OwnerID       int
+	HashtagIDs    []int
+	WorkID        *int
+	CategoryID    *int
+}
+
+// Mutate applies the CreateDraftInput on the DraftMutation builder.
+func (i *CreateDraftInput) Mutate(m *DraftMutation) {
+	if v := i.CreateTime; v != nil {
+		m.SetCreateTime(*v)
+	}
+	if v := i.UpdateTime; v != nil {
+		m.SetUpdateTime(*v)
+	}
+	m.SetPraiseTitle(i.PraiseTitle)
+	m.SetLetterTitle(i.LetterTitle)
+	m.SetPraiseContent(i.PraiseContent)
+	m.SetLetterContent(i.LetterContent)
+	m.SetPraiseSpoiled(i.PraiseSpoiled)
+	m.SetLetterSpoiled(i.LetterSpoiled)
+	m.SetOwnerID(i.OwnerID)
+	if v := i.HashtagIDs; len(v) > 0 {
+		m.AddHashtagIDs(v...)
+	}
+	if v := i.WorkID; v != nil {
+		m.SetWorkID(*v)
+	}
+	if v := i.CategoryID; v != nil {
+		m.SetCategoryID(*v)
+	}
+}
+
+// SetInput applies the change-set in the CreateDraftInput on the DraftCreate builder.
+func (c *DraftCreate) SetInput(i CreateDraftInput) *DraftCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// UpdateDraftInput represents a mutation input for updating drafts.
+type UpdateDraftInput struct {
+	UpdateTime       *time.Time
+	PraiseTitle      *string
+	LetterTitle      *string
+	PraiseContent    *string
+	LetterContent    *string
+	PraiseSpoiled    *bool
+	LetterSpoiled    *bool
+	ClearOwner       bool
+	OwnerID          *int
+	AddHashtagIDs    []int
+	RemoveHashtagIDs []int
+	ClearWork        bool
+	WorkID           *int
+	ClearCategory    bool
+	CategoryID       *int
+}
+
+// Mutate applies the UpdateDraftInput on the DraftMutation builder.
+func (i *UpdateDraftInput) Mutate(m *DraftMutation) {
+	if v := i.UpdateTime; v != nil {
+		m.SetUpdateTime(*v)
+	}
+	if v := i.PraiseTitle; v != nil {
+		m.SetPraiseTitle(*v)
+	}
+	if v := i.LetterTitle; v != nil {
+		m.SetLetterTitle(*v)
+	}
+	if v := i.PraiseContent; v != nil {
+		m.SetPraiseContent(*v)
+	}
+	if v := i.LetterContent; v != nil {
+		m.SetLetterContent(*v)
+	}
+	if v := i.PraiseSpoiled; v != nil {
+		m.SetPraiseSpoiled(*v)
+	}
+	if v := i.LetterSpoiled; v != nil {
+		m.SetLetterSpoiled(*v)
+	}
+	if i.ClearOwner {
+		m.ClearOwner()
+	}
+	if v := i.OwnerID; v != nil {
+		m.SetOwnerID(*v)
+	}
+	if v := i.AddHashtagIDs; len(v) > 0 {
+		m.AddHashtagIDs(v...)
+	}
+	if v := i.RemoveHashtagIDs; len(v) > 0 {
+		m.RemoveHashtagIDs(v...)
+	}
+	if i.ClearWork {
+		m.ClearWork()
+	}
+	if v := i.WorkID; v != nil {
+		m.SetWorkID(*v)
+	}
+	if i.ClearCategory {
+		m.ClearCategory()
+	}
+	if v := i.CategoryID; v != nil {
+		m.SetCategoryID(*v)
+	}
+}
+
+// SetInput applies the change-set in the UpdateDraftInput on the DraftUpdate builder.
+func (c *DraftUpdate) SetInput(i UpdateDraftInput) *DraftUpdate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// SetInput applies the change-set in the UpdateDraftInput on the DraftUpdateOne builder.
+func (c *DraftUpdateOne) SetInput(i UpdateDraftInput) *DraftUpdateOne {
+	i.Mutate(c.Mutation())
+	return c
+}
+
 // CreateHashtagInput represents a mutation input for creating hashtags.
 type CreateHashtagInput struct {
-	Title   string
-	PostIDs []int
+	Title    string
+	PostIDs  []int
+	DraftIDs []int
 }
 
 // Mutate applies the CreateHashtagInput on the HashtagMutation builder.
@@ -19,6 +148,9 @@ func (i *CreateHashtagInput) Mutate(m *HashtagMutation) {
 	m.SetTitle(i.Title)
 	if v := i.PostIDs; len(v) > 0 {
 		m.AddPostIDs(v...)
+	}
+	if v := i.DraftIDs; len(v) > 0 {
+		m.AddDraftIDs(v...)
 	}
 }
 
@@ -30,9 +162,11 @@ func (c *HashtagCreate) SetInput(i CreateHashtagInput) *HashtagCreate {
 
 // UpdateHashtagInput represents a mutation input for updating hashtags.
 type UpdateHashtagInput struct {
-	Title         *string
-	AddPostIDs    []int
-	RemovePostIDs []int
+	Title          *string
+	AddPostIDs     []int
+	RemovePostIDs  []int
+	AddDraftIDs    []int
+	RemoveDraftIDs []int
 }
 
 // Mutate applies the UpdateHashtagInput on the HashtagMutation builder.
@@ -45,6 +179,12 @@ func (i *UpdateHashtagInput) Mutate(m *HashtagMutation) {
 	}
 	if v := i.RemovePostIDs; len(v) > 0 {
 		m.RemovePostIDs(v...)
+	}
+	if v := i.AddDraftIDs; len(v) > 0 {
+		m.AddDraftIDs(v...)
+	}
+	if v := i.RemoveDraftIDs; len(v) > 0 {
+		m.RemoveDraftIDs(v...)
 	}
 }
 
@@ -219,6 +359,7 @@ type CreateUserInput struct {
 	BookmarkedPostIDs []int
 	FollowerIDs       []int
 	FollowingIDs      []int
+	DraftIDs          []int
 }
 
 // Mutate applies the CreateUserInput on the UserMutation builder.
@@ -248,6 +389,9 @@ func (i *CreateUserInput) Mutate(m *UserMutation) {
 	if v := i.FollowingIDs; len(v) > 0 {
 		m.AddFollowingIDs(v...)
 	}
+	if v := i.DraftIDs; len(v) > 0 {
+		m.AddDraftIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateUserInput on the UserCreate builder.
@@ -275,6 +419,8 @@ type UpdateUserInput struct {
 	RemoveFollowerIDs       []int
 	AddFollowingIDs         []int
 	RemoveFollowingIDs      []int
+	AddDraftIDs             []int
+	RemoveDraftIDs          []int
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
@@ -330,6 +476,12 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	if v := i.RemoveFollowingIDs; len(v) > 0 {
 		m.RemoveFollowingIDs(v...)
 	}
+	if v := i.AddDraftIDs; len(v) > 0 {
+		m.AddDraftIDs(v...)
+	}
+	if v := i.RemoveDraftIDs; len(v) > 0 {
+		m.RemoveDraftIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the UpdateUserInput on the UserUpdate builder.
@@ -349,6 +501,7 @@ type CreateWorkInput struct {
 	Title     string
 	Thumbnail *string
 	PostIDs   []int
+	DraftIDs  []int
 }
 
 // Mutate applies the CreateWorkInput on the WorkMutation builder.
@@ -359,6 +512,9 @@ func (i *CreateWorkInput) Mutate(m *WorkMutation) {
 	}
 	if v := i.PostIDs; len(v) > 0 {
 		m.AddPostIDs(v...)
+	}
+	if v := i.DraftIDs; len(v) > 0 {
+		m.AddDraftIDs(v...)
 	}
 }
 
@@ -375,6 +531,8 @@ type UpdateWorkInput struct {
 	Thumbnail      *string
 	AddPostIDs     []int
 	RemovePostIDs  []int
+	AddDraftIDs    []int
+	RemoveDraftIDs []int
 }
 
 // Mutate applies the UpdateWorkInput on the WorkMutation builder.
@@ -393,6 +551,12 @@ func (i *UpdateWorkInput) Mutate(m *WorkMutation) {
 	}
 	if v := i.RemovePostIDs; len(v) > 0 {
 		m.RemovePostIDs(v...)
+	}
+	if v := i.AddDraftIDs; len(v) > 0 {
+		m.AddDraftIDs(v...)
+	}
+	if v := i.RemoveDraftIDs; len(v) > 0 {
+		m.RemoveDraftIDs(v...)
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/predicate"
@@ -32,6 +33,7 @@ type UserQuery struct {
 	withBookmarkedPosts *PostQuery
 	withFollowers       *UserQuery
 	withFollowing       *UserQuery
+	withDrafts          *DraftQuery
 	withLikes           *LikeQuery
 	withBookmarks       *BookmarkQuery
 	modifiers           []func(*sql.Selector)
@@ -175,6 +177,28 @@ func (uq *UserQuery) QueryFollowing() *UserQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, user.FollowingTable, user.FollowingPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDrafts chains the current query on the "drafts" edge.
+func (uq *UserQuery) QueryDrafts() *DraftQuery {
+	query := &DraftQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(draft.Table, draft.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.DraftsTable, user.DraftsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -412,6 +436,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 		withBookmarkedPosts: uq.withBookmarkedPosts.Clone(),
 		withFollowers:       uq.withFollowers.Clone(),
 		withFollowing:       uq.withFollowing.Clone(),
+		withDrafts:          uq.withDrafts.Clone(),
 		withLikes:           uq.withLikes.Clone(),
 		withBookmarks:       uq.withBookmarks.Clone(),
 		// clone intermediate query.
@@ -473,6 +498,17 @@ func (uq *UserQuery) WithFollowing(opts ...func(*UserQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withFollowing = query
+	return uq
+}
+
+// WithDrafts tells the query-builder to eager-load the nodes that are connected to
+// the "drafts" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithDrafts(opts ...func(*DraftQuery)) *UserQuery {
+	query := &DraftQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withDrafts = query
 	return uq
 }
 
@@ -566,12 +602,13 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [8]bool{
 			uq.withPosts != nil,
 			uq.withLikedPosts != nil,
 			uq.withBookmarkedPosts != nil,
 			uq.withFollowers != nil,
 			uq.withFollowing != nil,
+			uq.withDrafts != nil,
 			uq.withLikes != nil,
 			uq.withBookmarks != nil,
 		}
@@ -629,6 +666,13 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadFollowing(ctx, query, nodes,
 			func(n *User) { n.Edges.Following = []*User{} },
 			func(n *User, e *User) { n.Edges.Following = append(n.Edges.Following, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withDrafts; query != nil {
+		if err := uq.loadDrafts(ctx, query, nodes,
+			func(n *User) { n.Edges.Drafts = []*Draft{} },
+			func(n *User, e *Draft) { n.Edges.Drafts = append(n.Edges.Drafts, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -914,6 +958,37 @@ func (uq *UserQuery) loadFollowing(ctx context.Context, query *UserQuery, nodes 
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (uq *UserQuery) loadDrafts(ctx context.Context, query *DraftQuery, nodes []*User, init func(*User), assign func(*User, *Draft)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Draft(func(s *sql.Selector) {
+		s.Where(sql.InValues(user.DraftsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_drafts
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_drafts" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_drafts" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

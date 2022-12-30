@@ -11,6 +11,7 @@ import (
 
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
@@ -32,6 +33,7 @@ const (
 	// Node types.
 	TypeBookmark = "Bookmark"
 	TypeCategory = "Category"
+	TypeDraft    = "Draft"
 	TypeHashtag  = "Hashtag"
 	TypeLike     = "Like"
 	TypePost     = "Post"
@@ -452,6 +454,9 @@ type CategoryMutation struct {
 	post          map[int]struct{}
 	removedpost   map[int]struct{}
 	clearedpost   bool
+	draft         map[int]struct{}
+	removeddraft  map[int]struct{}
+	cleareddraft  bool
 	done          bool
 	oldValue      func(context.Context) (*Category, error)
 	predicates    []predicate.Category
@@ -645,6 +650,60 @@ func (m *CategoryMutation) ResetPost() {
 	m.removedpost = nil
 }
 
+// AddDraftIDs adds the "draft" edge to the Draft entity by ids.
+func (m *CategoryMutation) AddDraftIDs(ids ...int) {
+	if m.draft == nil {
+		m.draft = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.draft[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDraft clears the "draft" edge to the Draft entity.
+func (m *CategoryMutation) ClearDraft() {
+	m.cleareddraft = true
+}
+
+// DraftCleared reports if the "draft" edge to the Draft entity was cleared.
+func (m *CategoryMutation) DraftCleared() bool {
+	return m.cleareddraft
+}
+
+// RemoveDraftIDs removes the "draft" edge to the Draft entity by IDs.
+func (m *CategoryMutation) RemoveDraftIDs(ids ...int) {
+	if m.removeddraft == nil {
+		m.removeddraft = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.draft, ids[i])
+		m.removeddraft[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDraft returns the removed IDs of the "draft" edge to the Draft entity.
+func (m *CategoryMutation) RemovedDraftIDs() (ids []int) {
+	for id := range m.removeddraft {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DraftIDs returns the "draft" edge IDs in the mutation.
+func (m *CategoryMutation) DraftIDs() (ids []int) {
+	for id := range m.draft {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDraft resets all changes to the "draft" edge.
+func (m *CategoryMutation) ResetDraft() {
+	m.draft = nil
+	m.cleareddraft = false
+	m.removeddraft = nil
+}
+
 // Where appends a list predicates to the CategoryMutation builder.
 func (m *CategoryMutation) Where(ps ...predicate.Category) {
 	m.predicates = append(m.predicates, ps...)
@@ -763,9 +822,12 @@ func (m *CategoryMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CategoryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.post != nil {
 		edges = append(edges, category.EdgePost)
+	}
+	if m.draft != nil {
+		edges = append(edges, category.EdgeDraft)
 	}
 	return edges
 }
@@ -780,15 +842,24 @@ func (m *CategoryMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case category.EdgeDraft:
+		ids := make([]ent.Value, 0, len(m.draft))
+		for id := range m.draft {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CategoryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedpost != nil {
 		edges = append(edges, category.EdgePost)
+	}
+	if m.removeddraft != nil {
+		edges = append(edges, category.EdgeDraft)
 	}
 	return edges
 }
@@ -803,15 +874,24 @@ func (m *CategoryMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case category.EdgeDraft:
+		ids := make([]ent.Value, 0, len(m.removeddraft))
+		for id := range m.removeddraft {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CategoryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedpost {
 		edges = append(edges, category.EdgePost)
+	}
+	if m.cleareddraft {
+		edges = append(edges, category.EdgeDraft)
 	}
 	return edges
 }
@@ -822,6 +902,8 @@ func (m *CategoryMutation) EdgeCleared(name string) bool {
 	switch name {
 	case category.EdgePost:
 		return m.clearedpost
+	case category.EdgeDraft:
+		return m.cleareddraft
 	}
 	return false
 }
@@ -841,8 +923,970 @@ func (m *CategoryMutation) ResetEdge(name string) error {
 	case category.EdgePost:
 		m.ResetPost()
 		return nil
+	case category.EdgeDraft:
+		m.ResetDraft()
+		return nil
 	}
 	return fmt.Errorf("unknown Category edge %s", name)
+}
+
+// DraftMutation represents an operation that mutates the Draft nodes in the graph.
+type DraftMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *int
+	create_time     *time.Time
+	update_time     *time.Time
+	praise_title    *string
+	letter_title    *string
+	praise_content  *string
+	letter_content  *string
+	praise_spoiled  *bool
+	letter_spoiled  *bool
+	clearedFields   map[string]struct{}
+	owner           *int
+	clearedowner    bool
+	hashtags        map[int]struct{}
+	removedhashtags map[int]struct{}
+	clearedhashtags bool
+	work            *int
+	clearedwork     bool
+	category        *int
+	clearedcategory bool
+	done            bool
+	oldValue        func(context.Context) (*Draft, error)
+	predicates      []predicate.Draft
+}
+
+var _ ent.Mutation = (*DraftMutation)(nil)
+
+// draftOption allows management of the mutation configuration using functional options.
+type draftOption func(*DraftMutation)
+
+// newDraftMutation creates new mutation for the Draft entity.
+func newDraftMutation(c config, op Op, opts ...draftOption) *DraftMutation {
+	m := &DraftMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDraft,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDraftID sets the ID field of the mutation.
+func withDraftID(id int) draftOption {
+	return func(m *DraftMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Draft
+		)
+		m.oldValue = func(ctx context.Context) (*Draft, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Draft.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDraft sets the old Draft of the mutation.
+func withDraft(node *Draft) draftOption {
+	return func(m *DraftMutation) {
+		m.oldValue = func(context.Context) (*Draft, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DraftMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DraftMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DraftMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DraftMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Draft.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreateTime sets the "create_time" field.
+func (m *DraftMutation) SetCreateTime(t time.Time) {
+	m.create_time = &t
+}
+
+// CreateTime returns the value of the "create_time" field in the mutation.
+func (m *DraftMutation) CreateTime() (r time.Time, exists bool) {
+	v := m.create_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreateTime returns the old "create_time" field's value of the Draft entity.
+// If the Draft object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DraftMutation) OldCreateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreateTime: %w", err)
+	}
+	return oldValue.CreateTime, nil
+}
+
+// ResetCreateTime resets all changes to the "create_time" field.
+func (m *DraftMutation) ResetCreateTime() {
+	m.create_time = nil
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (m *DraftMutation) SetUpdateTime(t time.Time) {
+	m.update_time = &t
+}
+
+// UpdateTime returns the value of the "update_time" field in the mutation.
+func (m *DraftMutation) UpdateTime() (r time.Time, exists bool) {
+	v := m.update_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdateTime returns the old "update_time" field's value of the Draft entity.
+// If the Draft object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DraftMutation) OldUpdateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdateTime: %w", err)
+	}
+	return oldValue.UpdateTime, nil
+}
+
+// ResetUpdateTime resets all changes to the "update_time" field.
+func (m *DraftMutation) ResetUpdateTime() {
+	m.update_time = nil
+}
+
+// SetPraiseTitle sets the "praise_title" field.
+func (m *DraftMutation) SetPraiseTitle(s string) {
+	m.praise_title = &s
+}
+
+// PraiseTitle returns the value of the "praise_title" field in the mutation.
+func (m *DraftMutation) PraiseTitle() (r string, exists bool) {
+	v := m.praise_title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPraiseTitle returns the old "praise_title" field's value of the Draft entity.
+// If the Draft object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DraftMutation) OldPraiseTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPraiseTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPraiseTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPraiseTitle: %w", err)
+	}
+	return oldValue.PraiseTitle, nil
+}
+
+// ResetPraiseTitle resets all changes to the "praise_title" field.
+func (m *DraftMutation) ResetPraiseTitle() {
+	m.praise_title = nil
+}
+
+// SetLetterTitle sets the "letter_title" field.
+func (m *DraftMutation) SetLetterTitle(s string) {
+	m.letter_title = &s
+}
+
+// LetterTitle returns the value of the "letter_title" field in the mutation.
+func (m *DraftMutation) LetterTitle() (r string, exists bool) {
+	v := m.letter_title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLetterTitle returns the old "letter_title" field's value of the Draft entity.
+// If the Draft object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DraftMutation) OldLetterTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLetterTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLetterTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLetterTitle: %w", err)
+	}
+	return oldValue.LetterTitle, nil
+}
+
+// ResetLetterTitle resets all changes to the "letter_title" field.
+func (m *DraftMutation) ResetLetterTitle() {
+	m.letter_title = nil
+}
+
+// SetPraiseContent sets the "praise_content" field.
+func (m *DraftMutation) SetPraiseContent(s string) {
+	m.praise_content = &s
+}
+
+// PraiseContent returns the value of the "praise_content" field in the mutation.
+func (m *DraftMutation) PraiseContent() (r string, exists bool) {
+	v := m.praise_content
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPraiseContent returns the old "praise_content" field's value of the Draft entity.
+// If the Draft object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DraftMutation) OldPraiseContent(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPraiseContent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPraiseContent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPraiseContent: %w", err)
+	}
+	return oldValue.PraiseContent, nil
+}
+
+// ResetPraiseContent resets all changes to the "praise_content" field.
+func (m *DraftMutation) ResetPraiseContent() {
+	m.praise_content = nil
+}
+
+// SetLetterContent sets the "letter_content" field.
+func (m *DraftMutation) SetLetterContent(s string) {
+	m.letter_content = &s
+}
+
+// LetterContent returns the value of the "letter_content" field in the mutation.
+func (m *DraftMutation) LetterContent() (r string, exists bool) {
+	v := m.letter_content
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLetterContent returns the old "letter_content" field's value of the Draft entity.
+// If the Draft object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DraftMutation) OldLetterContent(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLetterContent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLetterContent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLetterContent: %w", err)
+	}
+	return oldValue.LetterContent, nil
+}
+
+// ResetLetterContent resets all changes to the "letter_content" field.
+func (m *DraftMutation) ResetLetterContent() {
+	m.letter_content = nil
+}
+
+// SetPraiseSpoiled sets the "praise_spoiled" field.
+func (m *DraftMutation) SetPraiseSpoiled(b bool) {
+	m.praise_spoiled = &b
+}
+
+// PraiseSpoiled returns the value of the "praise_spoiled" field in the mutation.
+func (m *DraftMutation) PraiseSpoiled() (r bool, exists bool) {
+	v := m.praise_spoiled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPraiseSpoiled returns the old "praise_spoiled" field's value of the Draft entity.
+// If the Draft object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DraftMutation) OldPraiseSpoiled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPraiseSpoiled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPraiseSpoiled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPraiseSpoiled: %w", err)
+	}
+	return oldValue.PraiseSpoiled, nil
+}
+
+// ResetPraiseSpoiled resets all changes to the "praise_spoiled" field.
+func (m *DraftMutation) ResetPraiseSpoiled() {
+	m.praise_spoiled = nil
+}
+
+// SetLetterSpoiled sets the "letter_spoiled" field.
+func (m *DraftMutation) SetLetterSpoiled(b bool) {
+	m.letter_spoiled = &b
+}
+
+// LetterSpoiled returns the value of the "letter_spoiled" field in the mutation.
+func (m *DraftMutation) LetterSpoiled() (r bool, exists bool) {
+	v := m.letter_spoiled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLetterSpoiled returns the old "letter_spoiled" field's value of the Draft entity.
+// If the Draft object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DraftMutation) OldLetterSpoiled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLetterSpoiled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLetterSpoiled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLetterSpoiled: %w", err)
+	}
+	return oldValue.LetterSpoiled, nil
+}
+
+// ResetLetterSpoiled resets all changes to the "letter_spoiled" field.
+func (m *DraftMutation) ResetLetterSpoiled() {
+	m.letter_spoiled = nil
+}
+
+// SetOwnerID sets the "owner" edge to the User entity by id.
+func (m *DraftMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the User entity.
+func (m *DraftMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
+func (m *DraftMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *DraftMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *DraftMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *DraftMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// AddHashtagIDs adds the "hashtags" edge to the Hashtag entity by ids.
+func (m *DraftMutation) AddHashtagIDs(ids ...int) {
+	if m.hashtags == nil {
+		m.hashtags = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.hashtags[ids[i]] = struct{}{}
+	}
+}
+
+// ClearHashtags clears the "hashtags" edge to the Hashtag entity.
+func (m *DraftMutation) ClearHashtags() {
+	m.clearedhashtags = true
+}
+
+// HashtagsCleared reports if the "hashtags" edge to the Hashtag entity was cleared.
+func (m *DraftMutation) HashtagsCleared() bool {
+	return m.clearedhashtags
+}
+
+// RemoveHashtagIDs removes the "hashtags" edge to the Hashtag entity by IDs.
+func (m *DraftMutation) RemoveHashtagIDs(ids ...int) {
+	if m.removedhashtags == nil {
+		m.removedhashtags = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.hashtags, ids[i])
+		m.removedhashtags[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedHashtags returns the removed IDs of the "hashtags" edge to the Hashtag entity.
+func (m *DraftMutation) RemovedHashtagsIDs() (ids []int) {
+	for id := range m.removedhashtags {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// HashtagsIDs returns the "hashtags" edge IDs in the mutation.
+func (m *DraftMutation) HashtagsIDs() (ids []int) {
+	for id := range m.hashtags {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetHashtags resets all changes to the "hashtags" edge.
+func (m *DraftMutation) ResetHashtags() {
+	m.hashtags = nil
+	m.clearedhashtags = false
+	m.removedhashtags = nil
+}
+
+// SetWorkID sets the "work" edge to the Work entity by id.
+func (m *DraftMutation) SetWorkID(id int) {
+	m.work = &id
+}
+
+// ClearWork clears the "work" edge to the Work entity.
+func (m *DraftMutation) ClearWork() {
+	m.clearedwork = true
+}
+
+// WorkCleared reports if the "work" edge to the Work entity was cleared.
+func (m *DraftMutation) WorkCleared() bool {
+	return m.clearedwork
+}
+
+// WorkID returns the "work" edge ID in the mutation.
+func (m *DraftMutation) WorkID() (id int, exists bool) {
+	if m.work != nil {
+		return *m.work, true
+	}
+	return
+}
+
+// WorkIDs returns the "work" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkID instead. It exists only for internal usage by the builders.
+func (m *DraftMutation) WorkIDs() (ids []int) {
+	if id := m.work; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWork resets all changes to the "work" edge.
+func (m *DraftMutation) ResetWork() {
+	m.work = nil
+	m.clearedwork = false
+}
+
+// SetCategoryID sets the "category" edge to the Category entity by id.
+func (m *DraftMutation) SetCategoryID(id int) {
+	m.category = &id
+}
+
+// ClearCategory clears the "category" edge to the Category entity.
+func (m *DraftMutation) ClearCategory() {
+	m.clearedcategory = true
+}
+
+// CategoryCleared reports if the "category" edge to the Category entity was cleared.
+func (m *DraftMutation) CategoryCleared() bool {
+	return m.clearedcategory
+}
+
+// CategoryID returns the "category" edge ID in the mutation.
+func (m *DraftMutation) CategoryID() (id int, exists bool) {
+	if m.category != nil {
+		return *m.category, true
+	}
+	return
+}
+
+// CategoryIDs returns the "category" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CategoryID instead. It exists only for internal usage by the builders.
+func (m *DraftMutation) CategoryIDs() (ids []int) {
+	if id := m.category; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCategory resets all changes to the "category" edge.
+func (m *DraftMutation) ResetCategory() {
+	m.category = nil
+	m.clearedcategory = false
+}
+
+// Where appends a list predicates to the DraftMutation builder.
+func (m *DraftMutation) Where(ps ...predicate.Draft) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *DraftMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Draft).
+func (m *DraftMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DraftMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.create_time != nil {
+		fields = append(fields, draft.FieldCreateTime)
+	}
+	if m.update_time != nil {
+		fields = append(fields, draft.FieldUpdateTime)
+	}
+	if m.praise_title != nil {
+		fields = append(fields, draft.FieldPraiseTitle)
+	}
+	if m.letter_title != nil {
+		fields = append(fields, draft.FieldLetterTitle)
+	}
+	if m.praise_content != nil {
+		fields = append(fields, draft.FieldPraiseContent)
+	}
+	if m.letter_content != nil {
+		fields = append(fields, draft.FieldLetterContent)
+	}
+	if m.praise_spoiled != nil {
+		fields = append(fields, draft.FieldPraiseSpoiled)
+	}
+	if m.letter_spoiled != nil {
+		fields = append(fields, draft.FieldLetterSpoiled)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DraftMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case draft.FieldCreateTime:
+		return m.CreateTime()
+	case draft.FieldUpdateTime:
+		return m.UpdateTime()
+	case draft.FieldPraiseTitle:
+		return m.PraiseTitle()
+	case draft.FieldLetterTitle:
+		return m.LetterTitle()
+	case draft.FieldPraiseContent:
+		return m.PraiseContent()
+	case draft.FieldLetterContent:
+		return m.LetterContent()
+	case draft.FieldPraiseSpoiled:
+		return m.PraiseSpoiled()
+	case draft.FieldLetterSpoiled:
+		return m.LetterSpoiled()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DraftMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case draft.FieldCreateTime:
+		return m.OldCreateTime(ctx)
+	case draft.FieldUpdateTime:
+		return m.OldUpdateTime(ctx)
+	case draft.FieldPraiseTitle:
+		return m.OldPraiseTitle(ctx)
+	case draft.FieldLetterTitle:
+		return m.OldLetterTitle(ctx)
+	case draft.FieldPraiseContent:
+		return m.OldPraiseContent(ctx)
+	case draft.FieldLetterContent:
+		return m.OldLetterContent(ctx)
+	case draft.FieldPraiseSpoiled:
+		return m.OldPraiseSpoiled(ctx)
+	case draft.FieldLetterSpoiled:
+		return m.OldLetterSpoiled(ctx)
+	}
+	return nil, fmt.Errorf("unknown Draft field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DraftMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case draft.FieldCreateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreateTime(v)
+		return nil
+	case draft.FieldUpdateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdateTime(v)
+		return nil
+	case draft.FieldPraiseTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPraiseTitle(v)
+		return nil
+	case draft.FieldLetterTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLetterTitle(v)
+		return nil
+	case draft.FieldPraiseContent:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPraiseContent(v)
+		return nil
+	case draft.FieldLetterContent:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLetterContent(v)
+		return nil
+	case draft.FieldPraiseSpoiled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPraiseSpoiled(v)
+		return nil
+	case draft.FieldLetterSpoiled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLetterSpoiled(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Draft field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DraftMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DraftMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DraftMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Draft numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DraftMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DraftMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DraftMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Draft nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DraftMutation) ResetField(name string) error {
+	switch name {
+	case draft.FieldCreateTime:
+		m.ResetCreateTime()
+		return nil
+	case draft.FieldUpdateTime:
+		m.ResetUpdateTime()
+		return nil
+	case draft.FieldPraiseTitle:
+		m.ResetPraiseTitle()
+		return nil
+	case draft.FieldLetterTitle:
+		m.ResetLetterTitle()
+		return nil
+	case draft.FieldPraiseContent:
+		m.ResetPraiseContent()
+		return nil
+	case draft.FieldLetterContent:
+		m.ResetLetterContent()
+		return nil
+	case draft.FieldPraiseSpoiled:
+		m.ResetPraiseSpoiled()
+		return nil
+	case draft.FieldLetterSpoiled:
+		m.ResetLetterSpoiled()
+		return nil
+	}
+	return fmt.Errorf("unknown Draft field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DraftMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.owner != nil {
+		edges = append(edges, draft.EdgeOwner)
+	}
+	if m.hashtags != nil {
+		edges = append(edges, draft.EdgeHashtags)
+	}
+	if m.work != nil {
+		edges = append(edges, draft.EdgeWork)
+	}
+	if m.category != nil {
+		edges = append(edges, draft.EdgeCategory)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DraftMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case draft.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case draft.EdgeHashtags:
+		ids := make([]ent.Value, 0, len(m.hashtags))
+		for id := range m.hashtags {
+			ids = append(ids, id)
+		}
+		return ids
+	case draft.EdgeWork:
+		if id := m.work; id != nil {
+			return []ent.Value{*id}
+		}
+	case draft.EdgeCategory:
+		if id := m.category; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DraftMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedhashtags != nil {
+		edges = append(edges, draft.EdgeHashtags)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DraftMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case draft.EdgeHashtags:
+		ids := make([]ent.Value, 0, len(m.removedhashtags))
+		for id := range m.removedhashtags {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DraftMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedowner {
+		edges = append(edges, draft.EdgeOwner)
+	}
+	if m.clearedhashtags {
+		edges = append(edges, draft.EdgeHashtags)
+	}
+	if m.clearedwork {
+		edges = append(edges, draft.EdgeWork)
+	}
+	if m.clearedcategory {
+		edges = append(edges, draft.EdgeCategory)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DraftMutation) EdgeCleared(name string) bool {
+	switch name {
+	case draft.EdgeOwner:
+		return m.clearedowner
+	case draft.EdgeHashtags:
+		return m.clearedhashtags
+	case draft.EdgeWork:
+		return m.clearedwork
+	case draft.EdgeCategory:
+		return m.clearedcategory
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DraftMutation) ClearEdge(name string) error {
+	switch name {
+	case draft.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case draft.EdgeWork:
+		m.ClearWork()
+		return nil
+	case draft.EdgeCategory:
+		m.ClearCategory()
+		return nil
+	}
+	return fmt.Errorf("unknown Draft unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DraftMutation) ResetEdge(name string) error {
+	switch name {
+	case draft.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case draft.EdgeHashtags:
+		m.ResetHashtags()
+		return nil
+	case draft.EdgeWork:
+		m.ResetWork()
+		return nil
+	case draft.EdgeCategory:
+		m.ResetCategory()
+		return nil
+	}
+	return fmt.Errorf("unknown Draft edge %s", name)
 }
 
 // HashtagMutation represents an operation that mutates the Hashtag nodes in the graph.
@@ -856,6 +1900,9 @@ type HashtagMutation struct {
 	posts         map[int]struct{}
 	removedposts  map[int]struct{}
 	clearedposts  bool
+	drafts        map[int]struct{}
+	removeddrafts map[int]struct{}
+	cleareddrafts bool
 	done          bool
 	oldValue      func(context.Context) (*Hashtag, error)
 	predicates    []predicate.Hashtag
@@ -1049,6 +2096,60 @@ func (m *HashtagMutation) ResetPosts() {
 	m.removedposts = nil
 }
 
+// AddDraftIDs adds the "drafts" edge to the Draft entity by ids.
+func (m *HashtagMutation) AddDraftIDs(ids ...int) {
+	if m.drafts == nil {
+		m.drafts = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.drafts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDrafts clears the "drafts" edge to the Draft entity.
+func (m *HashtagMutation) ClearDrafts() {
+	m.cleareddrafts = true
+}
+
+// DraftsCleared reports if the "drafts" edge to the Draft entity was cleared.
+func (m *HashtagMutation) DraftsCleared() bool {
+	return m.cleareddrafts
+}
+
+// RemoveDraftIDs removes the "drafts" edge to the Draft entity by IDs.
+func (m *HashtagMutation) RemoveDraftIDs(ids ...int) {
+	if m.removeddrafts == nil {
+		m.removeddrafts = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.drafts, ids[i])
+		m.removeddrafts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDrafts returns the removed IDs of the "drafts" edge to the Draft entity.
+func (m *HashtagMutation) RemovedDraftsIDs() (ids []int) {
+	for id := range m.removeddrafts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DraftsIDs returns the "drafts" edge IDs in the mutation.
+func (m *HashtagMutation) DraftsIDs() (ids []int) {
+	for id := range m.drafts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDrafts resets all changes to the "drafts" edge.
+func (m *HashtagMutation) ResetDrafts() {
+	m.drafts = nil
+	m.cleareddrafts = false
+	m.removeddrafts = nil
+}
+
 // Where appends a list predicates to the HashtagMutation builder.
 func (m *HashtagMutation) Where(ps ...predicate.Hashtag) {
 	m.predicates = append(m.predicates, ps...)
@@ -1167,9 +2268,12 @@ func (m *HashtagMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *HashtagMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.posts != nil {
 		edges = append(edges, hashtag.EdgePosts)
+	}
+	if m.drafts != nil {
+		edges = append(edges, hashtag.EdgeDrafts)
 	}
 	return edges
 }
@@ -1184,15 +2288,24 @@ func (m *HashtagMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case hashtag.EdgeDrafts:
+		ids := make([]ent.Value, 0, len(m.drafts))
+		for id := range m.drafts {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *HashtagMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedposts != nil {
 		edges = append(edges, hashtag.EdgePosts)
+	}
+	if m.removeddrafts != nil {
+		edges = append(edges, hashtag.EdgeDrafts)
 	}
 	return edges
 }
@@ -1207,15 +2320,24 @@ func (m *HashtagMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case hashtag.EdgeDrafts:
+		ids := make([]ent.Value, 0, len(m.removeddrafts))
+		for id := range m.removeddrafts {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *HashtagMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedposts {
 		edges = append(edges, hashtag.EdgePosts)
+	}
+	if m.cleareddrafts {
+		edges = append(edges, hashtag.EdgeDrafts)
 	}
 	return edges
 }
@@ -1226,6 +2348,8 @@ func (m *HashtagMutation) EdgeCleared(name string) bool {
 	switch name {
 	case hashtag.EdgePosts:
 		return m.clearedposts
+	case hashtag.EdgeDrafts:
+		return m.cleareddrafts
 	}
 	return false
 }
@@ -1244,6 +2368,9 @@ func (m *HashtagMutation) ResetEdge(name string) error {
 	switch name {
 	case hashtag.EdgePosts:
 		m.ResetPosts()
+		return nil
+	case hashtag.EdgeDrafts:
+		m.ResetDrafts()
 		return nil
 	}
 	return fmt.Errorf("unknown Hashtag edge %s", name)
@@ -2770,6 +3897,9 @@ type UserMutation struct {
 	following               map[int]struct{}
 	removedfollowing        map[int]struct{}
 	clearedfollowing        bool
+	drafts                  map[int]struct{}
+	removeddrafts           map[int]struct{}
+	cleareddrafts           bool
 	done                    bool
 	oldValue                func(context.Context) (*User, error)
 	predicates              []predicate.User
@@ -3326,6 +4456,60 @@ func (m *UserMutation) ResetFollowing() {
 	m.removedfollowing = nil
 }
 
+// AddDraftIDs adds the "drafts" edge to the Draft entity by ids.
+func (m *UserMutation) AddDraftIDs(ids ...int) {
+	if m.drafts == nil {
+		m.drafts = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.drafts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDrafts clears the "drafts" edge to the Draft entity.
+func (m *UserMutation) ClearDrafts() {
+	m.cleareddrafts = true
+}
+
+// DraftsCleared reports if the "drafts" edge to the Draft entity was cleared.
+func (m *UserMutation) DraftsCleared() bool {
+	return m.cleareddrafts
+}
+
+// RemoveDraftIDs removes the "drafts" edge to the Draft entity by IDs.
+func (m *UserMutation) RemoveDraftIDs(ids ...int) {
+	if m.removeddrafts == nil {
+		m.removeddrafts = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.drafts, ids[i])
+		m.removeddrafts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDrafts returns the removed IDs of the "drafts" edge to the Draft entity.
+func (m *UserMutation) RemovedDraftsIDs() (ids []int) {
+	for id := range m.removeddrafts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DraftsIDs returns the "drafts" edge IDs in the mutation.
+func (m *UserMutation) DraftsIDs() (ids []int) {
+	for id := range m.drafts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDrafts resets all changes to the "drafts" edge.
+func (m *UserMutation) ResetDrafts() {
+	m.drafts = nil
+	m.cleareddrafts = false
+	m.removeddrafts = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -3516,7 +4700,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.posts != nil {
 		edges = append(edges, user.EdgePosts)
 	}
@@ -3531,6 +4715,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.following != nil {
 		edges = append(edges, user.EdgeFollowing)
+	}
+	if m.drafts != nil {
+		edges = append(edges, user.EdgeDrafts)
 	}
 	return edges
 }
@@ -3569,13 +4756,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeDrafts:
+		ids := make([]ent.Value, 0, len(m.drafts))
+		for id := range m.drafts {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedposts != nil {
 		edges = append(edges, user.EdgePosts)
 	}
@@ -3590,6 +4783,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedfollowing != nil {
 		edges = append(edges, user.EdgeFollowing)
+	}
+	if m.removeddrafts != nil {
+		edges = append(edges, user.EdgeDrafts)
 	}
 	return edges
 }
@@ -3628,13 +4824,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeDrafts:
+		ids := make([]ent.Value, 0, len(m.removeddrafts))
+		for id := range m.removeddrafts {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedposts {
 		edges = append(edges, user.EdgePosts)
 	}
@@ -3649,6 +4851,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedfollowing {
 		edges = append(edges, user.EdgeFollowing)
+	}
+	if m.cleareddrafts {
+		edges = append(edges, user.EdgeDrafts)
 	}
 	return edges
 }
@@ -3667,6 +4872,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedfollowers
 	case user.EdgeFollowing:
 		return m.clearedfollowing
+	case user.EdgeDrafts:
+		return m.cleareddrafts
 	}
 	return false
 }
@@ -3698,6 +4905,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 	case user.EdgeFollowing:
 		m.ResetFollowing()
 		return nil
+	case user.EdgeDrafts:
+		m.ResetDrafts()
+		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)
 }
@@ -3714,6 +4924,9 @@ type WorkMutation struct {
 	posts         map[int]struct{}
 	removedposts  map[int]struct{}
 	clearedposts  bool
+	drafts        map[int]struct{}
+	removeddrafts map[int]struct{}
+	cleareddrafts bool
 	done          bool
 	oldValue      func(context.Context) (*Work, error)
 	predicates    []predicate.Work
@@ -3956,6 +5169,60 @@ func (m *WorkMutation) ResetPosts() {
 	m.removedposts = nil
 }
 
+// AddDraftIDs adds the "drafts" edge to the Draft entity by ids.
+func (m *WorkMutation) AddDraftIDs(ids ...int) {
+	if m.drafts == nil {
+		m.drafts = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.drafts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDrafts clears the "drafts" edge to the Draft entity.
+func (m *WorkMutation) ClearDrafts() {
+	m.cleareddrafts = true
+}
+
+// DraftsCleared reports if the "drafts" edge to the Draft entity was cleared.
+func (m *WorkMutation) DraftsCleared() bool {
+	return m.cleareddrafts
+}
+
+// RemoveDraftIDs removes the "drafts" edge to the Draft entity by IDs.
+func (m *WorkMutation) RemoveDraftIDs(ids ...int) {
+	if m.removeddrafts == nil {
+		m.removeddrafts = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.drafts, ids[i])
+		m.removeddrafts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDrafts returns the removed IDs of the "drafts" edge to the Draft entity.
+func (m *WorkMutation) RemovedDraftsIDs() (ids []int) {
+	for id := range m.removeddrafts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DraftsIDs returns the "drafts" edge IDs in the mutation.
+func (m *WorkMutation) DraftsIDs() (ids []int) {
+	for id := range m.drafts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDrafts resets all changes to the "drafts" edge.
+func (m *WorkMutation) ResetDrafts() {
+	m.drafts = nil
+	m.cleareddrafts = false
+	m.removeddrafts = nil
+}
+
 // Where appends a list predicates to the WorkMutation builder.
 func (m *WorkMutation) Where(ps ...predicate.Work) {
 	m.predicates = append(m.predicates, ps...)
@@ -4100,9 +5367,12 @@ func (m *WorkMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.posts != nil {
 		edges = append(edges, work.EdgePosts)
+	}
+	if m.drafts != nil {
+		edges = append(edges, work.EdgeDrafts)
 	}
 	return edges
 }
@@ -4117,15 +5387,24 @@ func (m *WorkMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case work.EdgeDrafts:
+		ids := make([]ent.Value, 0, len(m.drafts))
+		for id := range m.drafts {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedposts != nil {
 		edges = append(edges, work.EdgePosts)
+	}
+	if m.removeddrafts != nil {
+		edges = append(edges, work.EdgeDrafts)
 	}
 	return edges
 }
@@ -4140,15 +5419,24 @@ func (m *WorkMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case work.EdgeDrafts:
+		ids := make([]ent.Value, 0, len(m.removeddrafts))
+		for id := range m.removeddrafts {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedposts {
 		edges = append(edges, work.EdgePosts)
+	}
+	if m.cleareddrafts {
+		edges = append(edges, work.EdgeDrafts)
 	}
 	return edges
 }
@@ -4159,6 +5447,8 @@ func (m *WorkMutation) EdgeCleared(name string) bool {
 	switch name {
 	case work.EdgePosts:
 		return m.clearedposts
+	case work.EdgeDrafts:
+		return m.cleareddrafts
 	}
 	return false
 }
@@ -4177,6 +5467,9 @@ func (m *WorkMutation) ResetEdge(name string) error {
 	switch name {
 	case work.EdgePosts:
 		m.ResetPosts()
+		return nil
+	case work.EdgeDrafts:
+		m.ResetDrafts()
 		return nil
 	}
 	return fmt.Errorf("unknown Work edge %s", name)

@@ -16,7 +16,7 @@ type Hashtag struct {
 // Fields of the Hashtag.
 func (Hashtag) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("title").NotEmpty(),
+		field.Text("title").NotEmpty().Unique(),
 	}
 }
 
@@ -24,6 +24,7 @@ func (Hashtag) Fields() []ent.Field {
 func (Hashtag) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("posts", Post.Type).Ref("hashtags"),
+		edge.From("drafts", Draft.Type).Ref("hashtags"),
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/post"
 )
@@ -39,6 +40,21 @@ func (hc *HashtagCreate) AddPosts(p ...*Post) *HashtagCreate {
 		ids[i] = p[i].ID
 	}
 	return hc.AddPostIDs(ids...)
+}
+
+// AddDraftIDs adds the "drafts" edge to the Draft entity by IDs.
+func (hc *HashtagCreate) AddDraftIDs(ids ...int) *HashtagCreate {
+	hc.mutation.AddDraftIDs(ids...)
+	return hc
+}
+
+// AddDrafts adds the "drafts" edges to the Draft entity.
+func (hc *HashtagCreate) AddDrafts(d ...*Draft) *HashtagCreate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return hc.AddDraftIDs(ids...)
 }
 
 // Mutation returns the HashtagMutation object of the builder.
@@ -171,6 +187,25 @@ func (hc *HashtagCreate) createSpec() (*Hashtag, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := hc.mutation.DraftsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashtag.DraftsTable,
+			Columns: hashtag.DraftsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
 				},
 			},
 		}

@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/post"
 )
 
@@ -39,6 +40,21 @@ func (cc *CategoryCreate) AddPost(p ...*Post) *CategoryCreate {
 		ids[i] = p[i].ID
 	}
 	return cc.AddPostIDs(ids...)
+}
+
+// AddDraftIDs adds the "draft" edge to the Draft entity by IDs.
+func (cc *CategoryCreate) AddDraftIDs(ids ...int) *CategoryCreate {
+	cc.mutation.AddDraftIDs(ids...)
+	return cc
+}
+
+// AddDraft adds the "draft" edges to the Draft entity.
+func (cc *CategoryCreate) AddDraft(d ...*Draft) *CategoryCreate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return cc.AddDraftIDs(ids...)
 }
 
 // Mutation returns the CategoryMutation object of the builder.
@@ -171,6 +187,25 @@ func (cc *CategoryCreate) createSpec() (*Category, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cc.mutation.DraftIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   category.DraftTable,
+			Columns: []string{category.DraftColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
 				},
 			},
 		}

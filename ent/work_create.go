@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/work"
 )
@@ -53,6 +54,21 @@ func (wc *WorkCreate) AddPosts(p ...*Post) *WorkCreate {
 		ids[i] = p[i].ID
 	}
 	return wc.AddPostIDs(ids...)
+}
+
+// AddDraftIDs adds the "drafts" edge to the Draft entity by IDs.
+func (wc *WorkCreate) AddDraftIDs(ids ...int) *WorkCreate {
+	wc.mutation.AddDraftIDs(ids...)
+	return wc
+}
+
+// AddDrafts adds the "drafts" edges to the Draft entity.
+func (wc *WorkCreate) AddDrafts(d ...*Draft) *WorkCreate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return wc.AddDraftIDs(ids...)
 }
 
 // Mutation returns the WorkMutation object of the builder.
@@ -198,6 +214,25 @@ func (wc *WorkCreate) createSpec() (*Work, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := wc.mutation.DraftsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   work.DraftsTable,
+			Columns: []string{work.DraftsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: draft.FieldID,
 				},
 			},
 		}

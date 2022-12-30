@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
@@ -39,6 +40,7 @@ func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
 		bookmark.Table: bookmark.ValidColumn,
 		category.Table: category.ValidColumn,
+		draft.Table:    draft.ValidColumn,
 		hashtag.Table:  hashtag.ValidColumn,
 		like.Table:     like.ValidColumn,
 		post.Table:     post.ValidColumn,

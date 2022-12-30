@@ -685,6 +685,34 @@ func HasFollowingWith(preds ...predicate.User) predicate.User {
 	})
 }
 
+// HasDrafts applies the HasEdge predicate on the "drafts" edge.
+func HasDrafts() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(DraftsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, DraftsTable, DraftsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDraftsWith applies the HasEdge predicate on the "drafts" edge with a given conditions (other predicates).
+func HasDraftsWith(preds ...predicate.Draft) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(DraftsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, DraftsTable, DraftsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasLikes applies the HasEdge predicate on the "likes" edge.
 func HasLikes() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

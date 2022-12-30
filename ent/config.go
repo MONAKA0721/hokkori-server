@@ -30,6 +30,7 @@ type config struct {
 type hooks struct {
 	Bookmark []ent.Hook
 	Category []ent.Hook
+	Draft    []ent.Hook
 	Hashtag  []ent.Hook
 	Like     []ent.Hook
 	Post     []ent.Hook

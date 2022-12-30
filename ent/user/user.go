@@ -25,6 +25,8 @@ const (
 	EdgeFollowers = "followers"
 	// EdgeFollowing holds the string denoting the following edge name in mutations.
 	EdgeFollowing = "following"
+	// EdgeDrafts holds the string denoting the drafts edge name in mutations.
+	EdgeDrafts = "drafts"
 	// EdgeLikes holds the string denoting the likes edge name in mutations.
 	EdgeLikes = "likes"
 	// EdgeBookmarks holds the string denoting the bookmarks edge name in mutations.
@@ -52,6 +54,13 @@ const (
 	FollowersTable = "user_following"
 	// FollowingTable is the table that holds the following relation/edge. The primary key declared below.
 	FollowingTable = "user_following"
+	// DraftsTable is the table that holds the drafts relation/edge.
+	DraftsTable = "drafts"
+	// DraftsInverseTable is the table name for the Draft entity.
+	// It exists in this package in order to avoid circular dependency with the "draft" package.
+	DraftsInverseTable = "drafts"
+	// DraftsColumn is the table column denoting the drafts relation/edge.
+	DraftsColumn = "user_drafts"
 	// LikesTable is the table that holds the likes relation/edge.
 	LikesTable = "likes"
 	// LikesInverseTable is the table name for the Like entity.

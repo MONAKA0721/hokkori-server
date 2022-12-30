@@ -25,6 +25,7 @@ func (Work) Fields() []ent.Field {
 func (Work) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("posts", Post.Type),
+		edge.To("drafts", Draft.Type),
 	}
 }
 

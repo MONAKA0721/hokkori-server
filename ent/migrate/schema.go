@@ -45,10 +45,51 @@ var (
 		Columns:    CategoriesColumns,
 		PrimaryKey: []*schema.Column{CategoriesColumns[0]},
 	}
+	// DraftsColumns holds the columns for the "drafts" table.
+	DraftsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "create_time", Type: field.TypeTime},
+		{Name: "update_time", Type: field.TypeTime},
+		{Name: "praise_title", Type: field.TypeString, Size: 2147483647},
+		{Name: "letter_title", Type: field.TypeString, Size: 2147483647},
+		{Name: "praise_content", Type: field.TypeString, Size: 2147483647},
+		{Name: "letter_content", Type: field.TypeString, Size: 2147483647},
+		{Name: "praise_spoiled", Type: field.TypeBool},
+		{Name: "letter_spoiled", Type: field.TypeBool},
+		{Name: "draft_category", Type: field.TypeInt, Nullable: true},
+		{Name: "user_drafts", Type: field.TypeInt},
+		{Name: "work_drafts", Type: field.TypeInt, Nullable: true},
+	}
+	// DraftsTable holds the schema information for the "drafts" table.
+	DraftsTable = &schema.Table{
+		Name:       "drafts",
+		Columns:    DraftsColumns,
+		PrimaryKey: []*schema.Column{DraftsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "drafts_categories_category",
+				Columns:    []*schema.Column{DraftsColumns[9]},
+				RefColumns: []*schema.Column{CategoriesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "drafts_users_drafts",
+				Columns:    []*schema.Column{DraftsColumns[10]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "drafts_works_drafts",
+				Columns:    []*schema.Column{DraftsColumns[11]},
+				RefColumns: []*schema.Column{WorksColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// HashtagsColumns holds the columns for the "hashtags" table.
 	HashtagsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "title", Type: field.TypeString, Size: 2147483647},
+		{Name: "title", Type: field.TypeString, Unique: true, Size: 2147483647},
 	}
 	// HashtagsTable holds the schema information for the "hashtags" table.
 	HashtagsTable = &schema.Table{
@@ -148,6 +189,31 @@ var (
 		Columns:    WorksColumns,
 		PrimaryKey: []*schema.Column{WorksColumns[0]},
 	}
+	// DraftHashtagsColumns holds the columns for the "draft_hashtags" table.
+	DraftHashtagsColumns = []*schema.Column{
+		{Name: "draft_id", Type: field.TypeInt},
+		{Name: "hashtag_id", Type: field.TypeInt},
+	}
+	// DraftHashtagsTable holds the schema information for the "draft_hashtags" table.
+	DraftHashtagsTable = &schema.Table{
+		Name:       "draft_hashtags",
+		Columns:    DraftHashtagsColumns,
+		PrimaryKey: []*schema.Column{DraftHashtagsColumns[0], DraftHashtagsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "draft_hashtags_draft_id",
+				Columns:    []*schema.Column{DraftHashtagsColumns[0]},
+				RefColumns: []*schema.Column{DraftsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "draft_hashtags_hashtag_id",
+				Columns:    []*schema.Column{DraftHashtagsColumns[1]},
+				RefColumns: []*schema.Column{HashtagsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// PostHashtagsColumns holds the columns for the "post_hashtags" table.
 	PostHashtagsColumns = []*schema.Column{
 		{Name: "post_id", Type: field.TypeInt},
@@ -202,11 +268,13 @@ var (
 	Tables = []*schema.Table{
 		BookmarksTable,
 		CategoriesTable,
+		DraftsTable,
 		HashtagsTable,
 		LikesTable,
 		PostsTable,
 		UsersTable,
 		WorksTable,
+		DraftHashtagsTable,
 		PostHashtagsTable,
 		UserFollowingTable,
 	}
@@ -215,11 +283,16 @@ var (
 func init() {
 	BookmarksTable.ForeignKeys[0].RefTable = UsersTable
 	BookmarksTable.ForeignKeys[1].RefTable = PostsTable
+	DraftsTable.ForeignKeys[0].RefTable = CategoriesTable
+	DraftsTable.ForeignKeys[1].RefTable = UsersTable
+	DraftsTable.ForeignKeys[2].RefTable = WorksTable
 	LikesTable.ForeignKeys[0].RefTable = UsersTable
 	LikesTable.ForeignKeys[1].RefTable = PostsTable
 	PostsTable.ForeignKeys[0].RefTable = CategoriesTable
 	PostsTable.ForeignKeys[1].RefTable = UsersTable
 	PostsTable.ForeignKeys[2].RefTable = WorksTable
+	DraftHashtagsTable.ForeignKeys[0].RefTable = DraftsTable
+	DraftHashtagsTable.ForeignKeys[1].RefTable = HashtagsTable
 	PostHashtagsTable.ForeignKeys[0].RefTable = PostsTable
 	PostHashtagsTable.ForeignKeys[1].RefTable = HashtagsTable
 	UserFollowingTable.ForeignKeys[0].RefTable = UsersTable

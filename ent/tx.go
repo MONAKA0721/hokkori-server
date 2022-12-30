@@ -18,6 +18,8 @@ type Tx struct {
 	Bookmark *BookmarkClient
 	// Category is the client for interacting with the Category builders.
 	Category *CategoryClient
+	// Draft is the client for interacting with the Draft builders.
+	Draft *DraftClient
 	// Hashtag is the client for interacting with the Hashtag builders.
 	Hashtag *HashtagClient
 	// Like is the client for interacting with the Like builders.
@@ -165,6 +167,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Bookmark = NewBookmarkClient(tx.config)
 	tx.Category = NewCategoryClient(tx.config)
+	tx.Draft = NewDraftClient(tx.config)
 	tx.Hashtag = NewHashtagClient(tx.config)
 	tx.Like = NewLikeClient(tx.config)
 	tx.Post = NewPostClient(tx.config)

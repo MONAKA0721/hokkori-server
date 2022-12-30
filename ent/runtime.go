@@ -7,6 +7,7 @@ import (
 
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
 	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/draft"
 	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
@@ -31,6 +32,23 @@ func init() {
 	categoryDescName := categoryFields[0].Descriptor()
 	// category.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	category.NameValidator = categoryDescName.Validators[0].(func(string) error)
+	draftMixin := schema.Draft{}.Mixin()
+	draftMixinFields0 := draftMixin[0].Fields()
+	_ = draftMixinFields0
+	draftMixinFields1 := draftMixin[1].Fields()
+	_ = draftMixinFields1
+	draftFields := schema.Draft{}.Fields()
+	_ = draftFields
+	// draftDescCreateTime is the schema descriptor for create_time field.
+	draftDescCreateTime := draftMixinFields0[0].Descriptor()
+	// draft.DefaultCreateTime holds the default value on creation for the create_time field.
+	draft.DefaultCreateTime = draftDescCreateTime.Default.(func() time.Time)
+	// draftDescUpdateTime is the schema descriptor for update_time field.
+	draftDescUpdateTime := draftMixinFields1[0].Descriptor()
+	// draft.DefaultUpdateTime holds the default value on creation for the update_time field.
+	draft.DefaultUpdateTime = draftDescUpdateTime.Default.(func() time.Time)
+	// draft.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
+	draft.UpdateDefaultUpdateTime = draftDescUpdateTime.UpdateDefault.(func() time.Time)
 	hashtagFields := schema.Hashtag{}.Fields()
 	_ = hashtagFields
 	// hashtagDescTitle is the schema descriptor for title field.
