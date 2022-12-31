@@ -15,6 +15,12 @@ const (
 	FieldProfile = "profile"
 	// FieldAvatarURL holds the string denoting the avatar_url field in the database.
 	FieldAvatarURL = "avatar_url"
+	// FieldAge holds the string denoting the age field in the database.
+	FieldAge = "age"
+	// FieldGender holds the string denoting the gender field in the database.
+	FieldGender = "gender"
+	// FieldInterests holds the string denoting the interests field in the database.
+	FieldInterests = "interests"
 	// EdgePosts holds the string denoting the posts edge name in mutations.
 	EdgePosts = "posts"
 	// EdgeLikedPosts holds the string denoting the liked_posts edge name in mutations.
@@ -84,6 +90,9 @@ var Columns = []string{
 	FieldUsername,
 	FieldProfile,
 	FieldAvatarURL,
+	FieldAge,
+	FieldGender,
+	FieldInterests,
 }
 
 var (

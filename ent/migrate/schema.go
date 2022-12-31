@@ -170,6 +170,9 @@ var (
 		{Name: "username", Type: field.TypeString, Nullable: true},
 		{Name: "profile", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "avatar_url", Type: field.TypeString, Nullable: true},
+		{Name: "age", Type: field.TypeInt, Nullable: true},
+		{Name: "gender", Type: field.TypeInt, Nullable: true},
+		{Name: "interests", Type: field.TypeJSON, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{

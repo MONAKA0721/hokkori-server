@@ -213,12 +213,15 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Age             func(childComplexity int) int
 		AvatarURL       func(childComplexity int) int
 		BookmarkedPosts func(childComplexity int) int
 		Drafts          func(childComplexity int) int
 		Followers       func(childComplexity int) int
 		Following       func(childComplexity int) int
+		Gender          func(childComplexity int) int
 		ID              func(childComplexity int) int
+		Interests       func(childComplexity int) int
 		LikedPosts      func(childComplexity int) int
 		Name            func(childComplexity int) int
 		Posts           func(childComplexity int) int
@@ -1115,6 +1118,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UnlikePostPayload.Post(childComplexity), true
 
+	case "User.age":
+		if e.complexity.User.Age == nil {
+			break
+		}
+
+		return e.complexity.User.Age(childComplexity), true
+
 	case "User.avatarURL":
 		if e.complexity.User.AvatarURL == nil {
 			break
@@ -1150,12 +1160,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Following(childComplexity), true
 
+	case "User.gender":
+		if e.complexity.User.Gender == nil {
+			break
+		}
+
+		return e.complexity.User.Gender(childComplexity), true
+
 	case "User.id":
 		if e.complexity.User.ID == nil {
 			break
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+
+	case "User.interests":
+		if e.complexity.User.Interests == nil {
+			break
+		}
+
+		return e.complexity.User.Interests(childComplexity), true
 
 	case "User.likedPosts":
 		if e.complexity.User.LikedPosts == nil {
@@ -1493,6 +1517,12 @@ input CreateUserInput {
   username: String
   profile: String
   avatarURL: String
+  """1:10代 2:20代 3:30代 4:40代 5:50代 6:60代以上"""
+  age: Int
+  """1:男 2:女 3:選択しない"""
+  gender: Int
+  """1:ポケットモンスター 2:どうぶつの森 3:スーパーマリオ 4:スプラトゥーン 5:ゼルダの伝説 6:モンスターハンター 7:ドラゴンクエスト 8:ファイナルファンタジー 9:ニーア 10:桃太郎電鉄 11:パワプロ 12:メタルギア 13:マインクラフト 14:ソニック"""
+  interests: [Int!]
   postIDs: [ID!]
   likedPostIDs: [ID!]
   bookmarkedPostIDs: [ID!]
@@ -2079,6 +2109,15 @@ input UpdateUserInput {
   profile: String
   clearAvatarURL: Boolean
   avatarURL: String
+  clearAge: Boolean
+  """1:10代 2:20代 3:30代 4:40代 5:50代 6:60代以上"""
+  age: Int
+  clearGender: Boolean
+  """1:男 2:女 3:選択しない"""
+  gender: Int
+  clearInterests: Boolean
+  """1:ポケットモンスター 2:どうぶつの森 3:スーパーマリオ 4:スプラトゥーン 5:ゼルダの伝説 6:モンスターハンター 7:ドラゴンクエスト 8:ファイナルファンタジー 9:ニーア 10:桃太郎電鉄 11:パワプロ 12:メタルギア 13:マインクラフト 14:ソニック"""
+  interests: [Int!]
   addPostIDs: [ID!]
   removePostIDs: [ID!]
   addLikedPostIDs: [ID!]
@@ -2111,6 +2150,12 @@ type User implements Node {
   username: String
   profile: String
   avatarURL: String
+  """1:10代 2:20代 3:30代 4:40代 5:50代 6:60代以上"""
+  age: Int
+  """1:男 2:女 3:選択しない"""
+  gender: Int
+  """1:ポケットモンスター 2:どうぶつの森 3:スーパーマリオ 4:スプラトゥーン 5:ゼルダの伝説 6:モンスターハンター 7:ドラゴンクエスト 8:ファイナルファンタジー 9:ニーア 10:桃太郎電鉄 11:パワプロ 12:メタルギア 13:マインクラフト 14:ソニック"""
+  interests: [Int!]
   posts: [Post!]
   likedPosts: [Post!]
   bookmarkedPosts: [Post!]
@@ -2197,6 +2242,28 @@ input UserWhereInput {
   avatarURLNotNil: Boolean
   avatarURLEqualFold: String
   avatarURLContainsFold: String
+  """age field predicates"""
+  age: Int
+  ageNEQ: Int
+  ageIn: [Int!]
+  ageNotIn: [Int!]
+  ageGT: Int
+  ageGTE: Int
+  ageLT: Int
+  ageLTE: Int
+  ageIsNil: Boolean
+  ageNotNil: Boolean
+  """gender field predicates"""
+  gender: Int
+  genderNEQ: Int
+  genderIn: [Int!]
+  genderNotIn: [Int!]
+  genderGT: Int
+  genderGTE: Int
+  genderLT: Int
+  genderLTE: Int
+  genderIsNil: Boolean
+  genderNotNil: Boolean
   """posts edge predicates"""
   hasPosts: Boolean
   hasPostsWith: [PostWhereInput!]
@@ -4286,6 +4353,12 @@ func (ec *executionContext) fieldContext_Draft_owner(ctx context.Context, field 
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -4805,6 +4878,12 @@ func (ec *executionContext) fieldContext_FollowUserPayload_user(ctx context.Cont
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -5453,6 +5532,12 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -5532,6 +5617,12 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -7027,6 +7118,12 @@ func (ec *executionContext) fieldContext_Post_owner(ctx context.Context, field g
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -7253,6 +7350,12 @@ func (ec *executionContext) fieldContext_Post_likedUsers(ctx context.Context, fi
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -7318,6 +7421,12 @@ func (ec *executionContext) fieldContext_Post_bookmarkedUsers(ctx context.Contex
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -8562,6 +8671,12 @@ func (ec *executionContext) fieldContext_UnfollowUserPayload_user(ctx context.Co
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -8904,6 +9019,129 @@ func (ec *executionContext) fieldContext_User_avatarURL(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _User_age(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_age(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Age, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalOInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_age(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_gender(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_gender(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Gender, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalOInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_gender(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_interests(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_interests(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Interests, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]int)
+	fc.Result = res
+	return ec.marshalOInt2ᚕintᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_interests(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_posts(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_posts(ctx, field)
 	if err != nil {
@@ -9163,6 +9401,12 @@ func (ec *executionContext) fieldContext_User_followers(ctx context.Context, fie
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -9228,6 +9472,12 @@ func (ec *executionContext) fieldContext_User_following(ctx context.Context, fie
 				return ec.fieldContext_User_profile(ctx, field)
 			case "avatarURL":
 				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "age":
+				return ec.fieldContext_User_age(ctx, field)
+			case "gender":
+				return ec.fieldContext_User_gender(ctx, field)
+			case "interests":
+				return ec.fieldContext_User_interests(ctx, field)
 			case "posts":
 				return ec.fieldContext_User_posts(ctx, field)
 			case "likedPosts":
@@ -12311,7 +12561,7 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "username", "profile", "avatarURL", "postIDs", "likedPostIDs", "bookmarkedPostIDs", "followerIDs", "followingIDs", "draftIDs"}
+	fieldsInOrder := [...]string{"name", "username", "profile", "avatarURL", "age", "gender", "interests", "postIDs", "likedPostIDs", "bookmarkedPostIDs", "followerIDs", "followingIDs", "draftIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -12347,6 +12597,30 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatarURL"))
 			it.AvatarURL, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "age":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("age"))
+			it.Age, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "gender":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gender"))
+			it.Gender, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "interests":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("interests"))
+			it.Interests, err = ec.unmarshalOInt2ᚖᚕintᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -14879,7 +15153,7 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "clearUsername", "username", "clearProfile", "profile", "clearAvatarURL", "avatarURL", "addPostIDs", "removePostIDs", "addLikedPostIDs", "removeLikedPostIDs", "addBookmarkedPostIDs", "removeBookmarkedPostIDs", "addFollowerIDs", "removeFollowerIDs", "addFollowingIDs", "removeFollowingIDs", "addDraftIDs", "removeDraftIDs"}
+	fieldsInOrder := [...]string{"name", "clearUsername", "username", "clearProfile", "profile", "clearAvatarURL", "avatarURL", "clearAge", "age", "clearGender", "gender", "clearInterests", "interests", "addPostIDs", "removePostIDs", "addLikedPostIDs", "removeLikedPostIDs", "addBookmarkedPostIDs", "removeBookmarkedPostIDs", "addFollowerIDs", "removeFollowerIDs", "addFollowingIDs", "removeFollowingIDs", "addDraftIDs", "removeDraftIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14939,6 +15213,54 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatarURL"))
 			it.AvatarURL, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "clearAge":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearAge"))
+			it.ClearAge, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "age":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("age"))
+			it.Age, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "clearGender":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearGender"))
+			it.ClearGender, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "gender":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gender"))
+			it.Gender, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "clearInterests":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearInterests"))
+			it.ClearInterests, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "interests":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("interests"))
+			it.Interests, err = ec.unmarshalOInt2ᚖᚕintᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -15127,7 +15449,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "username", "usernameNEQ", "usernameIn", "usernameNotIn", "usernameGT", "usernameGTE", "usernameLT", "usernameLTE", "usernameContains", "usernameHasPrefix", "usernameHasSuffix", "usernameIsNil", "usernameNotNil", "usernameEqualFold", "usernameContainsFold", "profile", "profileNEQ", "profileIn", "profileNotIn", "profileGT", "profileGTE", "profileLT", "profileLTE", "profileContains", "profileHasPrefix", "profileHasSuffix", "profileIsNil", "profileNotNil", "profileEqualFold", "profileContainsFold", "avatarURL", "avatarURLNEQ", "avatarURLIn", "avatarURLNotIn", "avatarURLGT", "avatarURLGTE", "avatarURLLT", "avatarURLLTE", "avatarURLContains", "avatarURLHasPrefix", "avatarURLHasSuffix", "avatarURLIsNil", "avatarURLNotNil", "avatarURLEqualFold", "avatarURLContainsFold", "hasPosts", "hasPostsWith", "hasLikedPosts", "hasLikedPostsWith", "hasBookmarkedPosts", "hasBookmarkedPostsWith", "hasFollowers", "hasFollowersWith", "hasFollowing", "hasFollowingWith", "hasDrafts", "hasDraftsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "username", "usernameNEQ", "usernameIn", "usernameNotIn", "usernameGT", "usernameGTE", "usernameLT", "usernameLTE", "usernameContains", "usernameHasPrefix", "usernameHasSuffix", "usernameIsNil", "usernameNotNil", "usernameEqualFold", "usernameContainsFold", "profile", "profileNEQ", "profileIn", "profileNotIn", "profileGT", "profileGTE", "profileLT", "profileLTE", "profileContains", "profileHasPrefix", "profileHasSuffix", "profileIsNil", "profileNotNil", "profileEqualFold", "profileContainsFold", "avatarURL", "avatarURLNEQ", "avatarURLIn", "avatarURLNotIn", "avatarURLGT", "avatarURLGTE", "avatarURLLT", "avatarURLLTE", "avatarURLContains", "avatarURLHasPrefix", "avatarURLHasSuffix", "avatarURLIsNil", "avatarURLNotNil", "avatarURLEqualFold", "avatarURLContainsFold", "age", "ageNEQ", "ageIn", "ageNotIn", "ageGT", "ageGTE", "ageLT", "ageLTE", "ageIsNil", "ageNotNil", "gender", "genderNEQ", "genderIn", "genderNotIn", "genderGT", "genderGTE", "genderLT", "genderLTE", "genderIsNil", "genderNotNil", "hasPosts", "hasPostsWith", "hasLikedPosts", "hasLikedPostsWith", "hasBookmarkedPosts", "hasBookmarkedPostsWith", "hasFollowers", "hasFollowersWith", "hasFollowing", "hasFollowingWith", "hasDrafts", "hasDraftsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15683,6 +16005,166 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatarURLContainsFold"))
 			it.AvatarURLContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "age":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("age"))
+			it.Age, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ageNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ageNEQ"))
+			it.AgeNEQ, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ageIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ageIn"))
+			it.AgeIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ageNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ageNotIn"))
+			it.AgeNotIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ageGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ageGT"))
+			it.AgeGT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ageGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ageGTE"))
+			it.AgeGTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ageLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ageLT"))
+			it.AgeLT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ageLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ageLTE"))
+			it.AgeLTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ageIsNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ageIsNil"))
+			it.AgeIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ageNotNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ageNotNil"))
+			it.AgeNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "gender":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gender"))
+			it.Gender, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "genderNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genderNEQ"))
+			it.GenderNEQ, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "genderIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genderIn"))
+			it.GenderIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "genderNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genderNotIn"))
+			it.GenderNotIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "genderGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genderGT"))
+			it.GenderGT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "genderGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genderGTE"))
+			it.GenderGTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "genderLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genderLT"))
+			it.GenderLT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "genderLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genderLTE"))
+			it.GenderLTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "genderIsNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genderIsNil"))
+			it.GenderIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "genderNotNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genderNotNil"))
+			it.GenderNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -17680,6 +18162,18 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "avatarURL":
 
 			out.Values[i] = ec._User_avatarURL(ctx, field, obj)
+
+		case "age":
+
+			out.Values[i] = ec._User_age(ctx, field, obj)
+
+		case "gender":
+
+			out.Values[i] = ec._User_gender(ctx, field, obj)
+
+		case "interests":
+
+			out.Values[i] = ec._User_interests(ctx, field, obj)
 
 		case "posts":
 			field := field
@@ -19697,6 +20191,54 @@ func (ec *executionContext) marshalOID2ᚖint(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOInt2ᚕintᚄ(ctx context.Context, v interface{}) ([]int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]int, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNInt2int(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOInt2ᚕintᚄ(ctx context.Context, sel ast.SelectionSet, v []int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNInt2int(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
 	if v == nil {
 		return nil, nil
@@ -19711,6 +20253,18 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	}
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖᚕintᚄ(ctx context.Context, v interface{}) (*[]int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖᚕintᚄ(ctx context.Context, sel ast.SelectionSet, v *[]int) graphql.Marshaler {
+	return ec.marshalOInt2ᚕintᚄ(ctx, sel, *v)
 }
 
 func (ec *executionContext) marshalONode2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐNoder(ctx context.Context, sel ast.SelectionSet, v ent.Noder) graphql.Marshaler {

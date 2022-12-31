@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -23,6 +24,12 @@ type User struct {
 	Profile string `json:"profile,omitempty"`
 	// AvatarURL holds the value of the "avatar_url" field.
 	AvatarURL string `json:"avatar_url,omitempty"`
+	// 1:10代 2:20代 3:30代 4:40代 5:50代 6:60代以上
+	Age int `json:"age,omitempty"`
+	// 1:男 2:女 3:選択しない
+	Gender int `json:"gender,omitempty"`
+	// 1:ポケットモンスター 2:どうぶつの森 3:スーパーマリオ 4:スプラトゥーン 5:ゼルダの伝説 6:モンスターハンター 7:ドラゴンクエスト 8:ファイナルファンタジー 9:ニーア 10:桃太郎電鉄 11:パワプロ 12:メタルギア 13:マインクラフト 14:ソニック
+	Interests []int `json:"interests,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges UserEdges `json:"edges"`
@@ -130,7 +137,9 @@ func (*User) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldID:
+		case user.FieldInterests:
+			values[i] = new([]byte)
+		case user.FieldID, user.FieldAge, user.FieldGender:
 			values[i] = new(sql.NullInt64)
 		case user.FieldName, user.FieldUsername, user.FieldProfile, user.FieldAvatarURL:
 			values[i] = new(sql.NullString)
@@ -178,6 +187,26 @@ func (u *User) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field avatar_url", values[i])
 			} else if value.Valid {
 				u.AvatarURL = value.String
+			}
+		case user.FieldAge:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field age", values[i])
+			} else if value.Valid {
+				u.Age = int(value.Int64)
+			}
+		case user.FieldGender:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field gender", values[i])
+			} else if value.Valid {
+				u.Gender = int(value.Int64)
+			}
+		case user.FieldInterests:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field interests", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &u.Interests); err != nil {
+					return fmt.Errorf("unmarshal field interests: %w", err)
+				}
 			}
 		}
 	}
@@ -258,6 +287,15 @@ func (u *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("avatar_url=")
 	builder.WriteString(u.AvatarURL)
+	builder.WriteString(", ")
+	builder.WriteString("age=")
+	builder.WriteString(fmt.Sprintf("%v", u.Age))
+	builder.WriteString(", ")
+	builder.WriteString("gender=")
+	builder.WriteString(fmt.Sprintf("%v", u.Gender))
+	builder.WriteString(", ")
+	builder.WriteString("interests=")
+	builder.WriteString(fmt.Sprintf("%v", u.Interests))
 	builder.WriteByte(')')
 	return builder.String()
 }

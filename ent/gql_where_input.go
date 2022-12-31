@@ -1581,6 +1581,30 @@ type UserWhereInput struct {
 	AvatarURLEqualFold    *string  `json:"avatarURLEqualFold,omitempty"`
 	AvatarURLContainsFold *string  `json:"avatarURLContainsFold,omitempty"`
 
+	// "age" field predicates.
+	Age       *int  `json:"age,omitempty"`
+	AgeNEQ    *int  `json:"ageNEQ,omitempty"`
+	AgeIn     []int `json:"ageIn,omitempty"`
+	AgeNotIn  []int `json:"ageNotIn,omitempty"`
+	AgeGT     *int  `json:"ageGT,omitempty"`
+	AgeGTE    *int  `json:"ageGTE,omitempty"`
+	AgeLT     *int  `json:"ageLT,omitempty"`
+	AgeLTE    *int  `json:"ageLTE,omitempty"`
+	AgeIsNil  bool  `json:"ageIsNil,omitempty"`
+	AgeNotNil bool  `json:"ageNotNil,omitempty"`
+
+	// "gender" field predicates.
+	Gender       *int  `json:"gender,omitempty"`
+	GenderNEQ    *int  `json:"genderNEQ,omitempty"`
+	GenderIn     []int `json:"genderIn,omitempty"`
+	GenderNotIn  []int `json:"genderNotIn,omitempty"`
+	GenderGT     *int  `json:"genderGT,omitempty"`
+	GenderGTE    *int  `json:"genderGTE,omitempty"`
+	GenderLT     *int  `json:"genderLT,omitempty"`
+	GenderLTE    *int  `json:"genderLTE,omitempty"`
+	GenderIsNil  bool  `json:"genderIsNil,omitempty"`
+	GenderNotNil bool  `json:"genderNotNil,omitempty"`
+
 	// "posts" edge predicates.
 	HasPosts     *bool             `json:"hasPosts,omitempty"`
 	HasPostsWith []*PostWhereInput `json:"hasPostsWith,omitempty"`
@@ -1874,6 +1898,66 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 	}
 	if i.AvatarURLContainsFold != nil {
 		predicates = append(predicates, user.AvatarURLContainsFold(*i.AvatarURLContainsFold))
+	}
+	if i.Age != nil {
+		predicates = append(predicates, user.AgeEQ(*i.Age))
+	}
+	if i.AgeNEQ != nil {
+		predicates = append(predicates, user.AgeNEQ(*i.AgeNEQ))
+	}
+	if len(i.AgeIn) > 0 {
+		predicates = append(predicates, user.AgeIn(i.AgeIn...))
+	}
+	if len(i.AgeNotIn) > 0 {
+		predicates = append(predicates, user.AgeNotIn(i.AgeNotIn...))
+	}
+	if i.AgeGT != nil {
+		predicates = append(predicates, user.AgeGT(*i.AgeGT))
+	}
+	if i.AgeGTE != nil {
+		predicates = append(predicates, user.AgeGTE(*i.AgeGTE))
+	}
+	if i.AgeLT != nil {
+		predicates = append(predicates, user.AgeLT(*i.AgeLT))
+	}
+	if i.AgeLTE != nil {
+		predicates = append(predicates, user.AgeLTE(*i.AgeLTE))
+	}
+	if i.AgeIsNil {
+		predicates = append(predicates, user.AgeIsNil())
+	}
+	if i.AgeNotNil {
+		predicates = append(predicates, user.AgeNotNil())
+	}
+	if i.Gender != nil {
+		predicates = append(predicates, user.GenderEQ(*i.Gender))
+	}
+	if i.GenderNEQ != nil {
+		predicates = append(predicates, user.GenderNEQ(*i.GenderNEQ))
+	}
+	if len(i.GenderIn) > 0 {
+		predicates = append(predicates, user.GenderIn(i.GenderIn...))
+	}
+	if len(i.GenderNotIn) > 0 {
+		predicates = append(predicates, user.GenderNotIn(i.GenderNotIn...))
+	}
+	if i.GenderGT != nil {
+		predicates = append(predicates, user.GenderGT(*i.GenderGT))
+	}
+	if i.GenderGTE != nil {
+		predicates = append(predicates, user.GenderGTE(*i.GenderGTE))
+	}
+	if i.GenderLT != nil {
+		predicates = append(predicates, user.GenderLT(*i.GenderLT))
+	}
+	if i.GenderLTE != nil {
+		predicates = append(predicates, user.GenderLTE(*i.GenderLTE))
+	}
+	if i.GenderIsNil {
+		predicates = append(predicates, user.GenderIsNil())
+	}
+	if i.GenderNotNil {
+		predicates = append(predicates, user.GenderNotNil())
 	}
 
 	if i.HasPosts != nil {

@@ -354,6 +354,9 @@ type CreateUserInput struct {
 	Username          *string
 	Profile           *string
 	AvatarURL         *string
+	Age               *int
+	Gender            *int
+	Interests         *[]int
 	PostIDs           []int
 	LikedPostIDs      []int
 	BookmarkedPostIDs []int
@@ -373,6 +376,15 @@ func (i *CreateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.AvatarURL; v != nil {
 		m.SetAvatarURL(*v)
+	}
+	if v := i.Age; v != nil {
+		m.SetAge(*v)
+	}
+	if v := i.Gender; v != nil {
+		m.SetGender(*v)
+	}
+	if v := i.Interests; v != nil {
+		m.SetInterests(*v)
 	}
 	if v := i.PostIDs; len(v) > 0 {
 		m.AddPostIDs(v...)
@@ -409,6 +421,12 @@ type UpdateUserInput struct {
 	Profile                 *string
 	ClearAvatarURL          bool
 	AvatarURL               *string
+	ClearAge                bool
+	Age                     *int
+	ClearGender             bool
+	Gender                  *int
+	ClearInterests          bool
+	Interests               *[]int
 	AddPostIDs              []int
 	RemovePostIDs           []int
 	AddLikedPostIDs         []int
@@ -445,6 +463,24 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.AvatarURL; v != nil {
 		m.SetAvatarURL(*v)
+	}
+	if i.ClearAge {
+		m.ClearAge()
+	}
+	if v := i.Age; v != nil {
+		m.SetAge(*v)
+	}
+	if i.ClearGender {
+		m.ClearGender()
+	}
+	if v := i.Gender; v != nil {
+		m.SetGender(*v)
+	}
+	if i.ClearInterests {
+		m.ClearInterests()
+	}
+	if v := i.Interests; v != nil {
+		m.SetInterests(*v)
 	}
 	if v := i.AddPostIDs; len(v) > 0 {
 		m.AddPostIDs(v...)

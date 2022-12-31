@@ -20,6 +20,9 @@ func (User) Fields() []ent.Field {
 		field.String("username").Optional(),
 		field.Text("profile").Optional(),
 		field.String("avatar_url").Optional(),
+		field.Int("age").Optional().Comment("1:10代 2:20代 3:30代 4:40代 5:50代 6:60代以上"),
+		field.Int("gender").Optional().Comment("1:男 2:女 3:選択しない"),
+		field.Ints("interests").Optional().Comment("1:ポケットモンスター 2:どうぶつの森 3:スーパーマリオ 4:スプラトゥーン 5:ゼルダの伝説 6:モンスターハンター 7:ドラゴンクエスト 8:ファイナルファンタジー 9:ニーア 10:桃太郎電鉄 11:パワプロ 12:メタルギア 13:マインクラフト 14:ソニック"),
 	}
 }
 
