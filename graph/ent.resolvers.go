@@ -28,7 +28,9 @@ func (r *queryResolver) Categories(ctx context.Context, after *ent.Cursor, first
 
 // Drafts is the resolver for the drafts field.
 func (r *queryResolver) Drafts(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.DraftOrder, where *ent.DraftWhereInput) (*ent.DraftConnection, error) {
-	return r.client.Draft.Query().Paginate(ctx, after, first, before, last, ent.WithDraftFilter(where.Filter))
+	return r.client.Draft.Query().Paginate(ctx, after, first, before, last,
+		ent.WithDraftOrder(orderBy),
+		ent.WithDraftFilter(where.Filter))
 }
 
 // Hashtags is the resolver for the hashtags field.

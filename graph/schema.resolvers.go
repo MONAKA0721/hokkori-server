@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
@@ -269,71 +270,14 @@ func (r *mutationResolver) DeleteDraft(ctx context.Context, input model.DeleteDr
 }
 
 // LikedPosts is the resolver for the likedPosts field.
-func (r *queryResolver) LikedPosts(ctx context.Context, first int, typeArg post.Type) ([]*ent.Post, error) {
-	query := fmt.Sprintf(`
-SELECT
-	p.id
-FROM
-	posts AS p
-LEFT JOIN
-	likes AS l on p.id = l.post_id
-WHERE
-	p.type = '%s'
-GROUP BY
-	p.id
-ORDER BY
-	COUNT(l.post_id) DESC
-LIMIT %d`, typeArg, first)
-	rows, err := r.client.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
-	postIDs := make([]int, 0)
-	for rows.Next() {
-		var postID int
-		if err := rows.Scan(&postID); err != nil {
-			break
-		}
-		postIDs = append(postIDs, postID)
-	}
-
-	// If the database is being written to ensure to check for Close
-	// errors that may be returned from the driver. The query may
-	// encounter an auto-commit error and be forced to rollback changes.
-	// Check for errors during rows "Close".
-	// This may be more important if multiple statements are executed
-	// in a single batch and rows were written as well as read.
-	if closeErr := rows.Close(); closeErr != nil {
-		return nil, closeErr
-	}
-
-	// Check for row scan error.
-	if err != nil {
-		return nil, err
-	}
-
-	// Rows.Err will report the last error encountered by Rows.Scan.
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	queryPosts, err := r.client.Post.Query().Where(post.IDIn(postIDs...)).All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	orderedPosts := make([]*ent.Post, 0)
-	for _, postID := range postIDs {
-		for _, queryPost := range queryPosts {
-			if queryPost.ID == postID {
-				orderedPosts = append(orderedPosts, queryPost)
-				break
-			}
-		}
-	}
-
-	return orderedPosts, nil
+func (r *queryResolver) LikedPosts(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.PostWhereInput) (*ent.PostConnection, error) {
+	return r.client.Post.Query().Unique(false).Order(
+		func(s *sql.Selector) {
+			t := sql.Table(like.Table)
+			s.LeftJoin(t).On(s.C(post.FieldID), t.C(like.PostColumn))
+			s.GroupBy(s.C(post.FieldID))
+			s.OrderBy(sql.Desc(sql.Count(t.C(like.PostColumn))))
+		}).Paginate(ctx, after, first, before, last, ent.WithPostFilter(where.Filter))
 }
 
 // TopicWorks is the resolver for the topicWorks field.

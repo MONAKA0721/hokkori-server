@@ -25,9 +25,12 @@ type Mutation {
 
 extend type Query {
   likedPosts(
-    first: Int!
-    type: PostPostType!
-  ): [Post]!
+    after: Cursor
+    first: Int
+    before: Cursor
+    last: Int
+    where: PostWhereInput
+  ): PostConnection!
   topicWorks(
     first: Int!
   ): [Work]!
