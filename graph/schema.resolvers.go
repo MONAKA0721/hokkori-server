@@ -6,12 +6,13 @@ package graph
 import (
 	"context"
 	"fmt"
-	"github.com/MONAKA0721/hokkori/ent/hashtag"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/MONAKA0721/hokkori/ent"
 	"github.com/MONAKA0721/hokkori/ent/bookmark"
+	"github.com/MONAKA0721/hokkori/ent/category"
+	"github.com/MONAKA0721/hokkori/ent/hashtag"
 	"github.com/MONAKA0721/hokkori/ent/like"
 	"github.com/MONAKA0721/hokkori/ent/post"
 	"github.com/MONAKA0721/hokkori/ent/user"
@@ -294,7 +295,7 @@ func (r *queryResolver) TopicWorks(ctx context.Context, after *ent.Cursor, first
 
 // TopicHashtags is the resolver for the topicHashtags field.
 func (r *queryResolver) TopicHashtags(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) (*ent.HashtagConnection, error) {
-	return r.client.Debug().Hashtag.Query().Unique(false).Order(
+	return r.client.Hashtag.Query().Unique(false).Order(
 		func(s *sql.Selector) {
 			t := sql.Table(post.HashtagsTable)
 			s.LeftJoin(t).On(s.C(hashtag.FieldID), t.C("hashtag_id"))
@@ -305,60 +306,18 @@ func (r *queryResolver) TopicHashtags(ctx context.Context, after *ent.Cursor, fi
 
 // WorkCategories is the resolver for the workCategories field.
 func (r *queryResolver) WorkCategories(ctx context.Context, workID int) ([]*model.WorkCategory, error) {
-	query := fmt.Sprintf(`
-SELECT
-	c.id AS categoryID,
-	c.name AS categoryName,
-	COUNT(p.id) AS postCount
-FROM
-	posts AS p
-INNER JOIN
-	categories AS c on p.post_category = c.id
-WHERE
-	p.work_posts = %d
-GROUP BY
-	c.id
-ORDER BY
-	COUNT(p.id) DESC
-`, workID)
-	rows, err := r.client.QueryContext(ctx, query)
+	var workCategories []*model.WorkCategory
+	err := r.client.Debug().Category.Query().
+		GroupBy(category.FieldID, category.FieldName).
+		Aggregate(func(s *sql.Selector) string {
+			t := sql.Table(post.Table)
+			s.Join(t).On(s.C(category.FieldID), t.C(post.CategoryColumn))
+			s.Where(sql.EQ(t.C(post.WorkColumn), workID))
+			s.OrderBy(sql.Desc(sql.Count(t.C(post.FieldID))))
+			return sql.As(sql.Count(t.C(post.FieldID)), "count")
+		}).
+		Scan(ctx, &workCategories)
 	if err != nil {
-		return nil, err
-	}
-
-	workCategories := make([]*model.WorkCategory, 0)
-	for rows.Next() {
-		var categoryID int
-		var categoryName string
-		var postCount int
-		if err := rows.Scan(&categoryID, &categoryName, &postCount); err != nil {
-			fmt.Println(err.Error())
-			break
-		}
-		workCategories = append(workCategories, &model.WorkCategory{
-			CategoryID:   categoryID,
-			CategoryName: categoryName,
-			PostCount:    postCount,
-		})
-	}
-
-	// If the database is being written to ensure to check for Close
-	// errors that may be returned from the driver. The query may
-	// encounter an auto-commit error and be forced to rollback changes.
-	// Check for errors during rows "Close".
-	// This may be more important if multiple statements are executed
-	// in a single batch and rows were written as well as read.
-	if closeErr := rows.Close(); closeErr != nil {
-		return nil, closeErr
-	}
-
-	// Check for row scan error.
-	if err != nil {
-		return nil, err
-	}
-
-	// Rows.Err will report the last error encountered by Rows.Scan.
-	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 

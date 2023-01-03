@@ -85,7 +85,7 @@ type UnlikePostPayload struct {
 }
 
 type WorkCategory struct {
-	CategoryID   int    `json:"categoryID"`
-	CategoryName string `json:"categoryName"`
-	PostCount    int    `json:"postCount"`
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Count int    `json:"count"`
 }

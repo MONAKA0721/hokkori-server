@@ -239,9 +239,9 @@ type ComplexityRoot struct {
 	}
 
 	WorkCategory struct {
-		CategoryID   func(childComplexity int) int
-		CategoryName func(childComplexity int) int
-		PostCount    func(childComplexity int) int
+		Count func(childComplexity int) int
+		ID    func(childComplexity int) int
+		Name  func(childComplexity int) int
 	}
 
 	WorkConnection struct {
@@ -1265,26 +1265,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Work.Title(childComplexity), true
 
-	case "WorkCategory.categoryID":
-		if e.complexity.WorkCategory.CategoryID == nil {
+	case "WorkCategory.count":
+		if e.complexity.WorkCategory.Count == nil {
 			break
 		}
 
-		return e.complexity.WorkCategory.CategoryID(childComplexity), true
+		return e.complexity.WorkCategory.Count(childComplexity), true
 
-	case "WorkCategory.categoryName":
-		if e.complexity.WorkCategory.CategoryName == nil {
+	case "WorkCategory.id":
+		if e.complexity.WorkCategory.ID == nil {
 			break
 		}
 
-		return e.complexity.WorkCategory.CategoryName(childComplexity), true
+		return e.complexity.WorkCategory.ID(childComplexity), true
 
-	case "WorkCategory.postCount":
-		if e.complexity.WorkCategory.PostCount == nil {
+	case "WorkCategory.name":
+		if e.complexity.WorkCategory.Name == nil {
 			break
 		}
 
-		return e.complexity.WorkCategory.PostCount(childComplexity), true
+		return e.complexity.WorkCategory.Name(childComplexity), true
 
 	case "WorkConnection.edges":
 		if e.complexity.WorkConnection.Edges == nil {
@@ -2474,9 +2474,9 @@ type UnfollowUserPayload {
 }
 
 type WorkCategory {
-  categoryID: ID!
-  categoryName: String!
-  postCount: Int!
+  id: ID!
+  name: String!
+  count: Int!
 }
 
 input DeleteDraftInput {
@@ -8478,12 +8478,12 @@ func (ec *executionContext) fieldContext_Query_workCategories(ctx context.Contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "categoryID":
-				return ec.fieldContext_WorkCategory_categoryID(ctx, field)
-			case "categoryName":
-				return ec.fieldContext_WorkCategory_categoryName(ctx, field)
-			case "postCount":
-				return ec.fieldContext_WorkCategory_postCount(ctx, field)
+			case "id":
+				return ec.fieldContext_WorkCategory_id(ctx, field)
+			case "name":
+				return ec.fieldContext_WorkCategory_name(ctx, field)
+			case "count":
+				return ec.fieldContext_WorkCategory_count(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type WorkCategory", field.Name)
 		},
@@ -9994,8 +9994,8 @@ func (ec *executionContext) fieldContext_Work_drafts(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _WorkCategory_categoryID(ctx context.Context, field graphql.CollectedField, obj *model.WorkCategory) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_WorkCategory_categoryID(ctx, field)
+func (ec *executionContext) _WorkCategory_id(ctx context.Context, field graphql.CollectedField, obj *model.WorkCategory) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_WorkCategory_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -10008,7 +10008,7 @@ func (ec *executionContext) _WorkCategory_categoryID(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CategoryID, nil
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10025,7 +10025,7 @@ func (ec *executionContext) _WorkCategory_categoryID(ctx context.Context, field 
 	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_WorkCategory_categoryID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_WorkCategory_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "WorkCategory",
 		Field:      field,
@@ -10038,8 +10038,8 @@ func (ec *executionContext) fieldContext_WorkCategory_categoryID(ctx context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _WorkCategory_categoryName(ctx context.Context, field graphql.CollectedField, obj *model.WorkCategory) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_WorkCategory_categoryName(ctx, field)
+func (ec *executionContext) _WorkCategory_name(ctx context.Context, field graphql.CollectedField, obj *model.WorkCategory) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_WorkCategory_name(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -10052,7 +10052,7 @@ func (ec *executionContext) _WorkCategory_categoryName(ctx context.Context, fiel
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CategoryName, nil
+		return obj.Name, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10069,7 +10069,7 @@ func (ec *executionContext) _WorkCategory_categoryName(ctx context.Context, fiel
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_WorkCategory_categoryName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_WorkCategory_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "WorkCategory",
 		Field:      field,
@@ -10082,8 +10082,8 @@ func (ec *executionContext) fieldContext_WorkCategory_categoryName(ctx context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _WorkCategory_postCount(ctx context.Context, field graphql.CollectedField, obj *model.WorkCategory) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_WorkCategory_postCount(ctx, field)
+func (ec *executionContext) _WorkCategory_count(ctx context.Context, field graphql.CollectedField, obj *model.WorkCategory) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_WorkCategory_count(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -10096,7 +10096,7 @@ func (ec *executionContext) _WorkCategory_postCount(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.PostCount, nil
+		return obj.Count, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10113,7 +10113,7 @@ func (ec *executionContext) _WorkCategory_postCount(ctx context.Context, field g
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_WorkCategory_postCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_WorkCategory_count(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "WorkCategory",
 		Field:      field,
@@ -18553,23 +18553,23 @@ func (ec *executionContext) _WorkCategory(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("WorkCategory")
-		case "categoryID":
+		case "id":
 
-			out.Values[i] = ec._WorkCategory_categoryID(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "categoryName":
-
-			out.Values[i] = ec._WorkCategory_categoryName(ctx, field, obj)
+			out.Values[i] = ec._WorkCategory_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "postCount":
+		case "name":
 
-			out.Values[i] = ec._WorkCategory_postCount(ctx, field, obj)
+			out.Values[i] = ec._WorkCategory_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "count":
+
+			out.Values[i] = ec._WorkCategory_count(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
