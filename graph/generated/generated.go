@@ -192,7 +192,7 @@ type ComplexityRoot struct {
 		Node           func(childComplexity int, id int) int
 		Nodes          func(childComplexity int, ids []int) int
 		Posts          func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.PostOrder, where *ent.PostWhereInput) int
-		TopicWorks     func(childComplexity int, first int) int
+		TopicWorks     func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) int
 		WorkCategories func(childComplexity int, workID int) int
 		Works          func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) int
 	}
@@ -281,7 +281,7 @@ type QueryResolver interface {
 	Posts(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.PostOrder, where *ent.PostWhereInput) (*ent.PostConnection, error)
 	Works(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) (*ent.WorkConnection, error)
 	LikedPosts(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.PostWhereInput) (*ent.PostConnection, error)
-	TopicWorks(ctx context.Context, first int) ([]*ent.Work, error)
+	TopicWorks(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.WorkWhereInput) (*ent.WorkConnection, error)
 	WorkCategories(ctx context.Context, workID int) ([]*model.WorkCategory, error)
 }
 
@@ -1050,7 +1050,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.TopicWorks(childComplexity, args["first"].(int)), true
+		return e.complexity.Query.TopicWorks(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["where"].(*ent.WorkWhereInput)), true
 
 	case "Query.workCategories":
 		if e.complexity.Query.WorkCategories == nil {
@@ -2387,19 +2387,9 @@ type Mutation {
 }
 
 extend type Query {
-  likedPosts(
-    after: Cursor
-    first: Int
-    before: Cursor
-    last: Int
-    where: PostWhereInput
-  ): PostConnection!
-  topicWorks(
-    first: Int!
-  ): [Work]!
-  workCategories(
-    workID: ID!
-  ): [WorkCategory]!
+  likedPosts(after: Cursor, first: Int, before: Cursor, last: Int, where: PostWhereInput): PostConnection!
+  topicWorks(after: Cursor, first: Int, before: Cursor, last: Int, where: WorkWhereInput): WorkConnection!
+  workCategories(workID: ID!): [WorkCategory]!
 }
 
 input LikePostInput {
@@ -3119,15 +3109,51 @@ func (ec *executionContext) field_Query_posts_args(ctx context.Context, rawArgs 
 func (ec *executionContext) field_Query_topicWorks_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["first"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+	var arg0 *ent.Cursor
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg0, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["first"] = arg0
+	args["after"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg1
+	var arg2 *ent.Cursor
+	if tmp, ok := rawArgs["before"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+		arg2, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["before"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg3
+	var arg4 *ent.WorkWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg4, err = ec.unmarshalOWorkWhereInput2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐWorkWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg4
 	return args, nil
 }
 
@@ -8235,7 +8261,7 @@ func (ec *executionContext) _Query_topicWorks(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().TopicWorks(rctx, fc.Args["first"].(int))
+		return ec.resolvers.Query().TopicWorks(rctx, fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["last"].(*int), fc.Args["where"].(*ent.WorkWhereInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8247,9 +8273,9 @@ func (ec *executionContext) _Query_topicWorks(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Work)
+	res := resTmp.(*ent.WorkConnection)
 	fc.Result = res
-	return ec.marshalNWork2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐWork(ctx, field.Selections, res)
+	return ec.marshalNWorkConnection2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐWorkConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_topicWorks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8260,18 +8286,14 @@ func (ec *executionContext) fieldContext_Query_topicWorks(ctx context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Work_id(ctx, field)
-			case "title":
-				return ec.fieldContext_Work_title(ctx, field)
-			case "thumbnail":
-				return ec.fieldContext_Work_thumbnail(ctx, field)
-			case "posts":
-				return ec.fieldContext_Work_posts(ctx, field)
-			case "drafts":
-				return ec.fieldContext_Work_drafts(ctx, field)
+			case "edges":
+				return ec.fieldContext_WorkConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_WorkConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_WorkConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Work", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type WorkConnection", field.Name)
 		},
 	}
 	defer func() {
@@ -19354,44 +19376,6 @@ func (ec *executionContext) unmarshalNUserWhereInput2ᚖgithubᚗcomᚋMONAKA072
 
 func (ec *executionContext) marshalNWork2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐWork(ctx context.Context, sel ast.SelectionSet, v ent.Work) graphql.Marshaler {
 	return ec._Work(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNWork2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐWork(ctx context.Context, sel ast.SelectionSet, v []*ent.Work) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOWork2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐWork(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	return ret
 }
 
 func (ec *executionContext) marshalNWork2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐWork(ctx context.Context, sel ast.SelectionSet, v *ent.Work) graphql.Marshaler {
