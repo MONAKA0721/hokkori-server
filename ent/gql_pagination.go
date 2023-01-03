@@ -447,6 +447,49 @@ func (c *CategoryQuery) Paginate(
 	return conn, nil
 }
 
+var (
+	// CategoryOrderFieldName orders Category by name.
+	CategoryOrderFieldName = &CategoryOrderField{
+		field: category.FieldName,
+		toCursor: func(c *Category) Cursor {
+			return Cursor{
+				ID:    c.ID,
+				Value: c.Name,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f CategoryOrderField) String() string {
+	var str string
+	switch f.field {
+	case category.FieldName:
+		str = "NAME"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f CategoryOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *CategoryOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("CategoryOrderField %T must be a string", v)
+	}
+	switch str {
+	case "NAME":
+		*f = *CategoryOrderFieldName
+	default:
+		return fmt.Errorf("%s is not a valid CategoryOrderField", str)
+	}
+	return nil
+}
+
 // CategoryOrderField defines the ordering field of Category.
 type CategoryOrderField struct {
 	field    string

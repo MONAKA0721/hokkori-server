@@ -21,8 +21,9 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 }
 
 // Categories is the resolver for the categories field.
-func (r *queryResolver) Categories(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.CategoryWhereInput) (*ent.CategoryConnection, error) {
+func (r *queryResolver) Categories(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.CategoryOrder, where *ent.CategoryWhereInput) (*ent.CategoryConnection, error) {
 	return r.client.Category.Query().Paginate(ctx, after, first, before, last,
+		ent.WithCategoryOrder(orderBy),
 		ent.WithCategoryFilter(where.Filter))
 }
 

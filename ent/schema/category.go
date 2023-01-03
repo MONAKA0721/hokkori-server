@@ -16,7 +16,7 @@ type Category struct {
 // Fields of the Category.
 func (Category) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("name").NotEmpty(),
+		field.Text("name").NotEmpty().Annotations(entgql.OrderField("NAME")),
 	}
 }
 

@@ -185,7 +185,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Categories     func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.CategoryWhereInput) int
+		Categories     func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.CategoryOrder, where *ent.CategoryWhereInput) int
 		Drafts         func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.DraftOrder, where *ent.DraftWhereInput) int
 		Hashtags       func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) int
 		LikedPosts     func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.PostWhereInput) int
@@ -276,7 +276,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
 	Nodes(ctx context.Context, ids []int) ([]ent.Noder, error)
-	Categories(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.CategoryWhereInput) (*ent.CategoryConnection, error)
+	Categories(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.CategoryOrder, where *ent.CategoryWhereInput) (*ent.CategoryConnection, error)
 	Drafts(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.DraftOrder, where *ent.DraftWhereInput) (*ent.DraftConnection, error)
 	Hashtags(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) (*ent.HashtagConnection, error)
 	Posts(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, orderBy *ent.PostOrder, where *ent.PostWhereInput) (*ent.PostConnection, error)
@@ -968,7 +968,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Categories(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["where"].(*ent.CategoryWhereInput)), true
+		return e.complexity.Query.Categories(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["orderBy"].(*ent.CategoryOrder), args["where"].(*ent.CategoryWhereInput)), true
 
 	case "Query.drafts":
 		if e.complexity.Query.Drafts == nil {
@@ -1330,6 +1330,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputBookmarkPostInput,
+		ec.unmarshalInputCategoryOrder,
 		ec.unmarshalInputCategoryWhereInput,
 		ec.unmarshalInputCreateDraftInput,
 		ec.unmarshalInputCreateHashtagInput,
@@ -1437,6 +1438,17 @@ type CategoryEdge {
   node: Category
   """A cursor for use in pagination."""
   cursor: Cursor!
+}
+"""Ordering options for Category connections"""
+input CategoryOrder {
+  """The ordering direction."""
+  direction: OrderDirection! = ASC
+  """The field by which to order Categories."""
+  field: CategoryOrderField!
+}
+"""Properties by which Category connections can be ordered."""
+enum CategoryOrderField {
+  NAME
 }
 """
 CategoryWhereInput is used for filtering Category objects.
@@ -1979,6 +1991,9 @@ type Query {
 
     """Returns the last _n_ elements from the list."""
     last: Int
+
+    """Ordering options for Categories returned from the connection."""
+    orderBy: CategoryOrder
 
     """Filtering options for Categories returned from the connection."""
     where: CategoryWhereInput
@@ -2857,15 +2872,24 @@ func (ec *executionContext) field_Query_categories_args(ctx context.Context, raw
 		}
 	}
 	args["last"] = arg3
-	var arg4 *ent.CategoryWhereInput
-	if tmp, ok := rawArgs["where"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-		arg4, err = ec.unmarshalOCategoryWhereInput2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCategoryWhereInput(ctx, tmp)
+	var arg4 *ent.CategoryOrder
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg4, err = ec.unmarshalOCategoryOrder2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCategoryOrder(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["where"] = arg4
+	args["orderBy"] = arg4
+	var arg5 *ent.CategoryWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg5, err = ec.unmarshalOCategoryWhereInput2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCategoryWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg5
 	return args, nil
 }
 
@@ -7949,7 +7973,7 @@ func (ec *executionContext) _Query_categories(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Categories(rctx, fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["last"].(*int), fc.Args["where"].(*ent.CategoryWhereInput))
+		return ec.resolvers.Query().Categories(rctx, fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.CategoryOrder), fc.Args["where"].(*ent.CategoryWhereInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -12176,6 +12200,46 @@ func (ec *executionContext) unmarshalInputBookmarkPostInput(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postID"))
 			it.PostID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCategoryOrder(ctx context.Context, obj interface{}) (ent.CategoryOrder, error) {
+	var it ent.CategoryOrder
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["direction"]; !present {
+		asMap["direction"] = "ASC"
+	}
+
+	fieldsInOrder := [...]string{"direction", "field"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "direction":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			it.Direction, err = ec.unmarshalNOrderDirection2githubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalNCategoryOrderField2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCategoryOrderField(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -19032,6 +19096,22 @@ func (ec *executionContext) marshalNCategoryConnection2ᚖgithubᚗcomᚋMONAKA0
 	return ec._CategoryConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCategoryOrderField2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCategoryOrderField(ctx context.Context, v interface{}) (*ent.CategoryOrderField, error) {
+	var res = new(ent.CategoryOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCategoryOrderField2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCategoryOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.CategoryOrderField) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) unmarshalNCategoryWhereInput2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCategoryWhereInput(ctx context.Context, v interface{}) (*ent.CategoryWhereInput, error) {
 	res, err := ec.unmarshalInputCategoryWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -19929,6 +20009,14 @@ func (ec *executionContext) marshalOCategoryEdge2ᚖgithubᚗcomᚋMONAKA0721ᚋ
 		return graphql.Null
 	}
 	return ec._CategoryEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOCategoryOrder2ᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCategoryOrder(ctx context.Context, v interface{}) (*ent.CategoryOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputCategoryOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOCategoryWhereInput2ᚕᚖgithubᚗcomᚋMONAKA0721ᚋhokkoriᚋentᚐCategoryWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.CategoryWhereInput, error) {
