@@ -135,8 +135,8 @@ type ComplexityRoot struct {
 		BookmarkPost   func(childComplexity int, input model.BookmarkPostInput) int
 		CreateDraft    func(childComplexity int, input ent.CreateDraftInput, hashtagTitles []*string) int
 		CreateHashtag  func(childComplexity int, input ent.CreateHashtagInput) int
-		CreatePost     func(childComplexity int, input ent.CreatePostInput, hashtagTitles []*string) int
-		CreatePosts    func(childComplexity int, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload) int
+		CreatePost     func(childComplexity int, input ent.CreatePostInput, hashtagTitles []*string, workImage *graphql.Upload) int
+		CreatePosts    func(childComplexity int, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload, workImage *graphql.Upload) int
 		CreateUser     func(childComplexity int, input ent.CreateUserInput) int
 		CreateWork     func(childComplexity int, input ent.CreateWorkInput) int
 		DeleteDraft    func(childComplexity int, input model.DeleteDraftInput) int
@@ -259,8 +259,8 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input ent.CreateUserInput) (*ent.User, error)
 	UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput, image *graphql.Upload) (*ent.User, error)
-	CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload) (*ent.Post, error)
-	CreatePost(ctx context.Context, input ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error)
+	CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload, workImage *graphql.Upload) (*ent.Post, error)
+	CreatePost(ctx context.Context, input ent.CreatePostInput, hashtagTitles []*string, workImage *graphql.Upload) (*ent.Post, error)
 	CreateHashtag(ctx context.Context, input ent.CreateHashtagInput) (*ent.Hashtag, error)
 	CreateWork(ctx context.Context, input ent.CreateWorkInput) (*ent.Work, error)
 	LikePost(ctx context.Context, input model.LikePostInput) (*model.LikePostPayload, error)
@@ -663,7 +663,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreatePost(childComplexity, args["input"].(ent.CreatePostInput), args["hashtagTitles"].([]*string)), true
+		return e.complexity.Mutation.CreatePost(childComplexity, args["input"].(ent.CreatePostInput), args["hashtagTitles"].([]*string), args["workImage"].(*graphql.Upload)), true
 
 	case "Mutation.createPosts":
 		if e.complexity.Mutation.CreatePosts == nil {
@@ -675,7 +675,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreatePosts(childComplexity, args["input"].(ent.CreatePostInput), args["input2"].(ent.CreatePostInput), args["hashtagTitles"].([]*string), args["image"].(*graphql.Upload)), true
+		return e.complexity.Mutation.CreatePosts(childComplexity, args["input"].(ent.CreatePostInput), args["input2"].(ent.CreatePostInput), args["hashtagTitles"].([]*string), args["image"].(*graphql.Upload), args["workImage"].(*graphql.Upload)), true
 
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
@@ -2400,8 +2400,8 @@ scalar Upload
 type Mutation {
   createUser(input: CreateUserInput!): User!
   updateUser(id: ID!, input: UpdateUserInput!, image: Upload): User!
-  createPosts(input: CreatePostInput!, input2: CreatePostInput!, hashtagTitles: [String]!, image: Upload): Post!
-  createPost(input: CreatePostInput!, hashtagTitles: [String]!): Post!
+  createPosts(input: CreatePostInput!, input2: CreatePostInput!, hashtagTitles: [String]!, image: Upload, workImage: Upload): Post!
+  createPost(input: CreatePostInput!, hashtagTitles: [String]!, workImage: Upload): Post!
   createHashtag(input: CreateHashtagInput!): Hashtag!
   createWork(input: CreateWorkInput!): Work!
   likePost(input: LikePostInput!): LikePostPayload!
@@ -2587,6 +2587,15 @@ func (ec *executionContext) field_Mutation_createPost_args(ctx context.Context, 
 		}
 	}
 	args["hashtagTitles"] = arg1
+	var arg2 *graphql.Upload
+	if tmp, ok := rawArgs["workImage"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("workImage"))
+		arg2, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["workImage"] = arg2
 	return args, nil
 }
 
@@ -2629,6 +2638,15 @@ func (ec *executionContext) field_Mutation_createPosts_args(ctx context.Context,
 		}
 	}
 	args["image"] = arg3
+	var arg4 *graphql.Upload
+	if tmp, ok := rawArgs["workImage"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("workImage"))
+		arg4, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["workImage"] = arg4
 	return args, nil
 }
 
@@ -5813,7 +5831,7 @@ func (ec *executionContext) _Mutation_createPosts(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePosts(rctx, fc.Args["input"].(ent.CreatePostInput), fc.Args["input2"].(ent.CreatePostInput), fc.Args["hashtagTitles"].([]*string), fc.Args["image"].(*graphql.Upload))
+		return ec.resolvers.Mutation().CreatePosts(rctx, fc.Args["input"].(ent.CreatePostInput), fc.Args["input2"].(ent.CreatePostInput), fc.Args["hashtagTitles"].([]*string), fc.Args["image"].(*graphql.Upload), fc.Args["workImage"].(*graphql.Upload))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5898,7 +5916,7 @@ func (ec *executionContext) _Mutation_createPost(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePost(rctx, fc.Args["input"].(ent.CreatePostInput), fc.Args["hashtagTitles"].([]*string))
+		return ec.resolvers.Mutation().CreatePost(rctx, fc.Args["input"].(ent.CreatePostInput), fc.Args["hashtagTitles"].([]*string), fc.Args["workImage"].(*graphql.Upload))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

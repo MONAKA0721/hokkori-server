@@ -55,7 +55,34 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.Upd
 }
 
 // CreatePosts is the resolver for the createPosts field.
-func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload) (*ent.Post, error) {
+func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePostInput, input2 ent.CreatePostInput, hashtagTitles []*string, image *graphql.Upload, workImage *graphql.Upload) (*ent.Post, error) {
+	if workImage != nil {
+		w, err := r.client.Work.Query().Where(work.ID(input.WorkID)).Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if w.Thumbnail == "" {
+			randomUUID, err := uuid.NewRandom()
+			if err != nil {
+				return nil, err
+			}
+
+			output, err := r.uploader.Upload(ctx, &s3.PutObjectInput{
+				Bucket:      aws.String(r.config.S3.BucketName),
+				Key:         aws.String(randomUUID.String()),
+				Body:        workImage.File,
+				ContentType: aws.String(workImage.ContentType),
+				ACL:         types.ObjectCannedACLPublicRead,
+			})
+			if err != nil {
+				return nil, err
+			}
+			w, err = r.client.Work.UpdateOneID(input.WorkID).SetThumbnail(output.Location).Save(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 	newHashtagIDs, err := GetNewHashtagIDs(ctx, r.client, hashtagTitles)
 	if err != nil {
 		return nil, err
@@ -92,7 +119,35 @@ func (r *mutationResolver) CreatePosts(ctx context.Context, input ent.CreatePost
 }
 
 // CreatePost is the resolver for the createPost field.
-func (r *mutationResolver) CreatePost(ctx context.Context, input ent.CreatePostInput, hashtagTitles []*string) (*ent.Post, error) {
+func (r *mutationResolver) CreatePost(ctx context.Context, input ent.CreatePostInput, hashtagTitles []*string, workImage *graphql.Upload) (*ent.Post, error) {
+	if workImage != nil {
+		w, err := r.client.Work.Query().Where(work.ID(input.WorkID)).Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if w.Thumbnail == "" {
+			randomUUID, err := uuid.NewRandom()
+			if err != nil {
+				return nil, err
+			}
+
+			output, err := r.uploader.Upload(ctx, &s3.PutObjectInput{
+				Bucket:      aws.String(r.config.S3.BucketName),
+				Key:         aws.String(randomUUID.String()),
+				Body:        workImage.File,
+				ContentType: aws.String(workImage.ContentType),
+				ACL:         types.ObjectCannedACLPublicRead,
+			})
+			if err != nil {
+				return nil, err
+			}
+			w, err = r.client.Work.UpdateOneID(input.WorkID).SetThumbnail(output.Location).Save(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	newHashtagIDs, err := GetNewHashtagIDs(ctx, r.client, hashtagTitles)
 	if err != nil {
 		return nil, err
