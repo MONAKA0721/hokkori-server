@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"github.com/MONAKA0721/hokkori/ent/hashtag"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
@@ -289,6 +290,17 @@ func (r *queryResolver) TopicWorks(ctx context.Context, after *ent.Cursor, first
 			s.GroupBy(s.C(work.FieldID))
 			s.OrderBy(sql.Desc(sql.Count(t.C(post.FieldID))))
 		}).Paginate(ctx, after, first, before, last, ent.WithWorkFilter(where.Filter))
+}
+
+// TopicHashtags is the resolver for the topicHashtags field.
+func (r *queryResolver) TopicHashtags(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.HashtagWhereInput) (*ent.HashtagConnection, error) {
+	return r.client.Debug().Hashtag.Query().Unique(false).Order(
+		func(s *sql.Selector) {
+			t := sql.Table(post.HashtagsTable)
+			s.LeftJoin(t).On(s.C(hashtag.FieldID), t.C("hashtag_id"))
+			s.GroupBy(s.C(hashtag.FieldID))
+			s.OrderBy(sql.Desc(sql.Count(t.C("post_id"))))
+		}).Paginate(ctx, after, first, before, last, ent.WithHashtagFilter(where.Filter))
 }
 
 // WorkCategories is the resolver for the workCategories field.

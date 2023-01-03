@@ -26,6 +26,7 @@ type Mutation {
 extend type Query {
   likedPosts(after: Cursor, first: Int, before: Cursor, last: Int, where: PostWhereInput): PostConnection!
   topicWorks(after: Cursor, first: Int, before: Cursor, last: Int, where: WorkWhereInput): WorkConnection!
+  topicHashtags(after: Cursor, first: Int, before: Cursor, last: Int, where: HashtagWhereInput): HashtagConnection!
   workCategories(workID: ID!): [WorkCategory]!
 }
 
