@@ -23,3 +23,7 @@ push:
 
 gen:
 	go generate ./...
+
+deploy:
+	docker compose -f docker-compose.deploy.yaml down
+	docker compose -f docker-compose.deploy.yaml up --build -d

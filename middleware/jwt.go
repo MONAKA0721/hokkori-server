@@ -27,8 +27,8 @@ func (c CustomClaims) Validate(ctx context.Context) error {
 }
 
 // EnsureValidToken is a middleware that will check the validity of our JWT.
-func EnsureValidToken() func(next http.Handler) http.Handler {
-	issuerURL, err := url.Parse("https://" + os.Getenv("AUTH0_DOMAIN") + "/")
+func EnsureValidToken(environment string) func(next http.Handler) http.Handler {
+	issuerURL, err := url.Parse("https://" + os.Getenv("hokkori-"+environment+".jp.auth0.com") + "/")
 	if err != nil {
 		log.Fatalf("Failed to parse the issuer url: %v", err)
 	}
@@ -39,7 +39,7 @@ func EnsureValidToken() func(next http.Handler) http.Handler {
 		provider.KeyFunc,
 		validator.RS256,
 		issuerURL.String(),
-		[]string{os.Getenv("AUTH0_AUDIENCE")},
+		[]string{os.Getenv("https://hokkori-" + environment + "/api")},
 		validator.WithCustomClaims(
 			func() validator.CustomClaims {
 				return &CustomClaims{}

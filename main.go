@@ -21,28 +21,32 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const defaultPort = "8080"
-
 func main() {
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
+	environment := os.Getenv("HOKKORI_ENV")
+	if environment == "" {
+		log.Fatal("HOKKORI_ENV is not set")
 	}
 
 	cfg := env.Config{
 		S3: s3.Config{
-			EndpointURL: os.Getenv("S3_ENDPOINT_URL"),
-			BucketName:  os.Getenv("S3_BUCKET_NAME"),
+			EndpointURL: "https://s3.ap-northeast-1.amazonaws.com",
+			BucketName:  "hokkori-" + environment,
 		},
 	}
 
 	// Create ent.Client and run the schema migration.
+	var host string
+	switch environment {
+	case "dev":
+		host = "db"
+	default:
+		host = "host.docker.internal"
+	}
 	client, err := ent.Open(dialect.Postgres, fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
-		os.Getenv("HOKKORI_DB_HOST"),
-		os.Getenv("HOKKORI_DB_PORT"),
-		os.Getenv("HOKKORI_DB_USER"),
-		os.Getenv("HOKKORI_DB_DATABASE"),
+		host,
+		"5432",
+		"postgres",
+		"hokkori",
 		os.Getenv("HOKKORI_DB_PASSWORD"),
 	))
 	if err != nil {
@@ -74,11 +78,12 @@ func main() {
 	http.Handle("/",
 		playground.Handler("Hokkori", "/query"),
 	)
-	if os.Getenv("HOKKORI_ENV") == "local" {
+	if environment == "dev" {
 		http.Handle("/query", srv)
 	} else {
-		http.Handle("/query", middleware.EnsureValidToken()(srv))
+		http.Handle("/query", middleware.EnsureValidToken(environment)(srv))
 	}
+	port := "8080"
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("http server terminated", err)

@@ -9,22 +9,23 @@ services:
     volumes:
       - ./db/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     ports:
-      - 15432:5432
+      - "15432:5432"
   app:
     container_name: hokkori_app
     build:
       context: .
       dockerfile: Dockerfile.dev
     entrypoint: "./wait-for-it.sh db:5432 -- air"
-    env_file: ./docker.env
     environment:
+      HOKKORI_ENV:
+      HOKKORI_DB_PASSWORD:
       AWS_ACCESS_KEY_ID:
       AWS_SECRET_ACCESS_KEY:
     volumes:
       - bin:/hokkori/bin
       - .:/hokkori
     ports:
-      - 8080:8080
+      - "8080:8080"
     depends_on:
       - db
 volumes:
